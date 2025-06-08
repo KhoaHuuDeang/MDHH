@@ -58,11 +58,24 @@ let UsersService = class UsersService {
         return user;
     }
     async create(createUserDto) {
+        const existingUser = await this.prisma.user.findUnique({
+            where: { email: createUserDto.email }
+        });
+        if (existingUser) {
+            throw new common_1.BadRequestException('User already exists with this email');
+        }
+        const defaultRole = await this.prisma.role.findUnique({
+            where: { name: 'user' }
+        });
+        if (!defaultRole) {
+            throw new common_1.BadRequestException('Default user role not found');
+        }
         const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
         return this.prisma.user.create({
             data: {
                 ...createUserDto,
                 password: hashedPassword,
+                role: { connect: { id: defaultRole.id } }
             },
             select: {
                 id: true,
@@ -80,29 +93,51 @@ let UsersService = class UsersService {
         });
     }
     async update(id, updateUserDto) {
-        const user = await this.findOne(id);
-        return this.prisma.user.update({
-            where: { id },
-            data: updateUserDto,
-            select: {
-                id: true,
-                email: true,
-                name: true,
-                role: {
-                    select: {
-                        id: true,
-                        name: true,
-                    },
+        const [existingUser, emailCheck, roleCheck] = await Promise.all([
+            this.prisma.user.findUnique({
+                where: { id },
+                select: {
+                    id: true, email: true, password: true
+                }
+            }),
+            updateUserDto.email ? this.prisma.user.findUnique({
+                where: {
+                    email: updateUserDto.email,
+                    NOT: { id }
                 },
-                createdAt: true,
-                updatedAt: true,
-            },
-        });
-    }
-    async remove(id) {
-        const user = await this.findOne(id);
-        return this.prisma.user.delete({
+                select: {
+                    id: true,
+                }
+            }) : null,
+            updateUserDto.roleId ? this.prisma.role.findUnique({
+                where: { id: updateUserDto.roleId },
+                select: { id: true }
+            }) : null
+        ]);
+        if (!existingUser) {
+            throw new common_1.NotFoundException(`User with ID ${id} not found`);
+        }
+        if (emailCheck && updateUserDto.email) {
+            throw new common_1.ConflictException('Email already exists');
+        }
+        if (!roleCheck && updateUserDto.roleId) {
+            throw new common_1.NotFoundException(`Role with ID ${updateUserDto.roleId} not found`);
+        }
+        const updateUser = await this.prisma.user.update({
             where: { id },
+            data: {
+                ...updateUserDto,
+                password: updateUserDto.password ? await bcrypt.hash(updateUserDto.password, 10) : existingUser.password,
+            },
+            include: { role: true }
+        });
+        const { password, ...result } = updateUser;
+        return result;
+    }
+    async delete(id) {
+        await this.findOne(id);
+        return this.prisma.user.delete({
+            where: { id }
         });
     }
 };

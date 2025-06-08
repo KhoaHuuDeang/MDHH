@@ -43,9 +43,10 @@ __decorate([
 ], AuthController.prototype, "login", null);
 __decorate([
     (0, common_1.Post)('register'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: 'User registration' }),
-    (0, swagger_1.ApiResponse)({ status: 201, description: 'User created successfully' }),
-    (0, swagger_1.ApiResponse)({ status: 400, description: 'Bad request' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: "Registration successful" }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: "Registration failed" }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_dto_1.CreateUserDto]),

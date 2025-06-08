@@ -18,10 +18,11 @@ export class AuthController {
   }
 
   @Post('register')
-  @ApiOperation({ summary: 'User registration' })
-  @ApiResponse({ status: 201, description: 'User created successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request' })
-  async register(@Body() createUserDto: CreateUserDto) {
-    return this.authService.register(createUserDto);
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({summary: 'User registration'})
+  @ApiResponse({status : 200, description : "Registration successful"})
+  @ApiResponse({status : 401, description : "Registration failed"})
+  async register(@Body () createUserDto : CreateUserDto){
+    return this.authService.register(createUserDto)
   }
 }

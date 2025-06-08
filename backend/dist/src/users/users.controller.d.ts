@@ -40,12 +40,16 @@ export declare class UsersController {
         role: {
             id: string;
             name: string;
+            description: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
         id: string;
         name: string;
         createdAt: Date;
         updatedAt: Date;
         email: string;
+        roleId: string;
     }>;
     remove(id: string): Promise<{
         id: string;

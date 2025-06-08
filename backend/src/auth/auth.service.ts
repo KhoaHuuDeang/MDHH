@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -39,24 +39,32 @@ export class AuthService {
             user,
             accessToken: this.jwtService.sign(payload),
         }
-    }
-
-    async register(createUserDto: CreateUserDto) {
+    }    async register(createUserDto: CreateUserDto) {
         const existstingUser = await this.prisma.user.findUnique({
             where: { email: createUserDto.email }
         })
         if (existstingUser) {
-            throw new UnauthorizedException('User already exists');
+            throw new BadRequestException('User already exists');
         }
+
+        const defaultRole = await this.prisma.role.findUnique({
+            where: { name: 'user' }
+        });
+
+        if (!defaultRole) {
+            throw new BadRequestException('Default user role not found');
+        }
+
         const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
         const user = await this.prisma.user.create({
             data: {
                 ...createUserDto,
-                password: hashedPassword
-            }, include: { role: true }
+                password: hashedPassword,
+                role: { connect: { id: defaultRole.id } }
+            }, 
+            include: { role: true }
         })
         const { password, ...result } = user
         return result;
-
     }
 }

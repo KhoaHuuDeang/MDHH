@@ -52,14 +52,22 @@ let AuthService = class AuthService {
             where: { email: createUserDto.email }
         });
         if (existstingUser) {
-            throw new common_1.UnauthorizedException('User already exists');
+            throw new common_1.BadRequestException('User already exists');
+        }
+        const defaultRole = await this.prisma.role.findUnique({
+            where: { name: 'user' }
+        });
+        if (!defaultRole) {
+            throw new common_1.BadRequestException('Default user role not found');
         }
         const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
         const user = await this.prisma.user.create({
             data: {
                 ...createUserDto,
-                password: hashedPassword
-            }, include: { role: true }
+                password: hashedPassword,
+                role: { connect: { id: defaultRole.id } }
+            },
+            include: { role: true }
         });
         const { password, ...result } = user;
         return result;

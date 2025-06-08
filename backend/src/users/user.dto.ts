@@ -15,11 +15,6 @@ export class CreateUserDto {
   @IsString()
   @MinLength(6)
   password: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  roleId: string;
 }
 
 export class UpdateUserDto {
@@ -32,6 +27,12 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEmail()
   email?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @MinLength(6)
+  password?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()

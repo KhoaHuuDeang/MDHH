@@ -36,7 +36,7 @@ let UsersController = class UsersController {
         return this.usersService.update(id, updateUserDto);
     }
     remove(id) {
-        return this.usersService.remove(id);
+        return this.usersService.delete(id);
     }
 };
 exports.UsersController = UsersController;
