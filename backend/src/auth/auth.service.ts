@@ -3,12 +3,15 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto, LoginDto } from '../users/user.dto';
+import { UsersService } from '../users/users.service';
+import { NotFoundError } from 'rxjs';
 
 @Injectable()
 export class AuthService {
     constructor(
         private prisma: PrismaService,
         private jwtService: JwtService,
+        private usersService: UsersService,
     ) { }
 
     async validateUser(email: string, password: string) {
@@ -25,10 +28,11 @@ export class AuthService {
     }
 
     async login(loginDto: LoginDto) {
+        console.log("loginDto", loginDto);
         const user = await this.validateUser(loginDto.email, loginDto.password);
-
+        console.log("asdasdasd",user);
         if (!user) {
-            throw new UnauthorizedException('Invalid credentials');
+            throw new NotFoundError('Invalid credentials');
         }
         const payload = {
             sub: user.id,
@@ -40,31 +44,6 @@ export class AuthService {
             accessToken: this.jwtService.sign(payload),
         }
     }    async register(createUserDto: CreateUserDto) {
-        const existstingUser = await this.prisma.user.findUnique({
-            where: { email: createUserDto.email }
-        })
-        if (existstingUser) {
-            throw new BadRequestException('User already exists');
-        }
-
-        const defaultRole = await this.prisma.role.findUnique({
-            where: { name: 'user' }
-        });
-
-        if (!defaultRole) {
-            throw new BadRequestException('Default user role not found');
-        }
-
-        const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-        const user = await this.prisma.user.create({
-            data: {
-                ...createUserDto,
-                password: hashedPassword,
-                role: { connect: { id: defaultRole.id } }
-            }, 
-            include: { role: true }
-        })
-        const { password, ...result } = user
-        return result;
+        return this.usersService.create(createUserDto);
     }
 }

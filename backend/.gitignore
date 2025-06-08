@@ -26,3 +26,8 @@ package-lock.json
 *.map
 *.js.map
 *.css.map
+
+# Source maps
+/*.map
+/*.js.map
+/*.css.map
