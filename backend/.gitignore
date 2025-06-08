@@ -14,9 +14,15 @@ Thumbs.db
 coverage/
 *.coverage
 
+# Build outputs
 node_modules
 .env
 /generated/prisma
 dist 
 dist/ 
 package-lock.json
+
+# Source maps
+*.map
+*.js.map
+*.css.map
