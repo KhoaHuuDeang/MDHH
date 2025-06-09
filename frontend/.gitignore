@@ -40,9 +40,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# source maps
-*.map
-*.js.map
-*.css.map
 
 package-lock.json

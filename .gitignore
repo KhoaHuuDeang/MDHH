@@ -1,3 +1,10 @@
 package-lock.json
 # dependencies
 /node_modules
+# Source maps
+*.map
+*.js.map
+*.css.map
+dist/* 
+dist
+backend/dist/tsconfig.build.tsbuildinfo
