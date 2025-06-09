@@ -9,10 +9,11 @@ export declare class UsersService {
             name: string;
         };
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
         email: string;
+        username: string;
+        fullname: string;
     }[]>;
     findOne(id: string): Promise<{
         role: {
@@ -20,10 +21,11 @@ export declare class UsersService {
             name: string;
         };
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
         email: string;
+        username: string;
+        fullname: string;
     }>;
     create(createUserDto: CreateUserDto): Promise<{
         role: {
@@ -31,10 +33,11 @@ export declare class UsersService {
             name: string;
         };
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
         email: string;
+        username: string;
+        fullname: string;
     }>;
     update(id: string, updateUserDto: UpdateUserDto): Promise<{
         role: {
@@ -45,18 +48,20 @@ export declare class UsersService {
             updatedAt: Date;
         };
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
         email: string;
+        username: string;
+        fullname: string;
         roleId: string;
     }>;
     delete(id: string): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
         email: string;
+        username: string;
+        fullname: string;
         password: string;
         roleId: string;
     }>;

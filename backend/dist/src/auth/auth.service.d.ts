@@ -14,10 +14,11 @@ export declare class AuthService {
             updatedAt: Date;
         };
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
         email: string;
+        username: string;
+        fullname: string;
         roleId: string;
     } | null>;
     login(loginDto: LoginDto): Promise<{
@@ -30,27 +31,32 @@ export declare class AuthService {
                 updatedAt: Date;
             };
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
             email: string;
+            username: string;
+            fullname: string;
             roleId: string;
         };
         accessToken: string;
     }>;
     register(createUserDto: CreateUserDto): Promise<{
-        role: {
+        user: {
+            role: {
+                id: string;
+                name: string;
+                description: string | null;
+                createdAt: Date;
+                updatedAt: Date;
+            };
             id: string;
-            name: string;
-            description: string | null;
             createdAt: Date;
             updatedAt: Date;
+            email: string;
+            username: string;
+            fullname: string;
+            roleId: string;
         };
-        id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        email: string;
-        roleId: string;
+        message: string;
     }>;
 }

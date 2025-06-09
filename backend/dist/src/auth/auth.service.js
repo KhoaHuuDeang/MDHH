@@ -48,29 +48,49 @@ let AuthService = class AuthService {
         };
     }
     async register(createUserDto) {
-        const existstingUser = await this.prisma.user.findUnique({
-            where: { email: createUserDto.email }
-        });
-        if (existstingUser) {
-            throw new common_1.BadRequestException('User already exists');
+        const [existingUser, existingName, RoleCheck] = await Promise.all([
+            this.prisma.user.findUnique({
+                where: { email: createUserDto.email },
+                select: { id: true }
+            }),
+            this.prisma.user.findUnique({
+                where: { username: createUserDto.username },
+                select: { id: true }
+            }),
+            this.prisma.role.findUnique({
+                where: { name: 'user' },
+                select: { id: true }
+            })
+        ]);
+        if (existingUser) {
+            throw new common_1.ConflictException('Email already exists');
         }
-        const defaultRole = await this.prisma.role.findUnique({
-            where: { name: 'user' }
-        });
-        if (!defaultRole) {
-            throw new common_1.BadRequestException('Default user role not found');
+        if (!RoleCheck) {
+            throw new common_1.InternalServerErrorException('Role not found');
         }
-        const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-        const user = await this.prisma.user.create({
-            data: {
-                ...createUserDto,
-                password: hashedPassword,
-                role: { connect: { id: defaultRole.id } }
-            },
-            include: { role: true }
-        });
-        const { password, ...result } = user;
-        return result;
+        if (existingName) {
+            throw new common_1.ConflictException('Username already exists');
+        }
+        try {
+            const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+            const newUser = await this.prisma.user.create({
+                data: {
+                    ...createUserDto,
+                    password: hashedPassword,
+                    role: { connect: { id: RoleCheck.id } }
+                },
+                include: { role: true }
+            });
+            const { password, ...result } = newUser;
+            return {
+                user: result,
+                message: 'User created successfully'
+            };
+        }
+        catch (err) {
+            console.error(err);
+            throw new common_1.InternalServerErrorException('Error creating user');
+        }
     }
 };
 exports.AuthService = AuthService;

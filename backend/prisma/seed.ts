@@ -31,22 +31,18 @@ async function main() {
         data: [
             {
                 email: 'admin@example.com',
-                name: 'Admin User',
-                password: hashedPassword,
+                username: 'admin',
+                fullname: 'Admin User',
+                password: '1234',
                 roleId: adminRole.id,
             },
             {
                 email: 'user1@example.com',
-                name: 'Regular User 1',
+                username: 'user',
+                fullname: 'Regular User 1',
                 password: hashedPassword,
                 roleId: userRole.id,
-            },
-            {
-                email: 'user2@example.com',
-                name: 'Regular User 2',
-                password: hashedPassword,
-                roleId: userRole.id,
-            },
+            }
         ],
         skipDuplicates: true,
     });

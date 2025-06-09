@@ -24,7 +24,8 @@ model Role {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  name      String
+  username  String   @unique
+  fullname  String   
   password  String
   roleId    String  
   createdAt DateTime @default(now())

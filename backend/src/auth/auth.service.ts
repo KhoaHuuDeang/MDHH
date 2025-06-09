@@ -1,8 +1,10 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto, LoginDto } from '../users/user.dto';
+import { create } from 'domain';
+
 
 @Injectable()
 export class AuthService {
@@ -39,32 +41,51 @@ export class AuthService {
             user,
             accessToken: this.jwtService.sign(payload),
         }
-    }    async register(createUserDto: CreateUserDto) {
-        const existstingUser = await this.prisma.user.findUnique({
-            where: { email: createUserDto.email }
-        })
-        if (existstingUser) {
-            throw new BadRequestException('User already exists');
+    }
+    async register(createUserDto: CreateUserDto) {
+        const [existingUser, existingName, RoleCheck] = await Promise.all([
+            this.prisma.user.findUnique({
+                where: { email: createUserDto.email },
+                select: { id: true }
+            }),
+            this.prisma.user.findUnique({
+                where: { username : createUserDto.username },
+                select: { id: true }
+            }),
+            this.prisma.role.findUnique({
+                where: { name: 'user' },
+                select: { id: true }
+            })
+        ])
+
+        // ✅ Boundary error handling - kiểm tra từng case
+
+        if (existingUser) {
+            throw new ConflictException('Email already exists');
         }
-
-        const defaultRole = await this.prisma.role.findUnique({
-            where: { name: 'user' }
-        });
-
-        if (!defaultRole) {
-            throw new BadRequestException('Default user role not found');
+        if (!RoleCheck) {
+            throw new InternalServerErrorException('Role not found');
         }
-
-        const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-        const user = await this.prisma.user.create({
-            data: {
-                ...createUserDto,
-                password: hashedPassword,
-                role: { connect: { id: defaultRole.id } }
-            }, 
-            include: { role: true }
-        })
-        const { password, ...result } = user
-        return result;
+        if (existingName) {
+            throw new ConflictException('Username already exists');
+        }        try {
+            const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+            const newUser = await this.prisma.user.create({
+                data: {
+                    ...createUserDto,
+                    password : hashedPassword,
+                    role : {connect : {id :RoleCheck.id}}
+                },
+                include: { role: true }
+            })
+            const { password, ...result } = newUser;
+            return {
+                user: result,
+                message: 'User created successfully'
+            }
+        } catch (err) {
+            console.error(err);
+            throw new InternalServerErrorException('Error creating user');
+        }
     }
 }
