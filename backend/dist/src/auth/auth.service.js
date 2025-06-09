@@ -14,12 +14,16 @@ const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const prisma_service_1 = require("../prisma.service");
 const bcrypt = require("bcrypt");
+const users_service_1 = require("../users/users.service");
+const rxjs_1 = require("rxjs");
 let AuthService = class AuthService {
     prisma;
     jwtService;
-    constructor(prisma, jwtService) {
+    usersService;
+    constructor(prisma, jwtService, usersService) {
         this.prisma = prisma;
         this.jwtService = jwtService;
+        this.usersService = usersService;
     }
     async validateUser(email, password) {
         const user = await this.prisma.user.findUnique({
@@ -33,9 +37,11 @@ let AuthService = class AuthService {
         return null;
     }
     async login(loginDto) {
+        console.log("loginDto", loginDto);
         const user = await this.validateUser(loginDto.email, loginDto.password);
+        console.log("asdasdasd", user);
         if (!user) {
-            throw new common_1.UnauthorizedException('Invalid credentials');
+            throw new rxjs_1.NotFoundError('Invalid credentials');
         }
         const payload = {
             sub: user.id,
@@ -48,6 +54,7 @@ let AuthService = class AuthService {
         };
     }
     async register(createUserDto) {
+<<<<<<< HEAD
         const [existingUser, existingName, RoleCheck] = await Promise.all([
             this.prisma.user.findUnique({
                 where: { email: createUserDto.email },
@@ -91,12 +98,16 @@ let AuthService = class AuthService {
             console.error(err);
             throw new common_1.InternalServerErrorException('Error creating user');
         }
+=======
+        return this.usersService.create(createUserDto);
+>>>>>>> d73092f12b9ee543ede2ade796d0fa198606cfc6
     }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        jwt_1.JwtService])
+        jwt_1.JwtService,
+        users_service_1.UsersService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

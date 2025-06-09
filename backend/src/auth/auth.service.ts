@@ -3,14 +3,15 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto, LoginDto } from '../users/user.dto';
-import { create } from 'domain';
-
+import { UsersService } from '../users/users.service';
+import { NotFoundError } from 'rxjs';
 
 @Injectable()
 export class AuthService {
     constructor(
         private prisma: PrismaService,
         private jwtService: JwtService,
+        private usersService: UsersService,
     ) { }
 
     async validateUser(email: string, password: string) {
@@ -27,10 +28,11 @@ export class AuthService {
     }
 
     async login(loginDto: LoginDto) {
+        console.log("loginDto", loginDto);
         const user = await this.validateUser(loginDto.email, loginDto.password);
-
+        console.log("asdasdasd", user);
         if (!user) {
-            throw new UnauthorizedException('Invalid credentials');
+            throw new NotFoundError('Invalid credentials');
         }
         const payload = {
             sub: user.id,
@@ -42,6 +44,7 @@ export class AuthService {
             accessToken: this.jwtService.sign(payload),
         }
     }
+
     async register(createUserDto: CreateUserDto) {
         const [existingUser, existingName, RoleCheck] = await Promise.all([
             this.prisma.user.findUnique({
@@ -49,7 +52,7 @@ export class AuthService {
                 select: { id: true }
             }),
             this.prisma.user.findUnique({
-                where: { username : createUserDto.username },
+                where: { username: createUserDto.username },
                 select: { id: true }
             }),
             this.prisma.role.findUnique({
@@ -68,13 +71,13 @@ export class AuthService {
         }
         if (existingName) {
             throw new ConflictException('Username already exists');
-        }        try {
+        } try {
             const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
             const newUser = await this.prisma.user.create({
                 data: {
                     ...createUserDto,
-                    password : hashedPassword,
-                    role : {connect : {id :RoleCheck.id}}
+                    password: hashedPassword,
+                    role: { connect: { id: RoleCheck.id } }
                 },
                 include: { role: true }
             })

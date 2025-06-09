@@ -20,3 +20,13 @@ node_modules
 dist 
 dist/ 
 package-lock.json
+
+# Source maps
+*.map
+*.js.map
+*.css.map
+
+# Source maps
+/*.map
+/*.js.map
+/*.css.map
