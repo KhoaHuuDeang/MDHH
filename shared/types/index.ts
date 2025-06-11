@@ -22,11 +22,11 @@ export interface PaginatedResponse<T> {
   };
 }
 
-// User related types
 export interface User {
   id: string;
   email: string;
-  name: string;
+  username: string;     
+  fullname: string;     
   roleId: string;
   role: Role;
   createdAt: Date;
@@ -43,14 +43,16 @@ export interface Role {
 
 export interface CreateUserDto {
   email: string;
-  name: string;
+  username: string;    
+  fullname: string;   
   password: string;
-  roleId: string;
 }
 
 export interface UpdateUserDto {
-  name?: string;
+  fullname: string;     
   email?: string;
+  username: string;    
+  password?: string;
   roleId?: string;
 }
 
@@ -61,5 +63,5 @@ export interface LoginDto {
 
 export interface AuthResponse {
   user: Omit<User, 'password'>;
-  token: string;
+  accessToken: string;
 }
