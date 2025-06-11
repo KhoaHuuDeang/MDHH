@@ -1,8 +1,7 @@
-import { BadGatewayException, BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {  BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { CreateUserDto, UpdateUserDto } from './user.dto';
 import * as bcrypt from 'bcrypt';
-
+import { UpdateUserDto,CreateUserDto } from './user.dto';
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) { }
@@ -59,7 +58,6 @@ export class UsersService {
       throw new BadRequestException('User already exists with this email');
     }
 
-    // Kiểm tra username nếu được cung cấp
     if (createUserDto.username) {
       const existingUsername = await this.prisma.user.findUnique({
         where: { username: createUserDto.username }
@@ -80,9 +78,9 @@ export class UsersService {
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10); return this.prisma.user.create({
       data: {
-      ...createUserDto,
-      password: hashedPassword,
-      role : {connect : {id: defaultRole.id}}
+        ...createUserDto,
+        password: hashedPassword,
+        role: { connect: { id: defaultRole.id } }
       },
       select: {
         id: true,
@@ -102,7 +100,7 @@ export class UsersService {
   }
   async update(id: string, updateUserDto: UpdateUserDto) {
     // ✅ 1. Parallel validation - chạy song song để tối ưu tốc độ
-    const [existingUser, emailCheck, usernameCheck, roleCheck] = await Promise.all([
+    const [existingUser, emailCheck, roleCheck] = await Promise.all([
       this.prisma.user.findUnique({
         where: { id },
         select: {
@@ -120,22 +118,12 @@ export class UsersService {
         }
       }) : null, // trả về null nếu không có email bị duplicate
 
-      updateUserDto.username ? this.prisma.user.findUnique({
-        where: {
-          username: updateUserDto.username,
-          NOT: { id } // ngoại trừ người dùng hiện tại
-        },
-        select: {
-          id: true, // id của người dùng nếu tồn tại
-        }
-      }) : null, // trả về null nếu không có username bị duplicate
-
       updateUserDto.roleId ? this.prisma.role.findUnique({
         where: { id: updateUserDto.roleId },
         select: { id: true }
       }) : null // trả về null nếu không có roleId 
     ])
-    
+
     // ✅ 2.Validate 
     if (!existingUser) {
       throw new NotFoundException(`User with ID ${id} not found`);
@@ -143,13 +131,9 @@ export class UsersService {
     if (emailCheck && updateUserDto.email) {
       throw new ConflictException('Email already exists');
     }
-    if (usernameCheck && updateUserDto.username) {
-      throw new ConflictException('Username already exists');
-    }
     if (!roleCheck && updateUserDto.roleId) {
       throw new NotFoundException(`Role with ID ${updateUserDto.roleId} not found`);
     }
-
     // ✅ 3.update user 
     const updateUser = await this.prisma.user.update({
       where: { id },

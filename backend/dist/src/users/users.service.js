@@ -104,7 +104,7 @@ let UsersService = class UsersService {
         });
     }
     async update(id, updateUserDto) {
-        const [existingUser, emailCheck, usernameCheck, roleCheck] = await Promise.all([
+        const [existingUser, emailCheck, roleCheck] = await Promise.all([
             this.prisma.user.findUnique({
                 where: { id },
                 select: {
@@ -114,15 +114,6 @@ let UsersService = class UsersService {
             updateUserDto.email ? this.prisma.user.findUnique({
                 where: {
                     email: updateUserDto.email,
-                    NOT: { id }
-                },
-                select: {
-                    id: true,
-                }
-            }) : null,
-            updateUserDto.username ? this.prisma.user.findUnique({
-                where: {
-                    username: updateUserDto.username,
                     NOT: { id }
                 },
                 select: {
@@ -139,9 +130,6 @@ let UsersService = class UsersService {
         }
         if (emailCheck && updateUserDto.email) {
             throw new common_1.ConflictException('Email already exists');
-        }
-        if (usernameCheck && updateUserDto.username) {
-            throw new common_1.ConflictException('Username already exists');
         }
         if (!roleCheck && updateUserDto.roleId) {
             throw new common_1.NotFoundException(`Role with ID ${updateUserDto.roleId} not found`);

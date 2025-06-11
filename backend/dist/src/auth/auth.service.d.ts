@@ -52,7 +52,6 @@ export declare class AuthService {
                 updatedAt: Date;
             };
             id: string;
-<<<<<<< HEAD
             createdAt: Date;
             updatedAt: Date;
             email: string;
@@ -61,14 +60,5 @@ export declare class AuthService {
             roleId: string;
         };
         message: string;
-=======
-            name: string;
-        };
-        id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        email: string;
->>>>>>> d73092f12b9ee543ede2ade796d0fa198606cfc6
     }>;
 }

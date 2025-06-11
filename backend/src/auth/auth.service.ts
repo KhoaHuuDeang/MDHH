@@ -28,11 +28,9 @@ export class AuthService {
     }
 
     async login(loginDto: LoginDto) {
-        console.log("loginDto", loginDto);
         const user = await this.validateUser(loginDto.email, loginDto.password);
-        console.log("asdasdasd", user);
         if (!user) {
-            throw new NotFoundError('Invalid credentials');
+            throw new UnauthorizedException('Invalid credentials');
         }
         const payload = {
             sub: user.id,

@@ -5,10 +5,10 @@ export class CreateUserDto {
   @ApiProperty()
   @IsEmail()
   email: string;
+
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  @MinLength(3)
   username: string;
 
   @ApiProperty()
@@ -26,28 +26,23 @@ export class UpdateUserDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  name?: string;
+  fullname: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsEmail()
-  email?: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  username: string;
+  email: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   @MinLength(6)
-  password?: string;
+  password: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  roleId?: string;
+  roleId: string;
 }
 
 export class LoginDto {

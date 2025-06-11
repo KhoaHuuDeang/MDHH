@@ -5,11 +5,10 @@ export declare class CreateUserDto {
     password: string;
 }
 export declare class UpdateUserDto {
-    name?: string;
-    email?: string;
-    username: string;
-    password?: string;
-    roleId?: string;
+    fullname: string;
+    email: string;
+    password: string;
+    roleId: string;
 }
 export declare class LoginDto {
     email: string;
