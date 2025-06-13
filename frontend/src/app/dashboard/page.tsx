@@ -27,7 +27,7 @@ export default function DashboardPage() {
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <h1 className="text-3xl font-bold text-black">Profile</h1>
             <button
               onClick={() => signOut({ callbackUrl: '/auth/signin' })}
               className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
@@ -39,8 +39,8 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* User Info Card */}
             <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold mb-3">User Information</h3>
-              <div className="space-y-2">
+              <h3 className="text-lg font-semibold mb-3 text-black">User Information</h3>
+              <div className="space-y-2 text-black">
                 <p><strong>ID:</strong> {session.user.id}</p>
                 <p><strong>Name:</strong> {session.user.name}</p>
                 <p><strong>Email:</strong> {session.user.email}</p>
@@ -59,8 +59,8 @@ export default function DashboardPage() {
 
             {/* Session Info Card */}
             <div className="bg-green-50 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold mb-3">Session Details</h3>
-              <div className="space-y-2">
+              <h3 className="text-lg font-semibold mb-3 text-black">Session Details</h3>
+              <div className="space-y-2 text-black">
                 <p><strong>Access Token:</strong> 
                   <span className="text-xs bg-gray-100 p-1 rounded ml-2">
                     {session.accessToken ? '✅ Present' : '❌ Missing'}
