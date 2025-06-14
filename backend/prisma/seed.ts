@@ -32,14 +32,14 @@ async function main() {
             {
                 email: 'admin@example.com',
                 username: 'admin',
-                fullname: 'Admin User',
+                displayname: 'Admin User',
                 password: '1234',
                 roleId: adminRole.id,
             },
             {
                 email: 'user1@example.com',
                 username: 'user',
-                fullname: 'Regular User 1',
+                displayname: 'Regular User 1',
                 password: hashedPassword,
                 roleId: userRole.id,
             }

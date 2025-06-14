@@ -11,7 +11,7 @@ export class UsersService {
         id: true,
         email: true,
         username: true,
-        fullname: true,
+        displayname: true,
         role: {
           select: {
             id: true,
@@ -30,7 +30,7 @@ export class UsersService {
         id: true,
         email: true,
         username: true,
-        fullname: true,
+        displayname: true,
         role: {
           select: {
             id: true,
@@ -58,14 +58,6 @@ export class UsersService {
       throw new BadRequestException('User already exists with this email');
     }
 
-    if (createUserDto.username) {
-      const existingUsername = await this.prisma.user.findUnique({
-        where: { username: createUserDto.username }
-      });
-      if (existingUsername) {
-        throw new ConflictException('Username already exists');
-      }
-    }
 
     // Tìm role 'user' mặc định
     const defaultRole = await this.prisma.role.findUnique({
@@ -86,7 +78,7 @@ export class UsersService {
         id: true,
         email: true,
         username: true,
-        fullname: true,
+        displayname: true,
         role: {
           select: {
             id: true,

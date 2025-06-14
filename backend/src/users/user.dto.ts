@@ -14,7 +14,7 @@ export class CreateUserDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  fullname: string;
+  displayname: string;
 
   @ApiProperty()
   @IsString()
@@ -26,7 +26,7 @@ export class UpdateUserDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  fullname: string;
+  displayname: string;
 
   @ApiProperty({ required: false })
   @IsOptional()

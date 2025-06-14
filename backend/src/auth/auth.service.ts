@@ -44,13 +44,9 @@ export class AuthService {
     }
 
     async register(createUserDto: CreateUserDto) {
-        const [existingUser, existingName, RoleCheck] = await Promise.all([
+        const [existingUser, RoleCheck] = await Promise.all([
             this.prisma.user.findUnique({
                 where: { email: createUserDto.email },
-                select: { id: true }
-            }),
-            this.prisma.user.findUnique({
-                where: { username: createUserDto.username },
                 select: { id: true }
             }),
             this.prisma.role.findUnique({
@@ -60,15 +56,11 @@ export class AuthService {
         ])
 
         // ✅ Boundary error handling - kiểm tra từng case
-
         if (existingUser) {
             throw new ConflictException('Email already exists');
         }
         if (!RoleCheck) {
             throw new InternalServerErrorException('Role not found');
-        }
-        if (existingName) {
-            throw new ConflictException('Username already exists');
         } try {
             const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
             const newUser = await this.prisma.user.create({
