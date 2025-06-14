@@ -78,8 +78,9 @@ npm run install:all
 ```
 
 3. **Environment Configuration**
-
-Remember to Create `.env` files in both frontend and backend directories:
+```
+Remember to Create `.env` files in both frontend and backend directories
+```
 4. **Database Setup**
 ```bash
 cd backend
