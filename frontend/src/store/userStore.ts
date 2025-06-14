@@ -5,7 +5,7 @@ interface User {
   id: string
   email: string
   username: string
-  fullname: string
+  displayname: string
   role: string
   accessToken: string
 }

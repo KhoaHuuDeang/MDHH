@@ -28,7 +28,7 @@ export const authOptions: NextAuthOptions = {
                         return {
                             id: data.user.id,
                             email: data.user.email,
-                            name: data.user.fullname,
+                            name: data.user.displayname,
                             username: data.user.username,
                             role: data.user.role.name,
                             accessToken: data.accessToken,
