@@ -79,24 +79,7 @@ npm run install:all
 
 3. **Environment Configuration**
 
-Create `.env` files in both frontend and backend directories:
-
-**Backend (.env)**
-```env
-DATABASE_URL="postgresql://username:password@localhost:5432/mdhh_db"
-JWT_SECRET="your-jwt-secret-key"
-JWT_EXPIRES_IN="7d"
-PORT=3001
-```
-
-**Frontend (.env.local)**
-```env
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-nextauth-secret"
-NEXTAUTH_BACKEND_URL="http://localhost:3001"
-NEXT_PUBLIC_API_URL="http://localhost:3001"
-```
-
+Remember to Create `.env` files in both frontend and backend directories:
 4. **Database Setup**
 ```bash
 cd backend
