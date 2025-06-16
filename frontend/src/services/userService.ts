@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { getSession } from 'next-auth/react'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const API_URL = process.env.NEXT_PUBLIC_API_URL 
 
 // Create axios instance
 const apiClient = axios.create({

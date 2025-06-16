@@ -42,10 +42,10 @@ export default function Home() {
               Role: <span className="font-semibold">{session.user.role}</span>
             </p>
             <Link
-              href="/dashboard"
+              href="/profile"
               className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
             >
-              Go to Dashboard
+              Go to Profile
             </Link>
           </div>
         )}

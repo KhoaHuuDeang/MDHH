@@ -4,13 +4,14 @@ import { useSession, signOut } from 'next-auth/react'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import useNotifications from '@/hooks/useNotifications'
-export default function DashboardPage() {
+export default function ProfilePage() {
+  const { error } = useNotifications()
   const { data: session, status } = useSession()
   const router = useRouter()
-  const { success } = useNotifications()
 
   useEffect(() => {
     if (status === 'unauthenticated') {
+      error("Chưa đăng nhập đừng có mò vào đây")
       router.push('/auth/signin')
     }
   }, [status, router])
@@ -18,11 +19,9 @@ export default function DashboardPage() {
   if (status === 'loading') {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>
   }
-
-  if (!session) {
-    return null
+  if (!session){
+    return 
   }
-
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
@@ -48,8 +47,8 @@ export default function DashboardPage() {
                 <p><strong>Username:</strong> {session.user.username}</p>
                 <p><strong>Role:</strong>
                   <span className={`ml-2 px-2 py-1 rounded text-sm ${session.user.role === 'admin'
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-green-100 text-green-800'
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-green-100 text-green-800'
                     }`}>
                     {session.user.role}
                   </span>

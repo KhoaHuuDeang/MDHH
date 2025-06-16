@@ -6,10 +6,11 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useLoadingStore } from "@/store/loadingStore"
 import { useErrorStore } from "@/store/errorState"
 import { useRouter } from "next/navigation"
-
+import useNotifications from "@/hooks/useNotifications"
 export default function RegisterForm() {
     const { isLoading, setLoading, clearLoading } = useLoadingStore()
     const { error, setError, clearError } = useErrorStore()
+    const { success } = useNotifications()
     const router = useRouter();
 
     const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormData>({
@@ -41,7 +42,8 @@ export default function RegisterForm() {
                 return;
             }
             clearError();
-            router.push("/auth/signin?message=Registration successful! Please sign in.");
+            success("Account created successfully! Please sign in.");
+            router.push("/auth/signin");
         } catch (err) {
             setError("Network error. Please try again later.");
         } finally {

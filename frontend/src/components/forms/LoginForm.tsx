@@ -32,7 +32,7 @@ export default function LoginForm() {
         clearError();
         clearLoading();
         success("Login successfully")
-        router.push("/dashboard");
+        router.push("/profile");
       }
     } catch (error) {
       const errorMessage = "An unexpected error occurred. Please try again later.";
