@@ -4,7 +4,6 @@ import { PrismaService } from '../prisma.service';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto, LoginDto } from '../users/user.dto';
 
-
 @Injectable()
 export class AuthService {
     constructor(
@@ -60,7 +59,6 @@ export class AuthService {
             throw new InternalServerErrorException('Role not found');
         } try {
             const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-
             const newUser = await this.prisma.user.create({
                 data: {
                     ...createUserDto,
