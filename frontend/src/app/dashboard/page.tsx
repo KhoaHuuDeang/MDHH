@@ -3,10 +3,11 @@
 import { useSession, signOut } from 'next-auth/react'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-
+import useNotifications from '@/hooks/useNotifications'
 export default function DashboardPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const { success } = useNotifications()
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -45,12 +46,11 @@ export default function DashboardPage() {
                 <p><strong>Name:</strong> {session.user.name}</p>
                 <p><strong>Email:</strong> {session.user.email}</p>
                 <p><strong>Username:</strong> {session.user.username}</p>
-                <p><strong>Role:</strong> 
-                  <span className={`ml-2 px-2 py-1 rounded text-sm ${
-                    session.user.role === 'admin' 
-                      ? 'bg-red-100 text-red-800' 
+                <p><strong>Role:</strong>
+                  <span className={`ml-2 px-2 py-1 rounded text-sm ${session.user.role === 'admin'
+                      ? 'bg-red-100 text-red-800'
                       : 'bg-green-100 text-green-800'
-                  }`}>
+                    }`}>
                     {session.user.role}
                   </span>
                 </p>
@@ -61,7 +61,7 @@ export default function DashboardPage() {
             <div className="bg-green-50 p-4 rounded-lg">
               <h3 className="text-lg font-semibold mb-3 text-black">Session Details</h3>
               <div className="space-y-2 text-black">
-                <p><strong>Access Token:</strong> 
+                <p><strong>Access Token:</strong>
                   <span className="text-xs bg-gray-100 p-1 rounded ml-2">
                     {session.accessToken ? '✅ Present' : '❌ Missing'}
                   </span>

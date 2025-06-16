@@ -5,14 +5,15 @@ import { useErrorStore } from "@/store/errorState";
 import React, { useState, } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import useNotifications from "@/hooks/useNotifications";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { isLoading, setLoading, clearLoading } = useLoadingStore();
   const { error, setError, clearError } = useErrorStore();
+  const { success, error: notifyError } = useNotifications();
   const router = useRouter();
-  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -25,26 +26,31 @@ export default function LoginForm() {
       });
 
       if (result?.error) {
-        setError(result.error);
+        const loginFailMessage = result.status === 401 ? "Email or password is incorrected" : "Some thing went wrong ";
+        notifyError(loginFailMessage);
       } else {
         clearError();
         clearLoading();
+        success("Login successfully")
         router.push("/dashboard");
       }
     } catch (error) {
-      setError("An unexpected error occurred. Please try again later.");
+      const errorMessage = "An unexpected error occurred. Please try again later.";
+      setError(errorMessage);
+      notifyError(errorMessage);
+
     } finally {
       setLoading(false);
     }
   }
   return (
-    <form onSubmit={handleSubmit} className="bg-[#6A994E] p-8 rounded-lg shadow-lg w-120">
+    <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-lg w-120">
       <div className="mb-6">
-        <h1 className="text-3xl font-semibold text-[#FFFFFF]">Welcome back!</h1>
-        <p className="text-[#386641]">We're so excited to see you again!</p>
+        <h1 className="text-3xl font-semibold text-gray-700">Welcome back!</h1>
+        <p className="text-gray-700">We're so excited to see you again!</p>
       </div>
       <div className="mb-4">
-        <label className="block text-[#386641] font-bold uppercase mb-1 text-xs"
+        <label className="block text-gray-700 font-bold uppercase mb-1 text-xs"
           htmlFor="email">
           Email  <span className="text-[#BC4749] ">*</span>
         </label>
@@ -54,12 +60,12 @@ export default function LoginForm() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Enter your email"
           disabled={isLoading}
-          className="w-full p-2 bg-white text-[#386641] border border-[#6A994E] rounded focus:border-[#A7C957] focus:outline-none"
+          className="w-full p-2 bg-white text-gray-700 border border-gray-300 rounded focus:border-gray-700 focus:outline-none"
         />
       </div>
       <div className="mb-4">
         <label
-          className="block text-[#386641] font-bold uppercase mb-1 text-xs"
+          className="block text-gray-700 font-bold uppercase mb-1 text-xs"
           htmlFor="password" >
           Password <span className="text-[#BC4749]">*</span>
         </label>
@@ -70,16 +76,16 @@ export default function LoginForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={isLoading}
-          className="w-full p-2 bg-white text-[#386641] border border-[#6A994E] rounded focus:border-[#A7C957] focus:outline-none"
+          className="w-full p-2 bg-white text-gray-700 border border-gray-300 rounded focus:border-gray-700 focus:outline-none"
         />
       </div>
-      <Link href={"/auth/forgot-password"} className="text-[#386641] mb-4 hover:underline text-sm ">
+      <Link href={"/auth/forgot-password"} className="text-[#A7C957] mb-4 hover:underline text-sm ">
         Forgot your password?
       </Link>
       <button
         type="submit"
         disabled={isLoading}
-        className={`w-full bg-gradient-to-t from-[#386641] to-[#A7C957] text-white py-3 rounded-lg font-semibold transition-all duration-300 ease-in-out hover:from-[#6A994E] hover:to-[#A7C957] hover:scale-105 hover:shadow-lg hover:text-[#386641] transform active:scale-95
+        className={`w-full bg-[#386641] text-white py-3 rounded-lg font-semibold transition-all duration-300 ease-in-out hover:bg-[#6A994E] hover:scale-105 hover:shadow-lg hover:text-[#ffffff] transform active:scale-95
           ${isLoading ? 'bg-gray-400 cursor-not-allowed' : ' '}`}
       >
         {isLoading ? (
@@ -109,8 +115,8 @@ export default function LoginForm() {
         ) : ("Log In")}
       </button>
       <div className="mt-4 text-center">
-        <span className="text-[#386641] text-sm">Need an account?</span>
-        <Link href="/auth/register" className="text-[#386641] ml-2 hover:underline">
+        <span className="text-gray-600 text-sm">Need an account?</span>
+        <Link href="/auth/register" className="text-[#A7C957] font-semibold ml-2 hover:underline">
           Register
         </Link>
       </div>

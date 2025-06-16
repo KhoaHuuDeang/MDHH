@@ -31,6 +31,7 @@ export const authOptions: NextAuthOptions = {
                             name: data.user.displayname,
                             username: data.user.username,
                             role: data.user.role.name,
+                            birth: data.user.birth,
                             accessToken: data.accessToken,
                         }
                     }
@@ -48,6 +49,7 @@ export const authOptions: NextAuthOptions = {
                 token.accessToken = user.accessToken
                 token.role = user.role
                 token.username = user.username
+                token.birth = user.birth
             }
             return token
         },
@@ -56,12 +58,13 @@ export const authOptions: NextAuthOptions = {
                 session.user.id = token.sub || ''
                 session.user.role = token.role || ''
                 session.user.username = token.username || ''
+                session.user.birth = token.birth || ''
             }
             session.accessToken = token.accessToken || ''
             return session
         },
     },
-    pages: { 
+    pages: {
         signIn: '/auth/signin',
     },
     session: { strategy: "jwt" },

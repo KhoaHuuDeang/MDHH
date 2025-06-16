@@ -3,15 +3,13 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto, LoginDto } from '../users/user.dto';
-import { UsersService } from '../users/users.service';
-import { NotFoundError } from 'rxjs';
+
 
 @Injectable()
 export class AuthService {
     constructor(
         private prisma: PrismaService,
         private jwtService: JwtService,
-        private usersService: UsersService,
     ) { }
 
     async validateUser(email: string, password: string) {
@@ -19,7 +17,6 @@ export class AuthService {
             where: { email },
             include: { role: true }
         })
-
         if (user && await bcrypt.compare(password, user.password)) {
             const { password, ...result } = user;
             return result;
@@ -63,10 +60,12 @@ export class AuthService {
             throw new InternalServerErrorException('Role not found');
         } try {
             const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+
             const newUser = await this.prisma.user.create({
                 data: {
                     ...createUserDto,
                     password: hashedPassword,
+                    birth: createUserDto.birth || '2000-01-01',
                     role: { connect: { id: RoleCheck.id } }
                 },
                 include: { role: true }

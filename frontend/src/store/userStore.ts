@@ -7,6 +7,7 @@ interface User {
   username: string
   displayname: string
   role: string
+  birth?: string
   accessToken: string
 }
 

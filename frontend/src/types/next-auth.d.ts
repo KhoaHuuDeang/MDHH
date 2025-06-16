@@ -8,6 +8,7 @@ declare module "next-auth" {
     name: string
     username: string
     role: string
+    birth?: string
     accessToken: string
   }
 
@@ -18,6 +19,7 @@ declare module "next-auth" {
       username: string
       name : string
       role: string
+      birth?: string
     }
     accessToken: string
   }
@@ -28,5 +30,6 @@ declare module "next-auth/jwt" {
     accessToken: string
     role: string
     username: string
+    birth?: string
   }
 }

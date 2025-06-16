@@ -20,13 +20,18 @@ export class CreateUserDto {
   @IsString()
   @MinLength(6)
   password: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  birth?: string;
 }
 
 export class UpdateUserDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  displayname: string;
+  displayname?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -38,6 +43,11 @@ export class UpdateUserDto {
   @IsString()
   @MinLength(6)
   password: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  birth?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()

@@ -12,6 +12,7 @@ export class UsersService {
         email: true,
         username: true,
         displayname: true,
+        birth: true,
         role: {
           select: {
             id: true,
@@ -31,6 +32,7 @@ export class UsersService {
         email: true,
         username: true,
         displayname: true,
+        birth: true,
         role: {
           select: {
             id: true,
@@ -79,6 +81,7 @@ export class UsersService {
         email: true,
         username: true,
         displayname: true,
+        birth: true,
         role: {
           select: {
             id: true,

@@ -26,7 +26,7 @@ export interface User {
   id: string;
   email: string;
   username: string;     
-  fullname: string;     
+  displayname: string;     
   roleId: string;
   role: Role;
   createdAt: Date;
@@ -44,16 +44,16 @@ export interface Role {
 export interface CreateUserDto {
   email: string;
   username: string;    
-  fullname: string;   
+  displayname: string;   
   password: string;
 }
 
 export interface UpdateUserDto {
-  fullname: string;     
+  displayname: string;     
   email?: string;
   username: string;    
   password?: string;
-  roleId?: string;
+  roleId: string;
 }
 
 export interface LoginDto {
