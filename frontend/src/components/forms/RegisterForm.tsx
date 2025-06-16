@@ -19,14 +19,21 @@ export default function RegisterForm() {
     const onSubmit = async (data: RegisterFormData) => {
         setLoading(true);
         clearError();
-        const { confirmPassword, ...result } = data
-        try {
+        //loại bỏ day-month-year ra khỏi data (rest)
+        const { day, month, year, ...rest } = data
+        const birth = `${day}/${month}/${year}`
+        //loại bỏ confirmPassword ra khỏi data (result)
+        const { confirmPassword, ...result } = rest
+        //tạo formData mới bao gồm result và birth
+        const formData = {...result, birth}
+
+        try { 
             const response = await fetch('http://localhost:3001/auth/register', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify(result)
+                body: JSON.stringify(formData)
             })
             if (!response.ok) {
                 const errorData = await response.json();
@@ -43,7 +50,7 @@ export default function RegisterForm() {
     }
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-8 rounded-lg shadow-lg w-120">
+        <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-8 rounded-lg shadow-lg w-120 mt-20">
             <div className="mb-6">
                 <h1 className="text-3xl font-semibold text-gray-700">Create an account</h1>
                 <p className="text-gray-700">Join our community today!</p>
