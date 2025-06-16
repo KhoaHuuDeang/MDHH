@@ -8,7 +8,6 @@
 MDHH/
 ├── frontend/           # Next.js 15 + React 19 + TypeScript
 ├── backend/           # NestJS + Prisma + PostgreSQL
-├── shared/           # Shared TypeScript types
 └── package.json      # Root workspace configuration
 ```
 
@@ -31,11 +30,11 @@ MDHH/
 - **Documentation**: Swagger/OpenAPI
 - **Security**: bcrypt for password hashing
 
-### **Database Schema**
+### **Database Schema** (Current, Code First)
 - **Users**: Email, username, displayname, password, role
 - **Roles**: Role-based access control (user, admin)
 
-## 📦 **Features**
+## 📦 **Features** (Current)
 
 ### **Authentication & Authorization**
 - ✅ User registration with email validation (@gmail.com only)
@@ -79,25 +78,9 @@ npm run install:all
 ```
 
 3. **Environment Configuration**
-
-Create `.env` files in both frontend and backend directories:
-
-**Backend (.env)**
-```env
-DATABASE_URL="postgresql://username:password@localhost:5432/mdhh_db"
-JWT_SECRET="your-jwt-secret-key"
-JWT_EXPIRES_IN="7d"
-PORT=3001
 ```
-
-**Frontend (.env.local)**
-```env
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-nextauth-secret"
-NEXTAUTH_BACKEND_URL="http://localhost:3001"
-NEXT_PUBLIC_API_URL="http://localhost:3001"
+Remember to Create `.env` files in both frontend and backend directories
 ```
-
 4. **Database Setup**
 ```bash
 cd backend
@@ -275,4 +258,4 @@ For questions or issues, please:
 
 ---
 
-**Built with ❤️ using modern web technologies**
+**Built with ❤️**
