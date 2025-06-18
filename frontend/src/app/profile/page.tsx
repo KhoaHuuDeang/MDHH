@@ -19,8 +19,8 @@ export default function ProfilePage() {
   if (status === 'loading') {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>
   }
-  if (!session){
-    return 
+  if (!session) {
+    return
   }
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -45,6 +45,7 @@ export default function ProfilePage() {
                 <p><strong>Name:</strong> {session.user.name}</p>
                 <p><strong>Email:</strong> {session.user.email}</p>
                 <p><strong>Username:</strong> {session.user.username}</p>
+                <p><strong>Birth:</strong> {session.user.birth}</p>
                 <p><strong>Role:</strong>
                   <span className={`ml-2 px-2 py-1 rounded text-sm ${session.user.role === 'admin'
                     ? 'bg-red-100 text-red-800'

@@ -16,24 +16,67 @@ model Role {
   updatedAt   DateTime @updatedAt
   
   // Relations
-  users       User[]
-  
+  users       User[]   @relation("UserRoles")
+  guildRoles UserGuildRole[]   @relation("DiscordRoles")
   @@map("roles")
 }
 
 model User {
   id        String   @id @default(cuid())
-  email     String   @unique
+  email     String?   @unique
+  emailVerified  DateTime? 
   username  String?   
+  password  String?
   displayname  String   
-  password  String
-  roleId    String  
+  avatar    String?  
   birth     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
-  role      Role     @relation(fields: [roleId], references: [id])
-  
+  roleId    String
+  role      Role     @relation("UserRoles",fields: [roleId], references: [id])
+
+  accounts Account[]
+  guildRoles UserGuildRole[]
+
   @@map("users")
+}
+
+model Account{
+  id                String  @id @default(cuid())
+  provider          String  // 'google', 'discord', 'credentials'
+  providerAccountId String  // ID người dùng từ provider
+  // OAuth-specific fields
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  metadata          Json? 
+  //discord guid  
+
+  // Relations
+  userId            String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId]) 
+  @@map("accounts")
+}
+
+model UserGuildRole  {
+  id String  @id @default(cuid())
+  userId String
+  guildId String
+  roleId String  
+
+
+  //relationship
+  user User   @relation(fields: [userId], references: [id],onDelete: Cascade)
+  role Role   @relation("DiscordRoles",fields : [roleId],references : [id],onDelete: Cascade)
+
+  @@unique([userId, guildId, roleId]) 
+  @@map("user_guild_roles")
 }
