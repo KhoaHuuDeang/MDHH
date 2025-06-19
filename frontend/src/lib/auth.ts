@@ -1,9 +1,13 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
+import { PrismaAdapter } from "@next-auth/prisma-adapter"
+import { PrismaClient } from "@prisma/client"
 
 const BACKEND_URL = process.env.NEXTAUTH_BACKEND_URL || "http://localhost:3001"
+const prisma = new PrismaClient()
 
 export const authOptions: NextAuthOptions = {
+    adapter: PrismaAdapter(prisma),
     providers: [
         CredentialsProvider({
             name: "credentials",
@@ -33,6 +37,7 @@ export const authOptions: NextAuthOptions = {
                             role: data.user.role.name,
                             birth: data.user.birth,
                             accessToken: data.accessToken,
+                            sessionToken: data.sessionToken,
                         }
                     }
                     return null
@@ -42,14 +47,15 @@ export const authOptions: NextAuthOptions = {
                 }
             }
         })
-
-    ], callbacks: {
+    ],
+    callbacks: {
         async jwt({ token, user }) {
             if (user) {
                 token.accessToken = user.accessToken
                 token.role = user.role
                 token.username = user.username
                 token.birth = user.birth
+                token.sessionToken = user.sessionToken
             }
             return token
         },
@@ -61,12 +67,13 @@ export const authOptions: NextAuthOptions = {
                 session.user.birth = token.birth || ''
             }
             session.accessToken = token.accessToken || ''
+            session.sessionToken = token.sessionToken || ''
             return session
         },
     },
     pages: {
         signIn: '/auth/signin',
     },
-    session: { strategy: "jwt" },
+    session: { strategy: "database" },
     secret: process.env.NEXTAUTH_SECRET,
 }

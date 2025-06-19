@@ -9,7 +9,10 @@ declare module "next-auth" {
     username: string
     role: string
     birth?: string
+    avatar?: string
+    emailVerified?: boolean
     accessToken: string
+    sessionToken?: string
   }
 
   interface Session {
@@ -17,11 +20,14 @@ declare module "next-auth" {
       id: string
       email: string
       username: string
-      name : string
+      name: string
       role: string
       birth?: string
+      avatar?: string
+      emailVerified?: boolean
     }
     accessToken: string
+    sessionToken?: string
   }
 }
 
@@ -31,5 +37,6 @@ declare module "next-auth/jwt" {
     role: string
     username: string
     birth?: string
+    sessionToken?: string
   }
 }
