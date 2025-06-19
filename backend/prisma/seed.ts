@@ -23,31 +23,30 @@ async function main() {
             },
         }),
     ]);
-    console.log('✅ Roles created: admin, user');
-    // Hash mật khẩu
-    const hashedPassword = await bcrypt.hash('password123', 10);
-
-    await prisma.user.createMany({
+    console.log('✅ Roles created: admin, user');    // Hash mật khẩu
+    const hashedPassword = await bcrypt.hash('password123', 10);    await prisma.user.createMany({
         data: [
             {
                 email: 'admin@example.com',
                 username: 'admin',
                 displayname: 'Admin User',
-                password: '1234',
+                password: hashedPassword,
                 roleId: adminRole.id,
+                birth: '1990-01-01',
             },
             {
                 email: 'user1@example.com',
-                username: 'user',
+                username: 'user1',
                 displayname: 'Regular User 1',
                 password: hashedPassword,
                 roleId: userRole.id,
+                birth: '1995-06-15',
             }
         ],
         skipDuplicates: true,
     });
 
-    console.log('✅ Users created: admin@example.com, user1@example.com, user2@example.com');
+    console.log('✅ Users created: admin@example.com, user1@example.com');
     console.log('📝 Test credentials: password123 for all users');
 
 }

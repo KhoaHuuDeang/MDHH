@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
+import { SessionService } from './session.service';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto, LoginDto } from '../users/user.dto';
 
@@ -9,6 +10,7 @@ export class AuthService {
     constructor(
         private prisma: PrismaService,
         private jwtService: JwtService,
+        private sessionService: SessionService,
     ) { }
 
     async validateUser(email: string, password: string) {
@@ -16,8 +18,8 @@ export class AuthService {
             where: { email },
             include: { role: true }
         })
-        if (user && await bcrypt.compare(password, user.password)) {
-            const { password, ...result } = user;
+        if (user && user.password && await bcrypt.compare(password, user.password)) {
+            const { password: _, ...result } = user;
             return result;
         }
         return null;
@@ -28,13 +30,29 @@ export class AuthService {
         if (!user) {
             throw new UnauthorizedException('Invalid credentials');
         }
+
+        // Create session for NextAuth database strategy [30 days]
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+        const session = await this.sessionService.createSession(user.id, expiresAt);
+
         const payload = {
             sub: user.id,
             email: user.email,
             role: user.role.name,
+            displayname: user.displayname,
         }
+
         return {
             accessToken: this.jwtService.sign(payload),
+            sessionToken: session.sessionToken,
+            expires: session.expires,
+            user: {
+                id: user.id,
+                email: user.email,
+                displayname: user.displayname,
+                role: user.role?.name,
+            },
         }
     }
 
