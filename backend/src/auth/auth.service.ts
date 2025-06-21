@@ -27,6 +27,7 @@ export class AuthService {
 
     async login(loginDto: LoginDto) {
         const user = await this.validateUser(loginDto.email, loginDto.password);
+        console.log('User found:', user);
         if (!user) {
             throw new UnauthorizedException('Invalid credentials');
         }
@@ -35,7 +36,7 @@ export class AuthService {
         const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
         const session = await this.sessionService.createSession(user.id, expiresAt);
-
+        console.log('Session created:', session);
         const payload = {
             sub: user.id,
             email: user.email,
@@ -47,12 +48,16 @@ export class AuthService {
             accessToken: this.jwtService.sign(payload),
             sessionToken: session.sessionToken,
             expires: session.expires,
-            user: {
+            user : {
                 id: user.id,
                 email: user.email,
                 displayname: user.displayname,
-                role: user.role?.name,
-            },
+                username: user.username,
+                role: user.role.name,
+                birth: user.birth,
+                avatar: user.avatar ,
+                emailVerified: user.emailVerified || false
+            }
         }
     }
 

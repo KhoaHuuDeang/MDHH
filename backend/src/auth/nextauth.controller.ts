@@ -29,7 +29,6 @@ export class NextAuthController {
     if (!session) {
       return null;
     }
-
     return {
       sessionToken: session.sessionToken,
       userId: session.userId,
