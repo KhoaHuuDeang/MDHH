@@ -8,7 +8,6 @@ export default function ProfilePage() {
   const { error } = useNotifications()
   const { data: session, status } = useSession()
   const router = useRouter()
-
   useEffect(() => {
     if (status === 'unauthenticated') {
       error("Chưa đăng nhập đừng có mò vào đây")

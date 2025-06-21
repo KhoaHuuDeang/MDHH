@@ -14,7 +14,6 @@ declare module "next-auth" {
     accessToken: string
     sessionToken?: string
   }
-
   interface Session {
     user: {
       id: string
@@ -25,6 +24,11 @@ declare module "next-auth" {
       birth?: string
       avatar?: string
       emailVerified?: boolean
+      // Discord-specific fields
+      discordId?: string
+      discordGuilds?: any[]
+      discordRoles?: string[]
+      provider?: string
     }
     accessToken: string
     sessionToken?: string
@@ -38,5 +42,10 @@ declare module "next-auth/jwt" {
     username: string
     birth?: string
     sessionToken?: string
+    // Discord-specific fields
+    discordId?: string
+    discordGuilds?: any[]
+    discordRoles?: string[]
+    provider?: string
   }
 }
