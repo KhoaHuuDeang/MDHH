@@ -6,7 +6,7 @@ import React, { useState, } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import useNotifications from "@/hooks/useNotifications";
-
+import DiscordAuth from "../auth/DiscordAuth";
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -119,6 +119,7 @@ export default function LoginForm() {
         <Link href="/auth/register" className="text-[#A7C957] font-semibold ml-2 hover:underline">
           Register
         </Link>
+        <DiscordAuth/>
       </div>
     </form>
 

@@ -8,8 +8,8 @@ export default function DiscordAuth() {
 
   if (session) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
-        <h2 className="text-2xl font-bold mb-4">Discord Connected!</h2>
+      <div className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto text-black">
+        <h2 className="text-2xl font-bold mb-4">Discord Status </h2>
         <div className="space-y-2 text-sm">
           <p><strong>Name:</strong> {session.user?.name}</p>
           <p><strong>Email:</strong> {session.user?.email}</p>
@@ -39,16 +39,8 @@ export default function DiscordAuth() {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Connect Your Account</h2>
-      
+      <h2 className="text-2xl font-bold mb-4">OR</h2>
       <div className="space-y-3">
-        <button
-          onClick={() => signIn("credentials")}
-          className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition-colors"
-        >
-          Sign in with Credentials
-        </button>
-        
         <button
           onClick={() => signIn("discord")}
           className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition-colors flex items-center justify-center"

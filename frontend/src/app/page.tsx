@@ -11,7 +11,7 @@ export default function Home() {
       <div className="max-w-md mx-auto text-center p-8 bg-white rounded-lg shadow-lg">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">
           Full-Stack Auth App
-        </h1>
+        </h1>s
         
         <p className="text-gray-600 mb-8">
           Next.js + NestJS + PostgreSQL + Prisma

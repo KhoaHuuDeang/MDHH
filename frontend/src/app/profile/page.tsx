@@ -4,6 +4,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import useNotifications from '@/hooks/useNotifications'
+import DiscordAuth from '@/components/auth/DiscordAuth'
 export default function ProfilePage() {
   const { error } = useNotifications()
   const { data: session, status } = useSession()
@@ -69,7 +70,11 @@ export default function ProfilePage() {
                 <p><strong>Provider:</strong> Credentials</p>
               </div>
             </div>
-
+            {/* Session Info Card */}
+             <div className="bg-green-50 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold mb-3 text-black">Discord Integration</h3>
+              <DiscordAuth />
+             </div>
             {/* Role-based Actions */}
             {session.user.role === 'admin' && (
               <div className="bg-yellow-50 p-4 rounded-lg md:col-span-2">
@@ -87,6 +92,8 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
     </div>
+
   )
 }
