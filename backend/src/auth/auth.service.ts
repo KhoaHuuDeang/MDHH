@@ -100,4 +100,6 @@ export class AuthService {
             throw new InternalServerErrorException('Error creating user');
         }
     }
+
+    
 }

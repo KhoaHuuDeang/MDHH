@@ -69,12 +69,8 @@ export class LoginDto {
 
 export class DiscordSignInDto {
   @IsString()
-  @IsOptional()
+  @IsNotEmpty()
   discordId: string; //tồn tại trong cả ba user,account,profile của discord resposne 
-
-  @IsString()
-  @IsOptional()
-  userId: string; // tự tạo bằng uuid prisma 
 
   @IsString()
   @IsOptional()
@@ -118,8 +114,4 @@ export class DiscordSignInDto {
   @IsString()
   @IsOptional()
   global_name: string; // Tên này sẽ hiện cho người khác thấy 
-
-  @IsString()
-  @IsOptional() 
-  name?: string; 
 }

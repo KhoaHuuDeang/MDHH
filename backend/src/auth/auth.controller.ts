@@ -10,7 +10,7 @@ export class AuthController {
   constructor(
     private authService: AuthService,
     private discordService: DiscordService,
-  ) {}
+  ) { }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -22,10 +22,10 @@ export class AuthController {
   }
   @Post('register')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({summary: 'User registration'})
-  @ApiResponse({status : 200, description : "Registration successful"})
-  @ApiResponse({status : 401, description : "Registration failed"})
-  async register(@Body () createUserDto : CreateUserDto){
+  @ApiOperation({ summary: 'User registration' })
+  @ApiResponse({ status: 200, description: "Registration successful" })
+  @ApiResponse({ status: 401, description: "Registration failed" })
+  async register(@Body() createUserDto: CreateUserDto) {
     return this.authService.register(createUserDto)
   }
 
@@ -37,4 +37,5 @@ export class AuthController {
   async handleDiscordOAuth(@Body() discordData: DiscordSignInDto) {
     return this.discordService.handleDiscordOAuth(discordData);
   }
+
 }
