@@ -24,7 +24,7 @@ function mapDiscordRolesToAppRole(discordRoles: string[]): string {
     }
 
     // Default role if no special roles found
-    return 'unkonwn'
+    return 'unknown'
 }
 
 export const authOptions: NextAuthOptions = {
@@ -91,7 +91,7 @@ export const authOptions: NextAuthOptions = {
                 try {
                     const payload = {
                         discordId: profile.id,
-                        username: profile.name,
+                        username: profile.username,
                         email: profile.email,
                         avatar: profile.avatar ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png` : null,
                         provider : account.provider,
@@ -118,8 +118,12 @@ export const authOptions: NextAuthOptions = {
                     }
                     const data = await res.json();
                     console.log("KẾT QUẢ ", data);
-                    // @ts-ignore
-                    user.backendToken = data.access_token; // Hoặc data.user.access_token tùy cấu trúc backend trả về
+                    
+                    // Lưu thông tin user từ backend vào user object để dùng trong jwt callback
+                    user.id = data.user.id;
+                    user.role = data.user.role;
+                    user.username = data.user.username;
+                    user.birth = data.user.birth;
                     return true; // Cho phép đăng nhập
                 } catch (error) {
                     console.error("SignIn callback error:", error);
@@ -145,73 +149,15 @@ export const authOptions: NextAuthOptions = {
 
             // Handle Discord OAuth
             if (user && account?.provider === "discord") {
+                // Sử dụng thông tin đã được lưu từ signIn callback
                 token.id = user.id
-                token.username = user.name
+                token.username = user.username 
                 token.discordId = user.id
                 token.provider = "discord"
-                token.accessToken = account.access_token || ''
-
-                // Fetch Discord guild roles
-                if (account.access_token) {
-                    try {
-                        // Get user's guilds
-                        const guildsResponse = await fetch('https://discord.com/api/users/@me/guilds', {
-                            headers: {
-                                Authorization: `Bearer ${account.access_token}`,
-                            },
-                        })
-
-                        if (guildsResponse.ok) {
-                            const guilds = await guildsResponse.json()
-                            console.log('Discord guilds:', guilds)
-
-                            // Get guild members info for specific guild (you can configure this)
-                            const targetGuildId = process.env.DISCORD_GUILD_ID
-
-                            if (targetGuildId) {
-                                const memberResponse = await fetch(`https://discord.com/api/guilds/${targetGuildId}/members/${user.id}`, {
-                                    headers: {
-                                        Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
-                                    },
-                                })
-
-                                if (memberResponse.ok) {
-                                    const member = await memberResponse.json()
-                                    console.log('Discord member roles:', member.roles)
-
-                                    token.discordGuilds = guilds
-                                    token.discordRoles = member.roles
-                                    // Map Discord roles to app roles (customize this logic)
-                                    token.role = mapDiscordRolesToAppRole(member.roles)
-                                }
-                            }
-                        }
-
-                        // Send Discord data to backend for processing
-                        const backendResponse = await fetch(`${BACKEND_URL}/auth/discord`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                discordId: user.id,
-                                email: user.email,
-                                username: user.name,
-                                avatar: user.image,
-                                guilds: token.discordGuilds,
-                                roles: token.discordRoles,
-                            }),
-                        })
-
-                        if (backendResponse.ok) {
-                            const backendData = await backendResponse.json()
-                            token.id = backendData.user.id // Use backend user ID
-                            token.role = backendData.user.role.name
-                            token.birth = backendData.user.birth
-                        }
-
-                    } catch (error) {
-                        console.error('Discord API error:', error)
-                    }
-                }
+                token.role = user.role
+                token.birth = user.birth
+                // @ts-ignore
+                token.accessToken = user.backendToken || account.access_token
             }
 
             return token

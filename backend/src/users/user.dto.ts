@@ -115,3 +115,9 @@ export class DiscordSignInDto {
   @IsOptional()
   global_name: string; // Tên này sẽ hiện cho người khác thấy 
 }
+
+
+
+
+
+
