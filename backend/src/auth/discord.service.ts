@@ -1,134 +1,91 @@
 import { Injectable, ConflictException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { DiscordSignInDto } from 'src/users/user.dto';
-
+import { AuthService } from './auth.service';
+import { JwtService } from '@nestjs/jwt';
 @Injectable()
 export class DiscordService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService,  
+              private authService: AuthService,
+              private readonly jwtService : JwtService
+              
+  ) {}
 
+
+  /**
+   * Xử lý đăng nhập/đăng ký qua Discord OAuth
+   * - Nếu đã có account liên kết Discord, trả về token đăng nhập
+   * - Nếu chưa, tìm user theo email để liên kết hoặc tạo mới
+   * - Nếu user đã tồn tại (đăng ký bằng phương thức khác), tạo account Discord cho user đó
+   * - Nếu user chưa tồn tại, tạo mới cả user và account
+   * - Trả về token đăng nhập cho user
+   */
   async handleDiscordOAuth(discordData: DiscordSignInDto) {
-    try {
-      // Check if user exists by Discord ID first
-      let user = await this.prisma.user.findFirst({
-        where: {
-          accounts: {
-            some: {
-              provider: 'discord',
-              providerAccountId: discordData.discordId,
-            },
-          },
+    const {provider, discordId, email, name, avatar, ...accountToken } = discordData;
+
+    // 1. Kiểm tra account đã liên kết Discord chưa (provider + providerAccountId)
+    const existingAccount = await this.prisma.account.findUnique({
+      where: {
+        provider_providerAccountId: {
+          provider,
+          providerAccountId: discordId,
         },
-        include: { role: true, accounts: true },
-      });
+      },
+      include: { user: true },
+    });
 
-      if (user) {
-        // Update existing Discord user
-        user = await this.prisma.user.update({
-          where: { id: user.id },
-          data: {
-            username: discordData.name,
-            avatar: discordData.image,
-          },
-          include: { role: true, accounts: true },
-        });
-
-        // Update account metadata with Discord guild/role info
-        // await this.prisma.account.updateMany({
-        //   where: {
-        //     userId: user.id,
-        //     provider: 'discord',
-        //   },
-        //   data: {
-        //     metadata: {
-        //       guilds: discordData.guilds,
-        //       roles: discordData.roles,
-        //       lastSync: new Date().toISOString(),
-        //     },
-        //   },
-        // });
-
-        return { user };
-      }
-
-      // Check if email is already used by another user
-      const existingUser = await this.prisma.user.findUnique({
-        where: { email: discordData.email },
-        include: { accounts: true },
-      });
-
-      if (existingUser) {
-        // Email exists - link Discord account to existing user
-        await this.prisma.account.create({
-          data: {
-            userId: existingUser.id,
-            type: 'oauth',
-            provider: 'discord',
-            providerAccountId: discordData.discordId,
-            // metadata: {
-            //   guilds: discordData.guilds,
-            //   roles: discordData.roles,
-            //   lastSync: new Date().toISOString(),
-            // },
-          },
-        });
-
-        // Update user with Discord info
-        const updatedUser = await this.prisma.user.update({
-          where: { id: existingUser.id },
-          data: {
-            username: discordData.name,
-            avatar: discordData.image,
-          },
-          include: { role: true },
-        });
-
-        return { user: updatedUser };
-      }
-
-      // Create new user with Discord account
-      const userRole = await this.prisma.role.findUnique({
-        where: { name: 'user' },
-      });
-
-      if (!userRole) {
-        throw new InternalServerErrorException('User role not found');
-      }
-
-      // Determine role based on Discord roles
-      // const appRole = this.determineRoleFromDiscordRoles(discordData.roles || []);
-      // const targetRole = await this.prisma.role.findUnique({
-      //   where: { name: appRole },
-      // }) || userRole;
-
-      const newUser = await this.prisma.user.create({
-        data: {
-          email: discordData.email,
-          displayname:  " ",
-          username: discordData.name,
-          avatar: discordData.image,
-          emailVerified: true, // Discord emails are verified
-          roleId: "discord user ",
-          accounts: {
-            create: {
-              type: 'oauth',
-              provider: 'discord',
-              providerAccountId: discordData.discordId,
-              metadata: {
-                guilds: "chưa hỗ trợ",
-                roles:  "chưa hỗ trợ",
-                lastSync: new Date().toISOString(),
-              },
-            },
-          },
-        },
-        include: { role: true },
-      });
-
-      return { user: newUser };
-    } catch (error) {
-      console.error('Discord OAuth error:', error);
-      throw new InternalServerErrorException('Failed to process Discord OAuth');
+    if (existingAccount) {
+      // Đã liên kết, trả về token đăng nhập cho user
+      // Đảm bảo password là string (không null)
+      const safeUser = { ...existingAccount.user, password: existingAccount.user.password || '' };
+      return this.authService.login(safeUser);
     }
+
+    // 2. Nếu chưa có account, tìm user theo email
+    let user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (user) {
+      // User đã tồn tại (đăng ký bằng phương thức khác), tạo mới account Discord cho user này
+      await this.prisma.account.create({
+        data: {
+          userId: user.id,
+          type: 'oauth',
+          provider,
+          providerAccountId: discordId,
+          access_token: accountToken.access_token || null,
+          refresh_token: accountToken.refresh_token || null,
+          expires_at: accountToken.expires_at || null,
+          scope: accountToken.scope || null,
+          token_type: accountToken.token_type || null,
+        },
+      });
+    } else {
+      // 3. Nếu user chưa tồn tại, tạo mới user và account
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          displayname: name || email, // fallback nếu name không có
+          avatar: avatar || null,
+          role: { connect: { name: 'user' } }, // Kết nối với role mặc định 'user'
+          accounts: {
+            create: [{
+              type: 'oauth',
+              provider,
+              providerAccountId: discordId,
+              access_token: accountToken.access_token || null,
+              refresh_token: accountToken.refresh_token || null,
+              expires_at: accountToken.expires_at || null,
+              scope: accountToken.scope || null,
+              token_type: accountToken.token_type || null,
+            }],
+          },
+        },
+      });
+    }
+
+    // 4. Đăng nhập và trả về token cho user
+    const safeUser = { ...user, password: user.password || '' };
+    return this.authService.login(safeUser);
   }
 
   private determineRoleFromDiscordRoles(discordRoles: string[]): string {

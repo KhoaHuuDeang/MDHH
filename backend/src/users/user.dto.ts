@@ -70,17 +70,56 @@ export class LoginDto {
 export class DiscordSignInDto {
   @IsString()
   @IsOptional()
-  discordId: string;
-
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-
-  @IsString()
-  @IsOptional() 
-  name?: string; //fullanme 
+  discordId: string; //tồn tại trong cả ba user,account,profile của discord resposne 
 
   @IsString()
   @IsOptional()
-  image?: string;
+  userId: string; // tự tạo bằng uuid prisma 
+
+  @IsString()
+  @IsOptional()
+  username: string; // là name của người dùng, không public 
+
+  @IsEmail()
+  @IsNotEmpty()
+  email: string; //email của người dùng 
+
+  @IsString()
+  @IsOptional()
+  avatar: string; //avatar của người dùng
+
+  @IsString()
+  @IsOptional()
+  provider: string;// tên provider, ví dụ: 'discord'
+
+  @IsString()
+  @IsOptional()
+  type: string; // loại tài khoản, ví dụ: 'oauth'
+
+  @IsString()
+  @IsOptional()
+  token_type: string; // loại token
+
+  @IsString()
+  @IsOptional()
+  access_token: string; // access token từ discord
+
+  @IsOptional()
+  expires_at: number; // thời gian hết hạn của access token
+
+  @IsString()
+  @IsOptional()
+  refresh_token: string; // refresh token từ discord
+
+  @IsString()
+  @IsOptional()
+  scope: string; // phạm vi quyền truy cập của token
+
+  @IsString()
+  @IsOptional()
+  global_name: string; // Tên này sẽ hiện cho người khác thấy 
+
+  @IsString()
+  @IsOptional() 
+  name?: string; 
 }
