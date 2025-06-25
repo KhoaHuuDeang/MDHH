@@ -1,7 +1,7 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import DiscordProvider from "next-auth/providers/discord"
-import { RestAdapter } from "./rest-adapter"
+// import { RestAdapter } from "./rest-adapter"
 
 const BACKEND_URL = process.env.NEXTAUTH_BACKEND_URL
 
@@ -28,7 +28,7 @@ function mapDiscordRolesToAppRole(discordRoles: string[]): string {
 }
 
 export const authOptions: NextAuthOptions = {
-    adapter: RestAdapter(),
+    // adapter: RestAdapter(),
     providers: [
         CredentialsProvider({
             name: "credentials",
@@ -90,14 +90,23 @@ export const authOptions: NextAuthOptions = {
             if (account?.provider === 'discord' && profile) {
                 try {
                     const payload = {
-                        discordId: profile.id, 
+                        discordId: profile.id,
+                        username: profile.name,
                         email: profile.email,
-                        name: profile.global_name || profile.username,
-                        image: profile.avatar ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png` : null,
+                        avatar: profile.avatar ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png` : null,
+                        provider : account.provider,
+                        type : account.type,
+                        token_type : account.token_type,
+                        access_token : account.access_token,
+                        expires_at : account.expires_at,
+                        refresh_token : account.refresh_token,
+                        scope : account.scope,
+                        global_name: profile.global_name, 
                     };
-
-                    // Gọi đến backend với payload ĐÚNG
-                    const res = await fetch(`${BACKEND_URL}/auth/discord/signin`, { 
+                    console.log("Discord sign-in payload:", payload);
+                    // Gọi API đến backend 
+                    console.log("GỌI API ĐẾN BACKEND");
+                    const res = await fetch(`${BACKEND_URL}/auth/discord/signin`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload),
@@ -107,14 +116,10 @@ export const authOptions: NextAuthOptions = {
                         console.error("Backend sign-in failed:", await res.json());
                         return false;
                     }
-
                     const data = await res.json();
-
-                    // Giả sử backend trả về access_token trong user hoặc một object riêng
-                    // Gắn token vào user object để các callback sau (jwt, session) sử dụng
+                    console.log("KẾT QUẢ ", data);
                     // @ts-ignore
                     user.backendToken = data.access_token; // Hoặc data.user.access_token tùy cấu trúc backend trả về
-
                     return true; // Cho phép đăng nhập
                 } catch (error) {
                     console.error("SignIn callback error:", error);
