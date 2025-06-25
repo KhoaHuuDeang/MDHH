@@ -73,12 +73,58 @@ export const authOptions: NextAuthOptions = {
             clientSecret: process.env.DISCORD_CLIENT_SECRET!,
             authorization: {
                 params: {
-                    scope: "identify email guilds guilds.members.read"
+                    scope: "identify email guilds"
                 }
             }
         })
     ], callbacks: {
-        
+        async signIn({ user, account, profile }) {
+            console.log('SignIn callback:', { user, account, profile })
+
+            // Handle credentials login
+            if (account?.provider === "credentials") {
+                return true
+            }
+
+            // Handle Discord OAuth
+            if (account?.provider === 'discord' && profile) {
+                try {
+                    const payload = {
+                        discordId: profile.id, 
+                        email: profile.email,
+                        name: profile.global_name || profile.username,
+                        image: profile.avatar ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png` : null,
+                    };
+
+                    // Gọi đến backend với payload ĐÚNG
+                    const res = await fetch(`${BACKEND_URL}/auth/discord/signin`, { 
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+
+                    if (!res.ok) {
+                        console.error("Backend sign-in failed:", await res.json());
+                        return false;
+                    }
+
+                    const data = await res.json();
+
+                    // Giả sử backend trả về access_token trong user hoặc một object riêng
+                    // Gắn token vào user object để các callback sau (jwt, session) sử dụng
+                    // @ts-ignore
+                    user.backendToken = data.access_token; // Hoặc data.user.access_token tùy cấu trúc backend trả về
+
+                    return true; // Cho phép đăng nhập
+                } catch (error) {
+                    console.error("SignIn callback error:", error);
+                    return false; // Chặn đăng nhập nếu có lỗi
+                }
+            }
+
+
+            return false // Reject sign-in for other cases
+        },
         async jwt({ token, user, account, profile }) {
             console.log('JWT callback:', { token, user, account, profile })
 
@@ -115,7 +161,7 @@ export const authOptions: NextAuthOptions = {
                             console.log('Discord guilds:', guilds)
 
                             // Get guild members info for specific guild (you can configure this)
-                            const targetGuildId = process.env.DISCORD_GUILD_ID  
+                            const targetGuildId = process.env.DISCORD_GUILD_ID
 
                             if (targetGuildId) {
                                 const memberResponse = await fetch(`https://discord.com/api/guilds/${targetGuildId}/members/${user.id}`, {

@@ -7,23 +7,60 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import useNotifications from "@/hooks/useNotifications";
 import DiscordAuth from "../auth/DiscordAuth";
+import AuthDebugger from "../debug/AuthDebugger";
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { isLoading, setLoading, clearLoading } = useLoadingStore();
   const { error, setError, clearError } = useErrorStore();
   const { success, error: notifyError } = useNotifications();
-  const router = useRouter();
-  const handleSubmit = async (e: React.FormEvent) => {
+  const router = useRouter();  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Debug: Log form data before sending
+    console.log('🔍 Form submission data:', {
+      email,
+      password: password ? '***' : '(empty)',
+      emailLength: email?.length || 0,
+      passwordLength: password?.length || 0,
+    });
+    
+    // Validation before sending
+    if (!email || !email.trim()) {
+      notifyError("Email is required");
+      return;
+    }
+    
+    if (!password || !password.trim()) {
+      notifyError("Password is required");
+      return;
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      notifyError("Please enter a valid email address");
+      return;
+    }
+    
     setLoading(true);
     setError("");
+    
     try {
+      console.log('🚀 Calling signIn with:', {
+        provider: 'credentials',
+        email: email.trim(),
+        passwordProvided: !!password.trim(),
+        redirect: false
+      });
+      
       const result = await signIn("credentials", {
-        email,
-        password,
+        email: email.trim(),
+        password: password.trim(),
         redirect: false,
       });
+
+      console.log('📥 SignIn result:', result);
 
       if (result?.error) {
         const loginFailMessage = result.status === 401 ? "Email or password is incorrected" : "Some thing went wrong ";
@@ -43,6 +80,8 @@ export default function LoginForm() {
       setLoading(false);
     }
   }
+  
+  
   return (
     <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-lg w-120">
       <div className="mb-6">
@@ -118,9 +157,9 @@ export default function LoginForm() {
         <span className="text-gray-600 text-sm">Need an account?</span>
         <Link href="/auth/register" className="text-[#A7C957] font-semibold ml-2 hover:underline">
           Register
-        </Link>
-        <DiscordAuth/>
+        </Link>        <DiscordAuth/>
       </div>
+      {process.env.NODE_ENV === 'development' && <AuthDebugger />}
     </form>
 
   )

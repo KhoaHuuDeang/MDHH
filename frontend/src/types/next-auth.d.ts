@@ -33,6 +33,13 @@ declare module "next-auth" {
     accessToken: string
     sessionToken?: string
   }
+  interface Profile {
+    id: string;
+    username: string;
+    email: string;
+    avatar?: string | null;
+    global_name?: string | null;
+  }
 }
 
 declare module "next-auth/jwt" {
