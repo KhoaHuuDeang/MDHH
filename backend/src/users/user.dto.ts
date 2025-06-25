@@ -65,3 +65,22 @@ export class LoginDto {
   @IsNotEmpty()
   password: string;
 }
+
+
+export class DiscordSignInDto {
+  @IsString()
+  @IsOptional()
+  discordId: string;
+
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @IsString()
+  @IsOptional() 
+  name?: string; //fullanme 
+
+  @IsString()
+  @IsOptional()
+  image?: string;
+}

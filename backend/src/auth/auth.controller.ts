@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { DiscordService } from './discord.service';
 import { LoginDto, CreateUserDto } from '../users/user.dto';
-
+import { DiscordSignInDto } from '../users/user.dto';
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
@@ -29,12 +29,12 @@ export class AuthController {
     return this.authService.register(createUserDto)
   }
 
-  @Post('discord')
+  @Post('discord/signin')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Discord OAuth handler' })
   @ApiResponse({ status: 200, description: 'Discord OAuth successful' })
   @ApiResponse({ status: 400, description: 'Discord OAuth failed' })
-  async handleDiscordOAuth(@Body() discordData: any) {
+  async handleDiscordOAuth(@Body() discordData: DiscordSignInDto) {
     return this.discordService.handleDiscordOAuth(discordData);
   }
 }

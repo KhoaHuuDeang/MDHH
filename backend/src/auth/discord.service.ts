@@ -1,20 +1,12 @@
 import { Injectable, ConflictException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-
-interface DiscordOAuthData {
-  discordId: string;
-  email: string;
-  username: string;
-  avatar?: string;
-  guilds?: any[];
-  roles?: string[];
-}
+import { DiscordSignInDto } from 'src/users/user.dto';
 
 @Injectable()
 export class DiscordService {
   constructor(private prisma: PrismaService) {}
 
-  async handleDiscordOAuth(discordData: DiscordOAuthData) {
+  async handleDiscordOAuth(discordData: DiscordSignInDto) {
     try {
       // Check if user exists by Discord ID first
       let user = await this.prisma.user.findFirst({
@@ -34,26 +26,26 @@ export class DiscordService {
         user = await this.prisma.user.update({
           where: { id: user.id },
           data: {
-            username: discordData.username,
-            avatar: discordData.avatar,
+            username: discordData.name,
+            avatar: discordData.image,
           },
           include: { role: true, accounts: true },
         });
 
         // Update account metadata with Discord guild/role info
-        await this.prisma.account.updateMany({
-          where: {
-            userId: user.id,
-            provider: 'discord',
-          },
-          data: {
-            metadata: {
-              guilds: discordData.guilds,
-              roles: discordData.roles,
-              lastSync: new Date().toISOString(),
-            },
-          },
-        });
+        // await this.prisma.account.updateMany({
+        //   where: {
+        //     userId: user.id,
+        //     provider: 'discord',
+        //   },
+        //   data: {
+        //     metadata: {
+        //       guilds: discordData.guilds,
+        //       roles: discordData.roles,
+        //       lastSync: new Date().toISOString(),
+        //     },
+        //   },
+        // });
 
         return { user };
       }
@@ -72,11 +64,11 @@ export class DiscordService {
             type: 'oauth',
             provider: 'discord',
             providerAccountId: discordData.discordId,
-            metadata: {
-              guilds: discordData.guilds,
-              roles: discordData.roles,
-              lastSync: new Date().toISOString(),
-            },
+            // metadata: {
+            //   guilds: discordData.guilds,
+            //   roles: discordData.roles,
+            //   lastSync: new Date().toISOString(),
+            // },
           },
         });
 
@@ -84,8 +76,8 @@ export class DiscordService {
         const updatedUser = await this.prisma.user.update({
           where: { id: existingUser.id },
           data: {
-            username: discordData.username,
-            avatar: discordData.avatar,
+            username: discordData.name,
+            avatar: discordData.image,
           },
           include: { role: true },
         });
@@ -103,27 +95,27 @@ export class DiscordService {
       }
 
       // Determine role based on Discord roles
-      const appRole = this.determineRoleFromDiscordRoles(discordData.roles || []);
-      const targetRole = await this.prisma.role.findUnique({
-        where: { name: appRole },
-      }) || userRole;
+      // const appRole = this.determineRoleFromDiscordRoles(discordData.roles || []);
+      // const targetRole = await this.prisma.role.findUnique({
+      //   where: { name: appRole },
+      // }) || userRole;
 
       const newUser = await this.prisma.user.create({
         data: {
           email: discordData.email,
-          displayname: discordData.username,
-          username: discordData.username,
-          avatar: discordData.avatar,
+          displayname:  " ",
+          username: discordData.name,
+          avatar: discordData.image,
           emailVerified: true, // Discord emails are verified
-          roleId: targetRole.id,
+          roleId: "discord user ",
           accounts: {
             create: {
               type: 'oauth',
               provider: 'discord',
               providerAccountId: discordData.discordId,
               metadata: {
-                guilds: discordData.guilds,
-                roles: discordData.roles,
+                guilds: "chưa hỗ trợ",
+                roles:  "chưa hỗ trợ",
                 lastSync: new Date().toISOString(),
               },
             },
