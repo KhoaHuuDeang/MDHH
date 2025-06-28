@@ -1,7 +1,6 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import DiscordProvider from "next-auth/providers/discord"
-// import { RestAdapter } from "./rest-adapter"
 
 const BACKEND_URL = process.env.NEXTAUTH_BACKEND_URL
 
@@ -79,8 +78,6 @@ export const authOptions: NextAuthOptions = {
         })
     ], callbacks: {
         async signIn({ user, account, profile }) {
-            console.log('SignIn callback:', { user, account, profile })
-
             // Handle credentials login
             if (account?.provider === "credentials") {
                 return true
@@ -103,9 +100,6 @@ export const authOptions: NextAuthOptions = {
                         scope : account.scope,
                         global_name: profile.global_name, 
                     };
-                    console.log("Discord sign-in payload:", payload);
-                    // Gọi API đến backend 
-                    console.log("GỌI API ĐẾN BACKEND");
                     const res = await fetch(`${BACKEND_URL}/auth/discord/signin`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -117,8 +111,6 @@ export const authOptions: NextAuthOptions = {
                         return false;
                     }
                     const data = await res.json();
-                    console.log("KẾT QUẢ ", data);
-                    
                     // Lưu thông tin user từ backend vào user object để dùng trong jwt callback
                     user.id = data.user.id;
                     user.role = data.user.role;
