@@ -1,43 +1,43 @@
 'use client'
-import { Montserrat_Underline } from 'next/font/google';
-import React from 'react';
-import { useState } from 'react';
+import React, { useState, useRef } from 'react';
 
 
 //để tạm chưa có cách giải quyết hay hơn 
-const IconHome = () => <svg xmlns="http://www.w3.org/2000/svg" width = "24" height = "24" viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" strokeWidth = "2" strokeLinecap = "round" strokeLinejoin = "round" > <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" > </path><polyline points="9 22 9 12 15 12 15 22"></polyline > </svg>;
-const IconSearch = ({ size = 16 }) => <svg xmlns="http://www.w3.org/2000/svg" width = { size } height = { size } viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" strokeWidth = "2" strokeLinecap = "round" strokeLinejoin = "round" > <circle cx="11" cy = "11" r = "8" > </circle><path d="m21 21-4.3-4.3"></path > </svg>;
-const IconMessageSquare = ({ size = 16 }) => <svg xmlns="http://www.w3.org/2000/svg" width = { size } height = { size } viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" strokeWidth = "2" strokeLinecap = "round" strokeLinejoin = "round" > <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" > </path></svg >;
-const IconCheckCircle = ({ size = 16 }) => <svg xmlns="http://www.w3.org/2000/svg" width = { size } height = { size } viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" strokeWidth = "2" strokeLinecap = "round" strokeLinejoin = "round" > <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" > </path><polyline points="22 4 12 14.01 9 11.01"></polyline > </svg>;
-const IconFolder = ({ size = 16 }) => <svg xmlns="http://www.w3.org/2000/svg" width = { size } height = { size } viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" strokeWidth = "2" strokeLinecap = "round" strokeLinejoin = "round" > <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" > </path></svg >;
-const IconHistory = ({ size = 16 }) => <svg xmlns="http://www.w3.org/2000/svg" width = { size } height = { size } viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" strokeWidth = "2" strokeLinecap = "round" strokeLinejoin = "round" > <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" > </path><path d="M3 3v5h5"></path > <path d="M12 7v5l4 2" > </path></svg >;
-const IconPlus = ({ size = 12 }) => <svg xmlns="http://www.w3.org/2000/svg" width = { size } height = { size } viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" strokeWidth = "2" strokeLinecap = "round" strokeLinejoin = "round" > <path d="M5 12h14" > </path><path d="M12 5v14"></path > </svg>;
-const IconChevronDown = ({ size = 16, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width = { size } height = { size } viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" strokeWidth = "2" strokeLinecap = "round" strokeLinejoin = "round" className = { className } > <path d="m6 9 6 6 6-6" > </path></svg >;
-const IconSidebarToggle = ({ size = 17, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width = { size } height = { size } viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" strokeWidth = "2" strokeLinecap = "round" strokeLinejoin = "round" className = { className } > <path d="M17 12H3" > </path><path d="m11 18 6-6-6-6"></path > <path d="M21 5v14" > </path></svg >;
-
-
+const IconHome = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" > <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" > </path><polyline points="9 22 9 12 15 12 15 22"></polyline > </svg>;
+const IconSearch = ({ size = 16 }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" > <circle cx="11" cy="11" r="8" > </circle><path d="m21 21-4.3-4.3"></path > </svg>;
+const IconPlus = ({ size = 12 }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" > <path d="M5 12h14" > </path><path d="M12 5v14"></path > </svg>;
+const IconChevronDown = ({ size = 16, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} > <path d="m6 9 6 6 6-6" > </path></svg >;
+const IconSidebarToggle = ({ size = 17, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} > <path d="M17 12H3" > </path><path d="m11 18 6-6-6-6"></path > <path d="M21 5v14" > </path></svg >;
 // interface chính, để nào rảnh tách ra sau  
 
 // interface phụ khi nào làm xong interface chính sẽ tách ra đảm bảo clean code he` he` 
- interface MenuItem {
-  id: string;
-  label: string;
-  icon: string | React.ComponentType<any>
-  href?: string;
-  action?: string ;
-  subMenu?: MenuItem[];
+interface MenuItem {
+    id: string;
+    label: string;
+    icon?: string | React.ComponentType<any>
+    href?: string;
+    action?: string;
+    subMenu?: MenuItem[];
 }
 
 interface MenuProps {
-  items: MenuItem[];
+    items: MenuItem[]; //menu items
 }
-//mockdata đang chờ được tách ra thành file riêng nèeeeeeeeeeeee
-// Dữ liệu giả cho các mục điều hướng
-
-
-export default function Sidebar ({navItems} : {navItems: MenuItem[]}) {
+interface ProfileMenuProps {
+    items: MenuItem[]; // các mục trong menu profile 
+    mockUser: { // thông tin user 
+        initials: string;
+        name: string;
+        email: string;
+    }
+}
+//@navItems các mục điều hướng chính như "Dashboard", "Projects", "Tasks"
+//@userItems các item của profile như "Thông tin cá nhân", "Cài đặt", "Đăng xuất"
+//@user thông tin người dùng
+export default function Sidebar({ navItems, userItems, user }: { navItems: MenuProps['items'], userItems: ProfileMenuProps['items'], user: ProfileMenuProps['mockUser'] }) {
     const [isCollapsed, setIsCollapsed] = useState(false)
-    const [openMenus, setOpenMenus] = useState<Record<string,boolean>>({})
+    const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({})
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
 
     // Chuyển đổi trạng thái thu gọn của toàn bộ sidebar
@@ -46,7 +46,8 @@ export default function Sidebar ({navItems} : {navItems: MenuItem[]}) {
     };
 
     // Chuyển đổi trạng thái đóng/mở của một submenu cụ thể
-    const toggleMenu = (menuId : string) => {
+    const toggleMenu = (menuId: string) => {
+        console.log(menuId)
         setOpenMenus(prevState => ({
             ...prevState,
             [menuId]: !prevState[menuId]
@@ -54,7 +55,7 @@ export default function Sidebar ({navItems} : {navItems: MenuItem[]}) {
     };
 
     // Hàm xử lý các hành động như mở tìm kiếm hoặc tạo mục mới
-    const handleAction = (action : string, item : string) => {
+    const handleAction = (action: string, item: string) => {
         // Trong một ứng dụng thực tế, hành động này sẽ kích hoạt modal hoặc UI khác
         console.log(`Action: ${action} for item: ${item}`);
     };
@@ -86,97 +87,162 @@ export default function Sidebar ({navItems} : {navItems: MenuItem[]}) {
                                     <IconSearch size={16} />
                                     {!isCollapsed && <span>Search</span>}
                                 </div>
-                                {!isCollapsed && <span className="text-xs text-gray-500">Ctrl+K</span>}
                             </button>
                         </div>
-
-                        {/* Các liên kết điều hướng động */}
-                        <ul className="flex flex-col space-y-1">
-                            {navItems.map((item) => (
-                                <li key={item.id} className="relative group/menu-item">
-                                    {item.subMenu ? (
-                                        // Nút menu có thể thu gọn
-                                        <button
-                                            onClick={() => toggleMenu(item.id)}
-                                            className="flex items-center w-full gap-3 rounded-lg hover:bg-gray-700 text-sm h-10 px-3 text-gray-300"
-                                        >
-                                            <item.icon size={18} />
-                                            {!isCollapsed && <span className="flex-grow text-left">{item.label}</span>}
-                                            {!isCollapsed && (
-                                                <IconChevronDown
-                                                    className={`transition-transform duration-200 ${openMenus[item.id] ? 'rotate-180' : ''}`}
-                                                />
-                                            )}
-                                        </button>
-                                    ) : (
-                                        // Liên kết thông thường
-                                        <a href={item.href} className="flex items-center w-full gap-3 rounded-lg hover:bg-gray-700 text-sm h-10 px-3 text-gray-300">
-                                            <item.icon size={18} />
-                                            {!isCollapsed && <span>{item.label}</span>}
-                                        </a>
-                                    )}
-
-                                    {/* Nút hành động (ví dụ: '+') khi di chuột qua */}
-                                    {!isCollapsed && item.action && (
-                                        <span className="absolute top-1/2 right-2 -translate-y-1/2 opacity-0 group-hover/menu-item:opacity-100 transition-opacity">
+                        {isCollapsed ? (
+                            <ul className="flex flex-col space-y-1 items-center ">
+                                {navItems.map((item) => (console.log(item),
+                                    <li key={item.id} className="relative group/menu-item ">
+                                        {item.subMenu ? (
+                                            // Nút menu có thể thu gọn
                                             <button
-                                                onClick={() => handleAction(item.action ?? "?", item.label)}
-                                                className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-gray-600 text-gray-400"
-                                                aria-label={`Create new ${item.label}`}
+                                                onClick={() => toggleMenu(item.id)}
+                                                className="flex items-center w-full gap-3 rounded-lg hover:bg-gray-700 text-sm h-10 px-3 text-gray-300"
                                             >
-                                                <IconPlus size={14} />
+                                                {item.icon && <item.icon size={18} />}
+                                                {!isCollapsed && <span className="flex-grow text-left">{item.label}</span>}
+                                                {!isCollapsed && (
+                                                    <IconChevronDown
+                                                        className={`transition-transform duration-200 ${openMenus[item.id] ? 'rotate-180' : ''}`}
+                                                    />
+                                                )}
                                             </button>
-                                        </span>
-                                    )}
+                                        ) : (
+                                            // Liên kết thông thường
+                                            <a href={item.href} className="flex items-center w-full gap-3 rounded-lg hover:bg-gray-700 text-sm h-10 px-3 text-gray-300">
+                                                {item.icon && <item.icon size={18} />}
+                                                {!isCollapsed && <span>{item.label}</span>}
+                                            </a>
+                                        )}
 
-                                    {/* Danh sách submenu */}
-                                    {item.subMenu && !isCollapsed && (
-                                        <ul className={`pl-8 pr-2 space-y-1 overflow-hidden transition-all duration-300 ${openMenus[item.id] ? 'max-h-96 py-2' : 'max-h-0'}`}>
-                                            {item.subMenu.map(subItem => (
-                                                <li key={subItem.id}>
-                                                    <a href={subItem.href} className="flex items-center w-full rounded-md hover:bg-gray-700 text-xs h-8 px-3 text-gray-400">
-                                                        {subItem.label}
-                                                    </a>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
+                                        {/* Nút hành động (ví dụ: '+') khi di chuột qua */}
+                                        {!isCollapsed && item.action && (
+                                            <span className="absolute top-1/2 right-2 -translate-y-1/2 opacity-0 group-hover/menu-item:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => handleAction(item.action ?? "?", item.label)}
+                                                    className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-gray-600 text-gray-400"
+                                                    aria-label={`Create new ${item.label}`}
+                                                >
+                                                    <IconPlus size={14} />
+                                                </button>
+                                            </span>
+                                        )}
+
+                                        {/* Danh sách submenu */}
+                                        {item.subMenu && !isCollapsed && (
+                                            <ul className={`pl-8 pr-2 space-y-1 overflow-hidden transition-all duration-300 ${openMenus[item.id] ? 'max-h-96 py-2' : 'max-h-0'}`}>
+                                                {item.subMenu.map(subItem => (
+                                                    <li key={subItem.id}>
+                                                        <a href={subItem.href} className="flex items-center w-full rounded-md hover:bg-gray-700 text-xs h-8 px-3 text-gray-400">
+                                                            {subItem.label}
+                                                        </a>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <ul className="flex flex-col space-y-1 ">
+                                {navItems.map((item) => (console.log(item),
+                                    <li key={item.id} className="relative group/menu-item ">
+                                        {item.subMenu ? (
+                                            // Nút menu có thể thu gọn
+                                            <button
+                                                onClick={() => toggleMenu(item.id)}
+                                                className="flex items-center w-full gap-3 rounded-lg hover:bg-gray-700 text-sm h-10 px-3 text-gray-300"
+                                            >
+                                                {item.icon && <item.icon size={18} />}
+                                                {!isCollapsed && <span className="flex-grow text-left">{item.label}</span>}
+                                                {!isCollapsed && (
+                                                    <IconChevronDown
+                                                        className={`transition-transform duration-200 ${openMenus[item.id] ? 'rotate-180' : ''}`}
+                                                    />
+                                                )}
+                                            </button>
+                                        ) : (
+                                            // Liên kết thông thường
+                                            <a href={item.href} className="flex items-center w-full gap-3 rounded-lg hover:bg-gray-700 text-sm h-10 px-3 text-gray-300">
+                                                {item.icon && <item.icon size={18} />}
+                                                {!isCollapsed && <span>{item.label}</span>}
+                                            </a>
+                                        )}
+
+                                        {/* Nút hành động (ví dụ: '+') khi di chuột qua */}
+                                        {!isCollapsed && item.action && (
+                                            <span className="absolute top-1/2 right-2 -translate-y-1/2 opacity-0 group-hover/menu-item:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => handleAction(item.action ?? "?", item.label)}
+                                                    className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-gray-600 text-gray-400"
+                                                    aria-label={`Create new ${item.label}`}
+                                                >
+                                                    <IconPlus size={14} />
+                                                </button>
+                                            </span>
+                                        )}
+
+                                        {/* Danh sách submenu */}
+                                        {item.subMenu && !isCollapsed && (
+                                            <ul className={`pl-8 pr-2 space-y-1 overflow-hidden transition-all duration-300 ${openMenus[item.id] ? 'max-h-96 py-2' : 'max-h-0'}`}>
+                                                {item.subMenu.map(subItem => (
+                                                    <li key={subItem.id}>
+                                                        <a href={subItem.href} className="flex items-center w-full rounded-md hover:bg-gray-700 text-xs h-8 px-3 text-gray-400">
+                                                            {subItem.label}
+                                                        </a>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+
                     </nav>
 
                     {/* Footer */}
-                    <footer className="flex-shrink-0 p-2 border-t border-gray-700">
-                        <div className="flex items-center justify-between">
-                            {/* User Menu */}
-                            <button className={`h-12 w-12 rounded-full border border-gray-600 hover:opacity-80 flex items-center justify-center ${isCollapsed ? 'mx-auto' : 'ml-1'}`} aria-label="User menu">
-                                <span className="flex h-full w-full items-center justify-center rounded-full bg-indigo-600 text-white font-bold">DK</span>
-                            </button>
+                    <footer className="flex-shrink-0 p-2 border-t border-gray-700 mt-auto">
+                        <div className="relative">
+                            {isUserMenuOpen && (
+                                <div className={`absolute bottom-full mb-2 w-56 bg-gray-700 rounded-lg shadow-lg p-2 z-10 ${isCollapsed ? '' : 'left-2'}`}>
+                                    <div className="flex items-center p-2 border-b border-gray-600 mb-2">
+                                        <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white flex-shrink-0">{user.initials}</div>
+                                        <div className="ml-3 truncate">
+                                            <p className="text-sm font-semibold text-white truncate">{user.name}</p>
+                                            <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                                        </div>
+                                    </div>
+                                    <ul className="space-y-1">
+                                        {userItems.map(item => {
+                                            const Icon = item.icon;
+                                            return (
+                                                <li key={item.id}>
+                                                    <a href={item.href || '#'} onClick={() => item.action && handleAction(item.action, item.label)} className="flex items-center gap-3 w-full rounded-md hover:bg-gray-600 text-sm h-9 px-3 text-gray-300">
+                                                        {Icon && <Icon size={16} />}
+                                                        <span>{item.label}</span>
+                                                    </a>
+                                                </li>
+                                            )
+                                        })}
+                                    </ul>
+                                </div>
+                            )}
 
-                            {/* Nút thu gọn Sidebar */}
-                            {!isCollapsed && (
-                                <button
-                                    onClick={toggleSidebar}
-                                    className="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-gray-700 text-gray-400"
-                                    aria-label="Collapse Sidebar"
-                                >
-                                    <IconSidebarToggle />
+                            <div className="flex items-center justify-between">
+                                <button onClick={() => setIsUserMenuOpen(prev => !prev)} aria-expanded={isUserMenuOpen} aria-haspopup="menu" className={`h-12 w-12 rounded-full border border-gray-600 hover:opacity-80 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500 ${isCollapsed ? 'mx-auto' : 'ml-1'}`} aria-label="User menu">
+                                    <span className="flex h-full w-full items-center justify-center rounded-full bg-indigo-600 text-white font-bold">{user.initials}</span>
                                 </button>
+                                {!isCollapsed && (<button onClick={toggleSidebar} className="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-gray-700 text-gray-400" aria-label="Collapse Sidebar"><IconSidebarToggle /></button>)}
+                            </div>
+                            {isCollapsed && (
+                                <div className="mt-2 flex justify-center">
+                                    <button onClick={toggleSidebar} className="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-gray-700 text-gray-400" aria-label="Expand Sidebar">
+                                        <IconSidebarToggle className="rotate-180" />
+                                    </button>
+                                </div>
                             )}
                         </div>
-                        {/* Hiển thị nút mở rộng khi đã thu gọn */}
-                        {isCollapsed && (
-                            <div className="mt-2 flex justify-center">
-                                <button
-                                    onClick={toggleSidebar}
-                                    className="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-gray-700 text-gray-400"
-                                    aria-label="Expand Sidebar"
-                                >
-                                    <IconSidebarToggle className="rotate-180" />
-                                </button>
-                            </div>
-                        )}
                     </footer>
                 </div>
             </aside>
