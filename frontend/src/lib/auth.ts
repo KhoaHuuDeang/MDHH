@@ -127,7 +127,6 @@ export const authOptions: NextAuthOptions = {
             return false // Reject sign-in for other cases
         },
         async jwt({ token, user, account, profile }) {
-            console.log('JWT callback:', { token, user, account, profile })
 
             // Handle credentials login
             if (user && account?.provider === "credentials") {

@@ -1,0 +1,47 @@
+import { authOptions } from "@/lib/auth";
+import Sidebar from "@/components/layout/user/Sidebar";
+import SidebarItems from "@/data/SidebarItems";
+import { mockUserData } from '@/data/MockUser'
+import profileItems from '@/data/profileMenuItem'
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
+import Header from "@/components/layout/user/Header";
+import Footer from "@/components/layout/user/Footer";
+export default async function UserLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  // const session = await getServerSession(authOptions);
+  // if (!session) {
+  //   redirect('/auth/signin');
+  // }
+
+  // Create user data from session
+  // const userData = {
+  //   initials: session.user?.name?.substring(0, 2).toUpperCase() || 'UN',
+  //   name: session.user?.name || 'Unknown User',
+  //   email: session.user?.email || 'unknown@email.com'
+  // };
+
+  return (
+    <div className="flex h-screen bg-gray-900 text-gray-100 font-sans">
+      <Sidebar
+        navItems={SidebarItems}
+        userItems={profileItems}
+        user={mockUserData}
+      />
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Vùng nội dung chính */}
+        <main className="flex-1 overflow-auto p-6">
+          {/* Header */}
+          <Header />
+          {children}
+        </main>
+        {/* Footer */}
+        <Footer />
+      </div>
+    </div>
+  );
+}
