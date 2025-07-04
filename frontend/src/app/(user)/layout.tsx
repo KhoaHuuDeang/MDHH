@@ -1,12 +1,12 @@
 import { authOptions } from "@/lib/auth";
-import Sidebar from "@/components/layout/user/Sidebar";
 import SidebarItems from "@/data/SidebarItems";
 import { mockUserData } from '@/data/MockUser'
 import profileItems from '@/data/profileMenuItem'
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import Header from "@/components/layout/user/Header";
 import Footer from "@/components/layout/user/Footer";
+import Sidebar from "@/components/layout/user/Sidebar";
+import Header from "@/components/layout/user/Header";
 export default async function UserLayout({
   children,
 }: {
