@@ -154,3 +154,8 @@ const colors = {
   }
 }
 
+export default function HomePage() {
+  return (
+    <></>
+  )
+}
