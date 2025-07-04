@@ -189,6 +189,26 @@ export default function HomePage() {
           </form>
         </div>
         {/* Quick Actions Section */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          {quickActions.map(action => (
+            <button
+              key={action.id}
+              className="group relative bg-white border border-gray-200 hover:border-[#6A994E] transition-all duration-200 hover:shadow-lg rounded-xl p-8 h-24 flex items-center cursor-pointer"
+            >
+              <div className="w-14 h-14 bg-gray-50 group-hover:bg-[#6A994E]/10 flex items-center justify-center transition-colors duration-200 rounded-lg">
+                {getIcons(getActionIcon(action.id), 24, "text-[#6A994E] group-hover:text-[#386641] transition-colors")}
+              </div>
+
+              <span className="ml-6 font-semibold text-gray-700 group-hover:text-[#386641] text-xl transition-colors">
+                {action.title}
+              </span>
+
+              {/* Enhanced hover accent */}
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-[#6A994E] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left rounded-b-xl"></div>
+            </button>
+          ))}
+        </div>
+        {/* Continue Reading */}
       </div>
     </div>
   )
