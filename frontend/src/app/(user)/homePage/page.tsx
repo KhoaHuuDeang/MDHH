@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import * as lucideIcons from 'lucide-react'
 
@@ -155,7 +155,41 @@ const colors = {
 }
 
 export default function HomePage() {
+  const [searchQuery, setSearchQuery] = useState('')
+  const router = useRouter();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Searching for:", searchQuery);
+  }
+
+
+
   return (
-    <></>
+    <div className='min-h-screen bg-gray-50'>
+      <div className='max-w-7xl mx-auto px-4 md:px-8 py-8'>
+        {/* Enhanced Search Bar */}
+        <div className='mb-12'>
+          <form onSubmit={handleSearch} className="relative">
+            <div className="bg-white border-2 border-gray-200 hover:border-[#6A994E] transition-all duration-200 rounded-xl shadow-sm">
+              <input
+                type="search"
+                placeholder="Search documents, courses, quizzes..."
+                className="w-full py-6 px-8 bg-transparent text-gray-700 placeholder-gray-400 focus:outline-none font-medium text-lg rounded-xl"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <button
+                type="submit"
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-[#386641] text-white p-4 hover:bg-[#2d4f31] transition-colors duration-200 rounded-lg shadow-md hover:shadow-lg"
+              >
+                {getIcons("Search", 20, "text-white")}
+              </button>
+            </div>
+          </form>
+        </div>
+        {/* Quick Actions Section */}
+      </div>
+    </div>
   )
 }
