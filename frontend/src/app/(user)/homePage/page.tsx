@@ -209,6 +209,90 @@ export default function HomePage() {
           ))}
         </div>
         {/* Continue Reading */}
+        <section className="mb-20">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-3xl font-bold text-gray-800">
+              Continue Reading
+            </h2>
+            <div className="flex space-x-2">
+              <button className="p-2 bg-gray-100 text-gray-600 border border-gray-200 hover:bg-[#6A994E] hover:text-white transition-all duration-200 rounded-md cursor-pointer">
+                {getIcons("ChevronLeft", 20)}
+              </button>
+              <button className="p-2 bg-[#6A994E] text-white border border-[#6A994E] hover:bg-[#386641] transition-all duration-200 rounded-md cursor-pointer">
+                {getIcons("ChevronRight", 20)}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {recentDocuments.map(document => (
+              <div key={document.id} className="group">
+                {/* Main Card Area */}
+                <div className="bg-white border border-gray-200 hover:border-[#6A994E] hover:shadow-md transition-all duration-100 rounded-lg overflow-hidden">
+                  <a href={`/document/${document.id}`} className="block">
+                    {/* Document Preview Area */}
+                    <div className="relative bg-gray-50">
+                      {/* Page Count Badge */}
+                      <div className="absolute top-2.5 left-2.5 bg-[#386641] text-white px-2.5 py-0.5 text-xs font-medium rounded-full z-10">
+                        {document.pages}
+                      </div>
+
+                      {/* Document Thumbnail */}
+                      <div className="w-full h-48 flex items-center justify-center">
+                        {document.thumbnailUrl ? (
+                          <img
+                            src={document.thumbnailUrl}
+                            alt={document.title}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                            {getIcons("FileText", 40, "text-gray-400")}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Document Info Area */}
+                    <div className="p-4">
+                      <h3 className="font-semibold text-gray-800 text-sm line-clamp-1 mb-2 group-hover:text-[#386641] transition-colors">
+                        {document.title}
+                      </h3>
+                      <div>
+                        <span className="text-gray-500 text-xs">
+                          {document.course}
+                        </span>
+                      </div>
+                    </div>
+                  </a>
+
+                  {/* Actions Row */}
+                  <div className="flex justify-between items-center px-4 py-3 border-t border-gray-100">
+                    {/* Rating */}
+                    {document.rating && (
+                      <div className="flex items-center text-xs text-[#6A994E] font-medium">
+                        {getIcons("ThumbsUp", 14, "mr-1")}
+                        <span>{document.rating.positive}%</span>
+                      </div>
+                    )}
+
+                    {/* Save Button */}
+                    <button
+                      className="flex items-center text-gray-500 hover:text-[#386641] text-xs font-bold transition-colors duration-200 px-4 py-2 border border-[#6A994E] rounded-lg bg-white cursor-pointer"
+                      data-test-selector={`save-document-button-${document.id}`}
+                      data-is-saved="false"
+                    >
+                      {getIcons("Bookmark", 14, "mr-1")}
+                      <span>Save</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+        
       </div>
     </div>
   )
