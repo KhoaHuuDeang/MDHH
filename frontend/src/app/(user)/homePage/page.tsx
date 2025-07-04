@@ -375,6 +375,24 @@ export default function HomePage() {
             ))}
           </div>
         </section>
+        {/*  Call-to-Action Section */}
+        <section className="bg-white border border-gray-200 relative overflow-hidden rounded-2xl shadow-lg">
+          <div className="p-16 text-center">
+            <h2 className="text-4xl font-bold text-gray-800 mb-6">
+              Discover More Courses
+            </h2>
+            <p className="text-gray-600 text-lg mb-10 max-w-2xl mx-auto leading-relaxed">
+              Expand your knowledge with our comprehensive course library and join thousands of learners
+            </p>
+
+            <button className="bg-[#386641] text-white px-12 py-5 font-semibold text-xl hover:bg-[#2d4f31] transition-colors duration-100 group rounded-xl shadow-lg hover:shadow-xl">
+              <div className="flex items-center justify-center">
+                {getIcons("Plus", 22, "mr-4 group-hover:rotate-90 transition-transform duration-200")}
+                Explore Courses
+              </div>
+            </button>
+          </div>
+        </section>
       </div>
     </div>
   )
