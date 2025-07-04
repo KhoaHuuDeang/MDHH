@@ -292,7 +292,89 @@ export default function HomePage() {
             ))}
           </div>
         </section>
-        
+        {/*   Viewed Section*/}
+        <section className="mb-20">
+          <h2 className="text-4xl font-bold text-gray-800 mb-10">
+            Recently Viewed
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            {recentCourses.map(course => (
+              <div key={course.id} className="group">
+                {/* Main Course Link */}
+                <a
+                  href={`/course/${course.id}`}
+                  className="block bg-white border border-gray-200 hover:border-[#6A994E] hover:shadow-lg transition-all duration-100 rounded-xl overflow-hidden h-60"
+                >
+                  {/* Top Section - Icon & Title */}
+                  <div className="p-6">
+                    <div className="flex flex-col items-start">
+                      {/* Course Icon */}
+                      <div className='flex flex-row items-center'>
+                        <div className="mb-4">
+                          <div className="w-12 h-12 bg-[#6A994E] flex items-center justify-center rounded-lg group-hover:bg-[#386641] transition-colors duration-100">
+                            {getIcons("Folder", 24, "text-white")}
+                          </div>
+                        </div>
+
+                        {/* Bottom Section - Follow Button */}
+                        <div className="px-6 pb-6">
+                          <button
+                            type="button"
+                            className="w-full py-3 px-4 bg-gray-50 text-gray-700 hover:bg-[#6A994E] hover:text-white text-sm font-semibold transition-all duration-200 flex justify-center items-center group/btn border border-gray-200 hover:border-[#6A994E] rounded-lg cursor-pointer"
+                          >
+                            {getIcons("Plus", 16, "mr-2 group-hover/btn:rotate-90 transition-transform duration-100")}
+                            <span>Follow</span>
+                          </button>
+                        </div>
+                      </div>
+
+
+
+                      {/* Course Title */}
+                      <div className="w-full">
+                        <h3 className="font-semibold text-gray-800 text-base line-clamp-1  group-hover:text-[#386641] transition-colors leading-tight">
+                          {course.name}
+                        </h3>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Middle Section - Meta Info */}
+                  <div className="px-6 pb-4">
+                    <div className="space-y-3">
+                      {/* Course Code */}
+                      {course.code && (
+                        <div className="flex items-center">
+                          {getIcons("Tag", 14, "mr-3 text-gray-400")}
+                          <span className="text-sm text-gray-600 font-medium truncate">
+                            {course.code}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Institution */}
+                      {course.institution && (
+                        <div className="flex items-center">
+                          {getIcons("Building", 14, "mr-3 text-gray-400")}
+                          <span className="text-sm text-gray-600 truncate">
+                            {course.institution}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Document Count */}
+                      <div className="flex items-center">
+                        {getIcons("FileText", 14, "mr-3 text-gray-400")}
+                        <span className="text-sm text-gray-600 font-medium">
+                          {course.documentCount} documents
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   )
