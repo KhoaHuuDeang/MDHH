@@ -26,21 +26,27 @@ export default async function UserLayout({
 
   return (
     <div className="flex h-screen bg-gray-900 text-gray-100 font-sans">
-      <Sidebar
-        navItems={SidebarItems}
-        userItems={profileItems}
-        user={mockUserData}
-      />
+      {/* Sidebar - Hidden on mobile by default */}
+      <div className="hidden lg:flex">
+        <Sidebar
+          navItems={SidebarItems}
+          userItems={profileItems}
+          user={mockUserData}
+        />
+      </div>
+
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Vùng nội dung chính */}
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto  bg-white text-gray-900">
           {/* Header */}
-          <Header />
+          <Header userProps={mockUserData} HeaderItems={profileItems} />
+          {/* Footer */}
           {children}
+          <Footer />
         </main>
-        {/* Footer */}
-        <Footer />
+
+
       </div>
     </div>
   );

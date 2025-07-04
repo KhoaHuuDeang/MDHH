@@ -1,24 +1,28 @@
-export interface MenuItem {
+
+
+//~~~~~~~~sidebar~~~~~~~~~~
+export interface SidebarMenuProps {
     id: string;
     label: string;
     icon?: string;
     href?: string;
     action?: string;
-    subMenu?: MenuItem[];
+    subMenu?: SidebarMenuProps[];
 }
 
-export interface MenuProps {
-    items: MenuItem[]; // menu items
+export interface SidebarMenuItems {
+    items: SidebarMenuProps[]; // menu items
 }
-
-export interface UserData {
+//~~~~~~~~sidebar-footer~~~~~~~~~~
+export interface SidebarFooterProps{
     initials: string;
     name: string;
     email: string;
+    avatar? : string;
 }
 
-
-export interface ProfileMenuProps {
-    items: MenuItem[];
-    mockUser: UserData;
+export interface SidebarProfileMenuProps {
+    items: SidebarMenuProps[];
+    mockUser: SidebarFooterProps;
 }
+//~~~~~~~~-Header-~~~~~~~~~~

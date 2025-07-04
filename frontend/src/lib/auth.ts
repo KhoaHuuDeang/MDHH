@@ -1,4 +1,4 @@
-import { NextAuthOptions } from "next-auth"
+import { getServerSession, NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import DiscordProvider from "next-auth/providers/discord"
 
@@ -25,7 +25,29 @@ function mapDiscordRolesToAppRole(discordRoles: string[]): string {
     // Default role if no special roles found
     return 'unknown'
 }
+// Thêm hàm này vào đầu file, sau phần import
+async function fetchUserRolesFromDiscord(accessToken: string, userId: string, guildId: string): Promise<string[]> {
+    try {
+        // Fetch user's guild member info from Discord API
+        const response = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${userId}`, {
+            headers: {
+                'Authorization': `Bot ${process.env.DISCORD_BOT_TOKEN}`, // Sử dụng bot token
+                'Content-Type': 'application/json',
+            },
+        });
 
+        if (!response.ok) {
+            console.error('Failed to fetch Discord guild member:', response.status);
+            return [];
+        }
+
+        const memberData = await response.json();
+        return memberData.roles || []; // Trả về array các role IDs
+    } catch (error) {
+        console.error('Error fetching Discord roles:', error);
+        return [];
+    }
+}
 export const authOptions: NextAuthOptions = {
     // adapter: RestAdapter(),
     providers: [
@@ -47,7 +69,6 @@ export const authOptions: NextAuthOptions = {
                     })
 
                     const data = await res.json()
-                    console.log('Auth response:', data)
                     if (res.ok && data.user) {
                         return {
                             id: data.user.id,
@@ -78,6 +99,7 @@ export const authOptions: NextAuthOptions = {
         })
     ], callbacks: {
         async signIn({ user, account, profile }) {
+            console.log("SignIn callback:", { user, account, profile })
             // Handle credentials login
             if (account?.provider === "credentials") {
                 return true
@@ -86,20 +108,30 @@ export const authOptions: NextAuthOptions = {
             // Handle Discord OAuth
             if (account?.provider === 'discord' && profile) {
                 try {
+                    // Fetch user's roles from Discord server
+                    const discordRoles = await fetchUserRolesFromDiscord(
+                        account.access_token!,
+                        profile.id,
+                        process.env.DISCORD_GUILD_ID! // ID của server Discord
+                    );
+                    console.log("Fetched Discord roles:", discordRoles);
+
                     const payload = {
                         discordId: profile.id,
                         username: profile.username,
                         email: profile.email,
                         avatar: profile.avatar ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png` : null,
-                        provider : account.provider,
-                        type : account.type,
-                        token_type : account.token_type,
-                        access_token : account.access_token,
-                        expires_at : account.expires_at,
-                        refresh_token : account.refresh_token,
-                        scope : account.scope,
-                        global_name: profile.global_name, 
+                        provider: account.provider,
+                        type: account.type,
+                        token_type: account.token_type,
+                        access_token: account.access_token,
+                        expires_at: account.expires_at,
+                        refresh_token: account.refresh_token,
+                        scope: account.scope,
+                        global_name: profile.global_name,
+                        discordRoles: discordRoles,
                     };
+
                     const res = await fetch(`${BACKEND_URL}/auth/discord/signin`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -111,23 +143,19 @@ export const authOptions: NextAuthOptions = {
                         return false;
                     }
                     const data = await res.json();
-                    // Lưu thông tin user từ backend vào user object để dùng trong jwt callback
                     user.id = data.user.id;
                     user.role = data.user.role;
                     user.username = data.user.username;
                     user.birth = data.user.birth;
-                    return true; // Cho phép đăng nhập
+                    return true;
                 } catch (error) {
                     console.error("SignIn callback error:", error);
-                    return false; // Chặn đăng nhập nếu có lỗi
+                    return false;
                 }
             }
-
-
-            return false // Reject sign-in for other cases
+            return false
         },
         async jwt({ token, user, account, profile }) {
-
             // Handle credentials login
             if (user && account?.provider === "credentials") {
                 token.id = user.id
@@ -142,11 +170,12 @@ export const authOptions: NextAuthOptions = {
             if (user && account?.provider === "discord") {
                 // Sử dụng thông tin đã được lưu từ signIn callback
                 token.id = user.id
-                token.username = user.username 
+                token.username = user.username
                 token.discordId = user.id
                 token.provider = "discord"
                 token.role = user.role
                 token.birth = user.birth
+                token.image = user.avatar
                 // @ts-ignore
                 token.accessToken = user.backendToken || account.access_token
             }
@@ -167,6 +196,7 @@ export const authOptions: NextAuthOptions = {
                     session.user.discordGuilds = token.discordGuilds as any[]
                     session.user.discordRoles = token.discordRoles as string[]
                     session.user.provider = "discord"
+                    session.user.avatar = token.image as string
                 } else {
                     session.user.provider = "credentials"
                 }

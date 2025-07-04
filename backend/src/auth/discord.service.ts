@@ -63,7 +63,7 @@ export class DiscordService {
     }
 
     // --- KỊCH BẢN 1: USER CŨ QUAY LẠI ---
-    // Tìm tài khoản liên kết (account) bằng provider và discordId\
+    // Tìm tài khoản liên kết (account) bằng provider và discordId
 
     const existingAccount = await this.prisma.account.findUnique({
       where: {
