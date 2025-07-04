@@ -5,8 +5,8 @@ const SidebarItems = [
     { id: 'videos', label: 'Videos', icon: "Youtube", href: '/videos' },
     { id: 'upload', label: 'Upload', icon: "CloudUpload", href: '/upload', action: 'create' },
     {
-        id: 'test',
-        label: 'test',
+        id: 'documents',
+        label: 'Documents',
         icon: "File",
         subMenu: [
             { id: 'project-1', label: 'Website Redesign', href: '/projects/1' },
