@@ -81,6 +81,33 @@ npm run install:all
 ```
 Remember to Create `.env` files in both frontend and backend directories
 ```
+```
+Frontend 
+
+# Discord OAuth Configuration
+DISCORD_CLIENT_ID=
+DISCORD_CLIENT_SECRET=
+DISCORD_BOT_TOKEN=
+DISCORD_GUILD_ID=
+
+# Existing configuration
+NEXTAUTH_URL=
+NEXTAUTH_SECRET=
+NEXTAUTH_BACKEND_URL=
+NEXT_PUBLIC_API_URL=
+
+```
+```
+Backend
+DATABASE_URL=
+
+# JWT
+JWT_SECRET=
+JWT_EXPIRES_IN="7d"
+
+# App
+PORT=3001
+```
 4. **Database Setup**
 ```bash
 cd backend
