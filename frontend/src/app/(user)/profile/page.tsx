@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import useNotifications from '@/hooks/useNotifications'
 import * as LucideIcons from 'lucide-react'
 import { LucideIcon } from 'lucide-react'
+
 import Image from 'next/image'
 
 export default function ProfilePage() {

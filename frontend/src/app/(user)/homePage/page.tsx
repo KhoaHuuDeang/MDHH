@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import * as lucideIcons from 'lucide-react'
+import { LucideIcon } from 'lucide-react'
 import Image from 'next/image';
 const getIcons = (iconName: string, size: number, className?: string) => {
-  const IconComponent = (lucideIcons as any)[iconName];
+  const IconComponent = lucideIcons[iconName as keyof typeof lucideIcons] as LucideIcon
   return IconComponent ? <IconComponent className={className} size={size} /> : null;
 }
 const getActionIcon = (id: number) => {
