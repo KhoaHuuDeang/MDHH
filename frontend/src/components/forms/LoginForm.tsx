@@ -11,7 +11,7 @@ export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { isLoading, setLoading, clearLoading } = useLoadingStore();
-  const { error, setError, clearError } = useErrorStore();
+  const {  setError, clearError } = useErrorStore();
   const { success, error: notifyError } = useNotifications();
   const router = useRouter(); const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

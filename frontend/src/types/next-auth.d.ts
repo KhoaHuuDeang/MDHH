@@ -26,8 +26,8 @@ declare module "next-auth" {
       emailVerified?: boolean
       // Discord-specific fields
       discordId?: string
-      discordGuilds?: any[]
-      discordRoles?: string[]
+      discordGuilds?: string[]
+      discordRoles?: int[]
       provider?: string
     }
     accessToken: string
@@ -51,8 +51,8 @@ declare module "next-auth/jwt" {
     sessionToken?: string
     // Discord-specific fields
     discordId?: string
-    discordGuilds?: any[]
-    discordRoles?: string[]
+    discordGuilds?: string[]
+    discordRoles?: int[]
     provider?: string
   }
 }
