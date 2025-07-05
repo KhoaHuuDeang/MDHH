@@ -22,7 +22,7 @@ export default function ProfilePage() {
       toast.error("Chưa đăng nhập đừng có mò vào đây")
       router.push('/auth/signin')
     }
-  }, [status, router])
+  }, [status, router, toast])
 
   if (status === 'loading') {
     return (
