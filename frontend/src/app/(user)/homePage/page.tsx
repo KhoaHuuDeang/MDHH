@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import * as lucideIcons from 'lucide-react'
 
 const getIcons = (iconName: string, size: number, className?: string) => {
@@ -141,22 +140,22 @@ const quickActions = [
   }
 ];
 // Educational Color Palette
-const colors = {
-  primary: {
-    green: '#6A994E',      // Hover states, secondary actions
-    darkGreen: '#386641',  // CTA buttons, emphasis
-    white: '#FFFFFF',      // Background, primary text
-  },
-  neutral: {
-    lightGray: '#F8F9FA',
-    mediumGray: '#6C757D',
-    darkGray: '#343A40',
-  }
-}
+// const colors = {
+//   primary: {
+//     green: '#6A994E',      // Hover states, secondary actions
+//     darkGreen: '#386641',  // CTA buttons, emphasis
+//     white: '#FFFFFF',      // Background, primary text
+//   },
+//   neutral: {
+//     lightGray: '#F8F9FA',
+//     mediumGray: '#6C757D',
+//     darkGray: '#343A40',
+//   }
+// }
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
-  const router = useRouter();
+
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
