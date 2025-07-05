@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import useNotifications from '@/hooks/useNotifications'
 import * as LucideIcons from 'lucide-react'
+import { LucideIcon } from 'lucide-react'
 import Image from 'next/image'
 
 export default function ProfilePage() {
@@ -11,7 +12,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const toast = useNotifications()
   const getIcon = (iconName: string, size = 20, className?: string) => {
-    const IconComponent = (LucideIcons as any)[iconName]
+    const IconComponent = LucideIcons[iconName as keyof typeof LucideIcons] as LucideIcon
     return IconComponent ? <IconComponent size={size} className={className} /> : null
   }
 
