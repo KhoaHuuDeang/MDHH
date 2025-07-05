@@ -3,10 +3,14 @@ import * as LucideIcons from 'lucide-react';
 import { JSX } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { LucideIcon } from 'lucide-react';
+
+
+
 
 export default function Footer() {
     const getIcons = (icon: string, size = 18, classname?: string): JSX.Element => {
-        const IconComponent = (LucideIcons as any)[icon];
+        const IconComponent = LucideIcons[icon as keyof typeof LucideIcons] as LucideIcon;
         return IconComponent ?
             <IconComponent size={size} className={classname} />
             : <></>
@@ -37,28 +41,28 @@ export default function Footer() {
                     <div className="flex flex-col items-center md:items-start space-y-4 justify-center">
                         <Link href="/" className="flex items-center gap-3 group">
                             <div className="relative">
-                                <Image 
-                                    src="/logo.svg" 
-                                    alt="MDHH Logo" 
-                                    width={48} 
+                                <Image
+                                    src="/logo.svg"
+                                    alt="MDHH Logo"
+                                    width={48}
                                     height={48}
-                                    className="h-12 w-12 transition-transform duration-300 group-hover:scale-110" 
+                                    className="h-12 w-12 transition-transform duration-300 group-hover:scale-110"
                                 />
                                 <div className="absolute inset-0 rounded-full ring-2 ring-transparent group-hover:ring-[#6A994E]/50 transition-all duration-300"></div>
                             </div>
                             <div>
                                 <h3 className="text-xl font-bold text-white group-hover:text-[#6A994E] transition-colors duration-300">
-                                    MDHH 
+                                    MDHH
                                 </h3>
                                 <p className="text-sm text-gray-300 group-hover:text-[#6A994E]/80 transition-colors duration-300">
                                     DK VÔ ĐỊCH WORLDS 2025
                                 </p>
                             </div>
                         </Link>
-                        
+
                         {/* Mission Statement */}
                         <p className="text-sm text-gray-300 text-center md:text-left max-w-xs">
-                           DESCRIPTION FOR MDHH COMMUNITY 
+                            DESCRIPTION FOR MDHH COMMUNITY
                         </p>
                     </div>
 
@@ -67,7 +71,7 @@ export default function Footer() {
                     {/* Social Media & Contact */}
                     <div className="flex flex-col items-center md:items-end space-y-4">
                         <h4 className="text-lg font-semibold text-white">Kết Nối Với Chúng Tôi</h4>
-                        
+
                         {/* Social Media Links */}
                         <div className="flex gap-3">
                             {socialLinks.map(social => (
@@ -133,7 +137,7 @@ export default function Footer() {
                     {/* Additional Info */}
                     <div className="mt-4 pt-4 border-t border-[#386641]/10">
                         <p className="text-xs text-gray-400 text-center">
-                            Nền tảng được phát triển với ❤️ bởi MDHH Team • Phiên bản DEVELOPE 
+                            Nền tảng được phát triển với ❤️ bởi MDHH Team • Phiên bản DEVELOPE
                         </p>
                     </div>
                 </div>

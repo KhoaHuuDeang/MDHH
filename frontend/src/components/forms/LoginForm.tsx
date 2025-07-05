@@ -11,18 +11,11 @@ export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { isLoading, setLoading, clearLoading } = useLoadingStore();
-  const {  setError, clearError } = useErrorStore();
+  const { setError, clearError } = useErrorStore();
   const { success, error: notifyError } = useNotifications();
+  
   const router = useRouter(); const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Debug: Log form data before sending
-    console.log('🔍 Form submission data:', {
-      email,
-      password: password ? '***' : '(empty)',
-      emailLength: email?.length || 0,
-      passwordLength: password?.length || 0,
-    });
 
     // Validation before sending
     if (!email || !email.trim()) {
@@ -46,20 +39,11 @@ export default function LoginForm() {
     setError("");
 
     try {
-      console.log('🚀 Calling signIn with:', {
-        provider: 'credentials',
-        email: email.trim(),
-        passwordProvided: !!password.trim(),
-        redirect: false
-      });
-
       const result = await signIn("credentials", {
         email: email.trim(),
         password: password.trim(),
         redirect: false,
       });
-
-      console.log('📥 SignIn result:', result);
 
       if (result?.error) {
         const loginFailMessage = result.status === 401 ? "Email or password is incorrected" : "Some thing went wrong ";
@@ -71,10 +55,9 @@ export default function LoginForm() {
         router.push("/profile");
       }
     } catch (error) {
-      const errorMessage = "An unexpected error occurred. Please try again later.";
+      const errorMessage = "An unexpected error occurred. Please try again later." + error;
       setError(errorMessage);
       notifyError(errorMessage);
-
     } finally {
       setLoading(false);
     }

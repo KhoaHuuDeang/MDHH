@@ -24,7 +24,7 @@ export default function RegisterForm() {
         const { day, month, year, ...rest } = data
         const birth = `${day}/${month}/${year}`
         //loại bỏ confirmPassword ra khỏi data (result)
-        const { confirmPassword, ...result } = rest
+        const { confirmPassword : _confirmPassword, ...result } = rest
         //tạo formData mới bao gồm result và birth
         const formData = {...result, birth}
 
@@ -46,6 +46,7 @@ export default function RegisterForm() {
             router.push("/auth/signin");
         } catch (err) {
             setError("Network error. Please try again later.");
+            throw new Error("Network error. Please try again later." + err);
         } finally {
             clearLoading();
         }

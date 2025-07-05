@@ -4,13 +4,13 @@ import { JSX, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { SidebarProfileMenuProps } from '@/types/user.types';
-
+import { LucideIcon } from 'lucide-react';
 export default function Header({ userProps, HeaderItems }: { userProps: SidebarProfileMenuProps['mockUser'], HeaderItems: SidebarProfileMenuProps['items'] }) {
 
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
     const getIcons = (icon: string, size = 18, classname?: string): JSX.Element => {
-        const IconComponent = (LucideIcons as any)[icon];
+        const IconComponent = LucideIcons[icon as keyof typeof LucideIcons] as LucideIcon;
         return IconComponent ?
             <IconComponent size={size} className={classname} />
             : <></>
@@ -137,12 +137,12 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
                                              focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50'
                                 >
                                     <div className="relative">
-                                        <img 
+                                        <Image
                                             className="h-10 w-10 md:h-12 md:w-12 rounded-full object-cover 
                                                      border-2 border-[#6A994E]/60 hover:border-[#6A994E] transition-all duration-300
-                                                     shadow-lg hover:shadow-xl hover:shadow-[#386641]/50" 
-                                            src="https://lh3.googleusercontent.com/a/ACg8ocJjqTxlK60D1xNMf5mP2f4-wHDBzQkTZdHaNxLKLNGDjw=s96-c" 
-                                            alt="User avatar" 
+                                                     shadow-lg hover:shadow-xl hover:shadow-[#386641]/50"
+                                            src="https://lh3.googleusercontent.com/a/ACg8ocJjqTxlK60D1xNMf5mP2f4-wHDBzQkTZdHaNxLKLNGDjw=s96-c"
+                                            alt="User avatar"
                                         />
                                         {/* Online indicator */}
                                         <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-[#6A994E] border-2 border-[#1a2e1a]"></span>
