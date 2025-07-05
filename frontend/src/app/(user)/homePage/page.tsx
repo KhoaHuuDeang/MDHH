@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import * as lucideIcons from 'lucide-react'
-
+import Image from 'next/image';
 const getIcons = (iconName: string, size: number, className?: string) => {
   const IconComponent = (lucideIcons as any)[iconName];
   return IconComponent ? <IconComponent className={className} size={size} /> : null;
@@ -239,14 +239,15 @@ export default function HomePage() {
                       {/* Document Thumbnail */}
                       <div className="w-full h-48 flex items-center justify-center">
                         {document.thumbnailUrl ? (
-                          <img
+                          <Image
                             src={document.thumbnailUrl}
                             alt={document.title}
                             className="w-full h-full object-cover"
                             loading="lazy"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                          <div className="w-full 
+                          h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
                             {getIcons("FileText", 40, "text-gray-400")}
                           </div>
                         )}
