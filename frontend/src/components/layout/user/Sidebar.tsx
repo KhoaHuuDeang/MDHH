@@ -1,8 +1,9 @@
 'use client'
-import React, { ComponentType, JSX, useState } from 'react';
+import React, { JSX, useState } from 'react';
+import Link from 'next/link';
 import * as LucideIcons from "lucide-react"
-import { SidebarMenuProps, SidebarProfileMenuProps, SidebarFooterProps, SidebarMenuItems } from '@/types/user.types';
-
+import { SidebarProfileMenuProps, SidebarMenuItems } from '@/types/user.types';
+import { LucideIcon } from 'lucide-react';
 //@navItems các mục điều hướng chính như "Dashboard", "Projects", "Tasks"
 //@userItems các item của profile như "Thông tin cá nhân", "Cài đặt", "Đăng xuất"
 //@user thông tin người dùng
@@ -31,7 +32,7 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
     };
 
     const getIcon = (iconName: string, size = 18, classname?: string): JSX.Element => {
-        const IconComponent = (LucideIcons as any)[iconName]
+        const IconComponent = LucideIcons[iconName as keyof typeof LucideIcons] as LucideIcon;
         return IconComponent ? <IconComponent size={size} className={classname} />
             : <></>;
     }
@@ -52,14 +53,15 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
                 <div className="flex h-full flex-col relative z-10">
                     {/* Header với hiệu ứng educational */}
                     <header className={`flex items-center justify-center h-20 flex-shrink-0 ${isCollapsed ? 'px-0' : 'px-6'} border-b border-[#386641]/20`}>
-                        <a href="/"
+                        <Link
+                            href="/"
                             aria-label="Home page"
                             className="p-3 rounded-xl focus:outline-none transition-all duration-300 
                                     text-white hover:text-[#6A994E] hover:bg-[#386641]/10
                                     hover:shadow-lg hover:shadow-[#386641]/25 hover:scale-110
                                     ring-2 ring-transparent hover:ring-[#6A994E]/50">
                             {getIcon('Home', 28, 'drop-shadow-lg')}
-                        </a>
+                        </Link>
                     </header>
 
                     {/* Navigation với hiệu ứng học tập */}
@@ -110,8 +112,7 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
                                             )}
                                         </button>
                                     ) : (
-                                        // Regular Link
-                                        <a href={item.href}
+                                        <Link href={item.href as string}
                                             className="flex items-center w-full gap-4 rounded-xl transition-all duration-300
                                                     text-sm h-12 px-4 text-white font-medium tracking-wide
                                                     hover:bg-gradient-to-r hover:from-[#386641]/20 hover:to-[#2d4a2d]/50
@@ -121,7 +122,7 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
                                                     group/link">
                                             {item.icon && getIcon(item.icon, 20, 'group-hover/link:text-[#6A994E] transition-colors duration-300')}
                                             {!isCollapsed && <span>{item.label}</span>}
-                                        </a>
+                                        </Link>
                                     )}
 
                                     {/* Action Button với educational accent */}
@@ -146,14 +147,15 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
                                                       ${openMenus[item.id] ? 'max-h-96 py-3' : 'max-h-0'}`}>
                                             {item.subMenu.map(subItem => (
                                                 <li key={subItem.id}>
-                                                    <a href={subItem.href}
+                                                    <Link
+                                                        href={subItem.href as string}
                                                         className="flex items-center w-full rounded-lg transition-all duration-300
                                                                 text-xs h-9 px-4 text-gray-300 font-medium
                                                                 hover:bg-[#386641]/15 hover:text-white
                                                                 hover:shadow-md hover:shadow-[#386641]/10
                                                                 border-l-2 border-transparent hover:border-[#6A994E]/50">
                                                         {subItem.label}
-                                                    </a>
+                                                    </Link>
                                                 </li>
                                             ))}
                                         </ul>
@@ -189,7 +191,8 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
                                     <ul className="space-y-1.5">
                                         {userItems.map(item => (
                                             <li key={item.id}>
-                                                <a href={item.href || '#'}
+                                                <Link
+                                                    href={item.href as string}
                                                     onClick={() => item.action && handleAction(item.action, item.label)}
                                                     className="flex items-center gap-4 w-full rounded-xl transition-all duration-300
                                                             text-sm h-11 px-4 text-white font-medium
@@ -197,8 +200,9 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
                                                             hover:text-[#6A994E] hover:shadow-lg hover:shadow-[#386641]/20
                                                             border border-transparent hover:border-[#386641]/30">
                                                     {item.icon && getIcon(item.icon, 20, 'hover:text-[#6A994E] transition-colors duration-300')}
+                                                
                                                     <span>{item.label}</span>
-                                                </a>
+                                                </Link>
                                             </li>
                                         ))}
                                     </ul>

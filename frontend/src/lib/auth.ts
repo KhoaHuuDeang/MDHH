@@ -1,30 +1,30 @@
-import { getServerSession, NextAuthOptions } from "next-auth"
+import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import DiscordProvider from "next-auth/providers/discord"
 
 const BACKEND_URL = process.env.NEXTAUTH_BACKEND_URL
 
 // Helper function to map Discord roles to app roles
-function mapDiscordRolesToAppRole(discordRoles: string[]): string {
-    // Define your Discord role ID to app role mapping
-    const roleMapping: Record<string, string> = {
-        'cmc34h3j80000tm24mt9fdslv': 'user',
-        'cmc34h3ma0001tm242g6ff0is': 'admin',
-    }
+// function mapDiscordRolesToAppRole(discordRoles: string[]): string {
+//     // Define your Discord role ID to app role mapping
+//     const roleMapping: Record<string, string> = {
+//         'cmc34h3j80000tm24mt9fdslv': 'user',
+//         'cmc34h3ma0001tm242g6ff0is': 'admin',
+//     }
 
-    // Check for admin role first (highest priority)
-    for (const roleId of discordRoles) {
-        if (roleMapping[roleId] === 'admin') return 'admin'
-    }
+//     // Check for admin role first (highest priority)
+//     for (const roleId of discordRoles) {
+//         if (roleMapping[roleId] === 'admin') return 'admin'
+//     }
 
-    // Check for other roles
-    for (const roleId of discordRoles) {
-        if (roleMapping[roleId]) return roleMapping[roleId]
-    }
+//     // Check for other roles
+//     for (const roleId of discordRoles) {
+//         if (roleMapping[roleId]) return roleMapping[roleId]
+//     }
 
-    // Default role if no special roles found
-    return 'unknown'
-}
+//     // Default role if no special roles found
+//     return 'unknown'
+// }
 // Thêm hàm này vào đầu file, sau phần import
 async function fetchUserRolesFromDiscord(accessToken: string, userId: string, guildId: string): Promise<string[]> {
     try {
@@ -155,7 +155,7 @@ export const authOptions: NextAuthOptions = {
             }
             return false
         },
-        async jwt({ token, user, account, profile }) {
+        async jwt({ token, user, account }) {
             // Handle credentials login
             if (user && account?.provider === "credentials") {
                 token.id = user.id
