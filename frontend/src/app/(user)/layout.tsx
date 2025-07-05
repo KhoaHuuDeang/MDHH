@@ -1,9 +1,9 @@
-import { authOptions } from "@/lib/auth";
+// import { authOptions } from "@/lib/auth";
 import SidebarItems from "@/data/SidebarItems";
 import { mockUserData } from '@/data/MockUser'
 import profileItems from '@/data/profileMenuItem'
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
+// import { getServerSession } from "next-auth";
+// import { redirect } from "next/navigation";
 import Footer from "@/components/layout/user/Footer";
 import Sidebar from "@/components/layout/user/Sidebar";
 import Header from "@/components/layout/user/Header";
