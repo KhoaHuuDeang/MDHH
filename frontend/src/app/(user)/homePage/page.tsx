@@ -245,6 +245,8 @@ export default function HomePage() {
                             alt={document.title}
                             className="w-full h-full object-cover"
                             loading="lazy"
+                            width={400}
+                            height={200}
                           />
                         ) : (
                           <div className="w-full 
