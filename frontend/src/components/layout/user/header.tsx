@@ -143,6 +143,8 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
                                                      shadow-lg hover:shadow-xl hover:shadow-[#386641]/50"
                                             src="https://lh3.googleusercontent.com/a/ACg8ocJjqTxlK60D1xNMf5mP2f4-wHDBzQkTZdHaNxLKLNGDjw=s96-c"
                                             alt="User avatar"
+                                            width={48}
+                                            height={48}
                                         />
                                         {/* Online indicator */}
                                         <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-[#6A994E] border-2 border-[#1a2e1a]"></span>

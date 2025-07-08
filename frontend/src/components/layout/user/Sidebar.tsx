@@ -12,6 +12,9 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
     const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({})
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
+    console.log({ userItems })
+
+
     // Chuyển đổi trạng thái thu gọn của toàn bộ sidebar
     const toggleSidebar = () => {
         setIsCollapsed((prev) => !prev);
@@ -39,7 +42,7 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
 
     return (
         <>
-            {/* --- EDUCATIONAL DESIGN SIDEBAR --- */}
+            {/* --- SIDEBAR --- */}
             <aside
                 className={`flex-shrink-0 transition-all duration-500 ease-out shadow-2xl
                     ${isCollapsed ? 'w-20' : 'w-72'}
@@ -51,7 +54,7 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
                 `}
             >
                 <div className="flex h-full flex-col relative z-10">
-                    {/* Header với hiệu ứng educational */}
+                    {/* Header */}
                     <header className={`flex items-center justify-center h-20 flex-shrink-0 ${isCollapsed ? 'px-0' : 'px-6'} border-b border-[#386641]/20`}>
                         <Link
                             href="/"
@@ -64,9 +67,9 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
                         </Link>
                     </header>
 
-                    {/* Navigation với hiệu ứng học tập */}
+                    {/* Navigation */}
                     <nav className="flex-grow overflow-y-auto overflow-x-hidden px-3 py-4 space-y-3">
-                        {/* Search Button với educational theme */}
+                        {/* Search Button  */}
                         <div className="px-1">
                             <button
                                 onClick={() => handleAction('open-search', 'Search')}
@@ -87,7 +90,7 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
                             </button>
                         </div>
 
-                        {/* Menu Items với educational style */}
+                        {/* Menu Items  */}
                         <ul className={`flex flex-col space-y-2 ${isCollapsed ? 'items-center' : ''}`}>
                             {navItems.map((item) => (
                                 <li key={item.id} className="relative group/menu-item">
@@ -111,11 +114,11 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
                                                 </>
                                             )}
                                         </button>
-                                    ) : (
-                                        <Link href={item.href as string}
+                                    ) : (item.href &&
+                                        <Link href={item.href}
                                             className="flex items-center w-full gap-4 rounded-xl transition-all duration-300
                                                     text-sm h-12 px-4 text-white font-medium tracking-wide
-                                                    hover:bg-gradient-to-r hover:from-[#386641]/20 hover:to-[#2d4a2d]/50
+                                                    hover:bg-gradient-to-r hover:fr om-[#386641]/20 hover:to-[#2d4a2d]/50
                                                     hover:text-[#6A994E] hover:shadow-lg hover:shadow-[#386641]/20
                                                     focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50
                                                     border border-transparent hover:border-[#386641]/30
@@ -125,7 +128,7 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
                                         </Link>
                                     )}
 
-                                    {/* Action Button với educational accent */}
+                                    {/* Action Button  */}
                                     {!isCollapsed && item.action && (
                                         <span className="absolute top-1/2 right-3 -translate-y-1/2 opacity-0 group-hover/menu-item:opacity-100 transition-all duration-300">
                                             <button
@@ -141,21 +144,24 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
                                         </span>
                                     )}
 
-                                    {/* Submenu với educational styling */}
+                                    {/* Submenu với  */}
                                     {item.subMenu && !isCollapsed && (
                                         <ul className={`pl-12 pr-3 space-y-1.5 overflow-hidden transition-all duration-500 ease-out
                                                       ${openMenus[item.id] ? 'max-h-96 py-3' : 'max-h-0'}`}>
                                             {item.subMenu.map(subItem => (
                                                 <li key={subItem.id}>
-                                                    <Link
-                                                        href={subItem.href as string}
-                                                        className="flex items-center w-full rounded-lg transition-all duration-300
+                                                    {subItem.href && (
+                                                        <Link
+                                                            href={subItem.href}
+                                                            className="flex items-center w-full rounded-lg transition-all duration-300
                                                                 text-xs h-9 px-4 text-gray-300 font-medium
                                                                 hover:bg-[#386641]/15 hover:text-white
                                                                 hover:shadow-md hover:shadow-[#386641]/10
                                                                 border-l-2 border-transparent hover:border-[#6A994E]/50">
-                                                        {subItem.label}
-                                                    </Link>
+                                                            {subItem.label}
+                                                        </Link>
+                                                    )}
+
                                                 </li>
                                             ))}
                                         </ul>
@@ -165,7 +171,7 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
                         </ul>
                     </nav>
 
-                    {/* Footer với educational user menu */}
+                    {/* Footer với user menu */}
                     <footer className="flex-shrink-0 p-3 border-t border-[#386641]/20 mt-auto bg-gradient-to-r from-[#1a2e1a]/50 to-[#2d4a2d]/50">
                         <div className="relative">
                             {/* User Menu Dropdown */}
@@ -191,18 +197,29 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
                                     <ul className="space-y-1.5">
                                         {userItems.map(item => (
                                             <li key={item.id}>
-                                                <Link
-                                                    href={item.href as string}
-                                                    onClick={() => item.action && handleAction(item.action, item.label)}
-                                                    className="flex items-center gap-4 w-full rounded-xl transition-all duration-300
+                                                {item.href ? (
+                                                    <Link
+                                                        href={item.href}
+                                                        className="flex items-center gap-4 w-full rounded-xl transition-all duration-300
                                                             text-sm h-11 px-4 text-white font-medium
                                                             hover:bg-gradient-to-r hover:from-[#386641]/20 hover:to-[#2d4a2d]/50
                                                             hover:text-[#6A994E] hover:shadow-lg hover:shadow-[#386641]/20
                                                             border border-transparent hover:border-[#386641]/30">
-                                                    {item.icon && getIcon(item.icon, 20, 'hover:text-[#6A994E] transition-colors duration-300')}
-                                                
-                                                    <span>{item.label}</span>
-                                                </Link>
+                                                        {item.icon && getIcon(item.icon, 20, 'hover:text-[#6A994E] transition-colors duration-200')}
+
+                                                        <span>{item.label}</span>
+                                                    </Link>
+                                                ) : item.action ? (
+                                                    <button className='flex items-center gap-2 w-full rounded-xl transition-all duration-300
+                                                        text-sm h-11 px-4 text-white font-medium
+                                                        hover:bg-gradient-to-r hover:from-[#386641]/20 hover:to-[#2d4a2d]/50
+                                                        hover:text-[#6A994E] hover:shadow-lg hover:shadow-[#386641]/20
+                                                        border border-transparent hover:border-[#386641]/30 cursor-pointer' onClick={() => item.action && handleAction(item.action, item.label)}>
+                                                        {item.icon && getIcon(item.icon, 20, 'hover:text-[#6A994E] transition-colors duration-200')}
+                                                        {item.label}
+                                                    </button>
+                                                ) : null}
+
                                             </li>
                                         ))}
                                     </ul>
