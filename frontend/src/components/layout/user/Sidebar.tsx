@@ -12,9 +12,6 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
     const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({})
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
-    console.log({ userItems })
-
-
     // Chuyển đổi trạng thái thu gọn của toàn bộ sidebar
     const toggleSidebar = () => {
         setIsCollapsed((prev) => !prev);
@@ -44,8 +41,8 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
         <>
             {/* --- SIDEBAR --- */}
             <aside
-                className={`flex-shrink-0 transition-all duration-500 ease-out shadow-2xl
-                    ${isCollapsed ? 'w-20' : 'w-72'}
+                className={`flex-shrink-0 transition-all duration-200 ease-out shadow-2xl
+                    ${isCollapsed ? 'w-20' : 'w-62'}
                     bg-gradient-to-b from-[#1a2e1a] via-[#2d4a2d] to-[#0f1a0f]
                     border-r-2 border-[#386641]/30
                     relative 
@@ -257,7 +254,7 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
                                                  hover:shadow-lg hover:shadow-[#386641]/25 hover:scale-105
                                                  border border-transparent hover:border-[#386641]/30"
                                         aria-label="Collapse Sidebar">
-                                        {getIcon('ChevronLeft', 20, `transition-transform duration-300 ${isCollapsed ? 'rotate-0' : 'rotate-180'}`)}
+                                        {getIcon('ChevronRight', 20, `transition-transform duration-300 ${isCollapsed ? 'rotate-0' : 'rotate-180'}`)}
                                     </button>
                                 )}
                             </div>
@@ -272,7 +269,7 @@ export default function Sidebar({ navItems, userItems, user }: { navItems: Sideb
                                                  hover:shadow-lg hover:shadow-[#386641]/25 hover:scale-105
                                                  border border-transparent hover:border-[#386641]/30"
                                         aria-label="Expand Sidebar">
-                                        {getIcon('ChevronRight', 20, `transition-transform duration-300 ${isCollapsed ? 'rotate-180' : 'rotate-0'}`)}
+                                        {getIcon('ChevronLeft', 20, `transition-transform duration-300 ${isCollapsed ? 'rotate-180' : 'rotate-0'}`)}
                                     </button>
                                 </div>
                             )}
