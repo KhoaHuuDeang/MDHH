@@ -15,6 +15,11 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
             <IconComponent size={size} className={classname} />
             : <></>
     }
+
+    const handleAction = (action: string, item: string) => {
+        console.log(`Action: ${action} for item: ${item}`);
+    };
+
     return (
         <header className="sticky top-0 z-40 shadow-2xl border-b-2 border-[#386641]/30
                          bg-gradient-to-r from-[#1a2e1a] via-[#2d4a2d] to-[#1a2e1a]
@@ -28,8 +33,8 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
                         {/* Left Section - Mobile menu + Logo */}
                         <div className="flex items-center gap-6">
                             {/* Mobile Menu Button */}
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 className="lg:hidden p-3 rounded-xl transition-all duration-300
                                          text-white hover:text-[#6A994E] hover:bg-[#386641]/20
                                          hover:shadow-lg hover:shadow-[#386641]/25 hover:scale-105
@@ -39,25 +44,25 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
                             >
                                 {getIcons('Menu', 24)}
                             </button>
-                            
+
                             {/* Logo với hiệu ứng educational */}
                             <Link href="/" className="flex-shrink-0 group">
-                                    <div className="relative">
-                                        <Image 
-                                            src="/logo.svg" 
-                                            alt="Logo" 
-                                            width={40} 
-                                            height={40}
-                                            className="h-20 w-20 md:h-30 md:w-30" 
-                                        />
-                                    </div>
+                                <div className="relative">
+                                    <Image
+                                        src="/logo.svg"
+                                        alt="Logo"
+                                        width={40}
+                                        height={40}
+                                        className="h-20 w-20 md:h-30 md:w-30"
+                                    />
+                                </div>
                             </Link>
                         </div>
                         {/* Right Section - Notifications + User */}
                         <div className="flex items-center gap-3">
                             {/* Notification Buttons */}
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 className="hidden sm:flex relative p-3 rounded-xl transition-all duration-300
                                          text-white hover:text-[#6A994E] hover:bg-[#386641]/20
                                          hover:shadow-lg hover:shadow-[#386641]/25 hover:scale-105
@@ -69,9 +74,9 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
                                 <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#386641] border-2 border-[#6A994E] 
                                                flex items-center justify-center text-xs font-bold text-white">3</span>
                             </button>
-                            
-                            <button 
-                                type="button" 
+
+                            <button
+                                type="button"
                                 className="hidden md:flex relative p-3 rounded-xl transition-all duration-300
                                          text-white hover:text-[#6A994E] hover:bg-[#386641]/20
                                          hover:shadow-lg hover:shadow-[#386641]/25 hover:scale-105
@@ -107,9 +112,9 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
                                         <ul className="space-y-1.5">
                                             {HeaderItems.map(item => (
                                                 <li key={item.id}>
-                                                    {item.href && (
-                                                        <Link 
-                                                            href={item.href} 
+                                                    {item.href ? (
+                                                        <Link
+                                                            href={item.href}
                                                             className="flex items-center gap-4 w-full rounded-xl transition-all duration-300
                                                                      text-sm h-11 px-4 text-white font-medium
                                                                      hover:bg-gradient-to-r hover:from-[#386641]/20 hover:to-[#2d4a2d]/50
@@ -119,13 +124,26 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
                                                             {item.icon && getIcons(item.icon, 20, 'hover:text-[#6A994E] transition-colors duration-300')}
                                                             <span>{item.label}</span>
                                                         </Link>
+                                                    ) : item.action && (
+                                                        <button
+                                                            onClick={() => item.action && handleAction(item.action, item.label)}
+                                                            className='flex items-center gap-4 w-full rounded-xl transition-all duration-300
+                                                                     text-sm h-11 px-4 text-white font-medium
+                                                                     hover:bg-gradient-to-r hover:from-[#386641]/20 hover:to-[#2d4a2d]/50
+                                                                     hover:text-[#6A994E] hover:shadow-lg hover:shadow-[#386641]/20
+                                                                     border border-transparent hover:border-[#386641]/30'>
+                                                            {item.icon && getIcons(item.icon, 20, 'hover:text-[#6A994E] transition-colors duration-300')}
+                                                            <span>{item.label}</span>
+
+
+                                                        </button>
                                                     )}
                                                 </li>
                                             ))}
                                         </ul>
                                     </div>
                                 )}
-                                
+
                                 <button
                                     onClick={() => setIsUserMenuOpen(prev => !prev)}
                                     aria-expanded={isUserMenuOpen}
