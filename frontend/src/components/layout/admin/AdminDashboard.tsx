@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from 'react';
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -14,6 +15,7 @@ import {
 } from 'chart.js';
 import {
   uploadedDocsData,
+  downloadedDocsData,
   usersData,
   revenueData,
   chartOptions,
@@ -33,15 +35,30 @@ ChartJS.register(
 );
 
 export default function AdminDashboard() {
+  // State to manage the selected chart (uploaded or downloaded documents)
+  const [selectedChart, setSelectedChart] = useState('uploaded');
+
+  // Determine which data to display based on the selected chart
+  const chartData = selectedChart === 'uploaded' ? uploadedDocsData : downloadedDocsData;
+
   return (
     <div className="flex-1 p-4 sm:p-8">
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Line Chart: Uploaded Documents */}
+        {/* Line Chart: Uploaded/Downloaded Documents */}
         <div className="bg-white p-6 rounded-lg shadow-md col-span-full">
-          <h3 className="text-xl font-semibold mb-4">Tài Liệu Được Đăng Tải</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold">Tài Liệu</h3>
+            <select aria-label='#'
+              className="border rounded-md p-2"
+              value={selectedChart}
+              onChange={(e) => setSelectedChart(e.target.value)}
+            >
+              <option value="uploaded">Tài Liệu Được Tải Lên</option>
+              <option value="downloaded">Tài Liệu Được Tải Xuống</option>
+            </select>
+          </div>
           <div className="w-full h-[400px]">
-            <Line data={uploadedDocsData} options={lineChartOptions} />
+            <Line data={chartData} options={lineChartOptions} />
           </div>
         </div>
 
