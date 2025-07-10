@@ -5,14 +5,7 @@ import Link from 'next/link';
 import * as LucideIcons from 'lucide-react';
 import { SidebarProfileMenuProps, SidebarMenuItems } from '@/types/user.types';
 import { LucideIcon } from 'lucide-react';
-
-// Define AdminSidebarItems
-const AdminSidebarItems = [
-  { id: 'admin-dashboard', label: 'Bảng điều khiển Quản trị', icon: 'LayoutDashboard', href: '/admin/dashboard' },
-  { id: 'admin-moderation', label: 'Kiểm soát Nội dung', icon: 'ShieldCheck', href: '/admin/moderation' },
-  { id: 'admin-users', label: 'Quản lý Người dùng', icon: 'Users', href: '/admin/users' },
-  { id: 'admin-orders', label: 'Quản lý Đơn hàng', icon: 'ShoppingCart', href: '/admin/orders' },
-];
+import { AdminSidebarItems } from '@/data/SidebarItems';
 
 export default function Sidebar({
   navItems,
