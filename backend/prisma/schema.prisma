@@ -8,95 +8,282 @@ datasource db {
 }
 
 model Role {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  users       User[]   @relation("UserRoles")
-  guildRoles UserGuildRole[]   @relation("DiscordRoles")
-  
+  id               BigInt          @id @default(autoincrement())
+  name             String?         @unique @db.VarChar
+  description      String?
+  created_at       DateTime?       @db.Timestamptz(6)
+  updated_at       DateTime?       @db.Timestamptz(6)
+  user_guild_roles UserGuildRole[]
+  users            User[]
+
   @@map("roles")
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  username  String?   
-  displayname  String   
-  password  String?  // Made nullable for OAuth
-  roleId    String  
-  birth     String?
-  avatar    String?  // Avatar from OAuth providers
-  emailVerified Boolean @default(false) // Email verification status
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relations
-  role      Role     @relation("UserRoles",fields: [roleId], references: [id])
-  accounts  Account[]
-  sessions  Session[]
-  guildRoles UserGuildRole[]
-  
+  id               BigInt          @id @default(autoincrement())
+  email            String?         @unique @db.VarChar
+  username         String?         @db.VarChar
+  displayname      String?         @db.VarChar
+  password         String?         @db.VarChar
+  role_id          BigInt?
+  birth            String?         @db.VarChar
+  avatar           String?         @db.VarChar
+  email_verified   Boolean?
+  created_at       DateTime?       @db.Timestamptz(6)
+  updated_at       DateTime?       @db.Timestamptz(6)
+  accounts         Account[]
+  comments         comments[]
+  downloads        downloads[]
+  follows          follows[]
+  notifications    notifications[]
+  ratings          ratings[]
+  sessions         Session[]
+  uploads          uploads[]
+  user_guild_roles UserGuildRole[]
+  roles            Role?           @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
   @@map("users")
 }
 
 model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-  metadata          Json?   // Discord guilds, roles, etc.
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@unique([provider, providerAccountId])
+  id                  BigInt  @id @default(autoincrement())
+  user_id             BigInt?
+  type                String? @db.VarChar
+  provider            String? @db.VarChar
+  provider_account_id String? @db.VarChar
+  refresh_token       String?
+  access_token        String?
+  expires_at          Int?
+  token_type          String? @db.VarChar
+  scope               String? @db.VarChar
+  id_token            String?
+  session_state       String? @db.VarChar
+  metadata            Json?   @db.Json
+  users               User?   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([provider, provider_account_id], map: "accounts_provider_provider_account_id_idx")
   @@map("accounts")
 }
 
 model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique                 //tạo bằng randomByte, chuỗi hóa hệ 10 
-  userId       String                           // khóa ngoại của bảng user
-  expires      DateTime                         //hardcode 30 ngày 
-  createdAt    DateTime @default(now())       
-  updatedAt    DateTime @updatedAt
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)  // ràng buộc nhiều session chỉ thuộc về  1 user 
+  id            BigInt    @id @default(autoincrement())
+  session_token String?   @unique @db.VarChar
+  user_id       BigInt?
+  expires       DateTime? @db.Timestamptz(6)
+  created_at    DateTime? @db.Timestamptz(6)
+  updated_at    DateTime? @db.Timestamptz(6)
+  users         User?     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
   @@map("sessions")
 }
 
+model UserGuildRole {
+  id       BigInt  @id @default(autoincrement())
+  user_id  BigInt?
+  guild_id BigInt?
+  role_id  BigInt?
+  roles    Role?   @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users    User?   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-model UserGuildRole  {
-  id String  @id @default(cuid())
-  userId String
-  guildId String
-  roleId String  
-
-  //relationship
-  user User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role Role   @relation("DiscordRoles", fields: [roleId], references: [id])
-
-  @@unique([userId, guildId, roleId]) 
+  @@unique([user_id, guild_id, role_id], map: "user_guild_roles_user_id_guild_id_role_id_idx")
   @@map("user_guild_roles")
 }
 
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-  
-  @@unique([identifier, token])
+  identifier String?   @db.VarChar
+  token      String?   @unique @db.VarChar
+  expires    DateTime? @db.Timestamptz(6)
+
+  @@unique([identifier, token], map: "verification_tokens_identifier_token_idx")
   @@map("verification_tokens")
+  @@ignore
 }
 
+model classification_levels {
+  id          BigInt  @id @default(autoincrement())
+  name        String? @db.VarChar
+  description String?
+  tags        tags[]
+}
+
+model comments {
+  id                   BigInt                 @id @default(autoincrement())
+  user_id              BigInt?
+  resource_id          BigInt?
+  folder_id            BigInt?
+  parent_id            BigInt?
+  content              String?
+  is_deleted           Boolean?               @default(false)
+  created_at           DateTime?              @db.Timestamptz(6)
+  updated_at           DateTime?              @db.Timestamptz(6)
+  folders              folders?               @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  comments             comments?              @relation("commentsTocomments", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  other_comments       comments[]             @relation("commentsTocomments")
+  resources            resources?             @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                User?                  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  notification_targets notification_targets[] @ignore
+
+  @@index([folder_id])
+  @@index([resource_id])
+}
+
+model downloads {
+  id            BigInt     @id @default(autoincrement())
+  user_id       BigInt?
+  resource_id   BigInt?
+  downloaded_at DateTime?  @db.Timestamptz(6)
+  resources     resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users         User?      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model folder_files {
+  folder_id   BigInt
+  resource_id BigInt
+  folders     folders   @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  resources   resources @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([folder_id, resource_id])
+}
+
+model folder_tags {
+  folder_id BigInt
+  tag_id    BigInt
+  folders   folders @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tags      tags    @relation(fields: [tag_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([folder_id, tag_id])
+}
+
+model folders {
+  id                   BigInt                 @id @default(autoincrement())
+  name                 String?                @db.VarChar
+  visibility           Visibility?
+  created_at           DateTime?              @db.Timestamptz(6)
+  comments             comments[]
+  folder_files         folder_files[]
+  folder_tags          folder_tags[]
+  follows              follows[]
+  notification_targets notification_targets[] @ignore
+  rating_targets       rating_targets[]
+}
+
+model follows {
+  user_id     BigInt
+  folder_id   BigInt
+  followed_at DateTime? @db.Timestamptz(6)
+  folders     folders   @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users       User      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([user_id, folder_id])
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model notification_targets {
+  notification_id BigInt?
+  resource_id     BigInt?
+  folder_id       BigInt?
+  comment_id      BigInt?
+  comments        comments?      @relation(fields: [comment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  folders         folders?       @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  notifications   notifications? @relation(fields: [notification_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  resources       resources?     @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([notification_id, comment_id])
+  @@index([notification_id, folder_id])
+  @@index([notification_id, resource_id])
+  @@ignore
+}
+
+model notifications {
+  id                   BigInt                 @id @default(autoincrement())
+  actor_id             BigInt?
+  type                 NotificationType?
+  message              String?
+  is_read              Boolean?               @default(false)
+  created_at           DateTime?              @db.Timestamptz(6)
+  read_at              DateTime?              @db.Timestamptz(6)
+  notification_targets notification_targets[] @ignore
+  users                User?                  @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model rating_targets {
+  id          BigInt     @id @default(autoincrement())
+  rating_id   BigInt?
+  resource_id BigInt?
+  folder_id   BigInt?
+  folders     folders?   @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ratings     ratings?   @relation(fields: [rating_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  resources   resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([folder_id])
+  @@index([resource_id])
+}
+
+model ratings {
+  id             BigInt           @id @default(autoincrement())
+  user_id        BigInt?
+  value          Int?
+  rated_at       DateTime?        @db.Timestamptz(6)
+  rating_targets rating_targets[]
+  users          User?            @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model resource_tags {
+  resource_id BigInt
+  tag_id      BigInt
+  resources   resources @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tags        tags      @relation(fields: [tag_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([resource_id, tag_id])
+}
+
+model resources {
+  id                   BigInt                 @id @default(autoincrement())
+  title                String?                @db.VarChar
+  visibility           Visibility?
+  created_at           DateTime?              @db.Timestamptz(6)
+  comments             comments[]
+  downloads            downloads[]
+  folder_files         folder_files[]
+  notification_targets notification_targets[] @ignore
+  rating_targets       rating_targets[]
+  resource_tags        resource_tags[]
+  uploads              uploads[]
+}
+
+model tags {
+  id                    BigInt                 @id @default(autoincrement())
+  classification_id     BigInt?
+  name                  String?                @unique @db.VarChar
+  description           String?
+  folder_tags           folder_tags[]
+  resource_tags         resource_tags[]
+  classification_levels classification_levels? @relation(fields: [classification_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model uploads {
+  id          BigInt     @id @default(autoincrement())
+  user_id     BigInt?
+  resource_id BigInt?
+  uploaded_at DateTime?  @db.Timestamptz(6)
+  version     Int?
+  note        String?
+  resources   resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users       User?      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+enum NotificationType {
+  UPLOAD
+  DOWNLOAD
+  COMMENT
+  REPLY
+  RATING
+  FOLLOW
+  SYSTEM
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVATE
+}
