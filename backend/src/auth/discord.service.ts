@@ -31,7 +31,7 @@ export class DiscordService {
 
     return {
       accessToken: this.jwtService.sign(payload),
-      sessionToken: session.sessionToken,
+      sessionToken: session.session_token,
       expires: session.expires,
       user: {
         id: user.id,
@@ -56,8 +56,6 @@ export class DiscordService {
    * - Trả về token đăng nhập cho user
    */
   async handleDiscordOAuth(dto: DiscordSignInDto) {
-    console.log('HÀM NÀY ĐƯỢC CHẠY');
-    console.log('Discord SignIn DTO:', dto);
     if (!dto.discordId || !dto.provider) {
       throw new UnauthorizedException('Provider ID is missing. Cannot authenticate.');
     }
@@ -67,24 +65,24 @@ export class DiscordService {
 
     const existingAccount = await this.prisma.account.findUnique({
       where: {
-        provider_providerAccountId: {
+        provider_provider_account_id: {
           provider: dto.provider,
-          providerAccountId: dto.discordId,
+          provider_account_id: dto.discordId,
         },
       },
-      include: { user: { include: { role: true } } }, // Lấy kèm thông tin user và role
+      include: { users: { include: { roles: true } } }, // Lấy kèm thông tin user và role
     });
 
     if (existingAccount) {
        console.log('TỒN TẠI USER ACCOUNT');
       // Nếu tìm thấy, user đã tồn tại. Cập nhật thông tin mới nếu cần và đăng nhập
       const updatedUser = await this.prisma.user.update({
-        where: { id: existingAccount.userId },
+        where: { id: existingAccount.user_id },
         data: {
           displayname: dto.global_name, // Cập nhật tên
           avatar: dto.avatar, // Cập nhật avatar
         },
-        include: { role: true },
+        include: { roles: true },
       });
       console.log('Existing Discord user logged in:', updatedUser.email);
       return this._createTokensAndSession(updatedUser);
@@ -94,7 +92,7 @@ export class DiscordService {
     // Nếu không có account, tìm user bằng email
     const userByEmail = await this.prisma.user.findUnique({
       where: { email: dto.email },
-      include: { role: true }
+      include: { roles: true }
     });
 
     if (userByEmail) {
@@ -102,10 +100,10 @@ export class DiscordService {
       // Nếu có user với email này, tạo một 'account' mới và liên kết nó
       await this.prisma.account.create({
         data: {
-          userId: userByEmail.id,
+          user_id: userByEmail.id,
           type: dto.type || 'oauth',
           provider: dto.provider,
-          providerAccountId: dto.discordId,
+          provider_account_id: dto.discordId,
           access_token: dto.access_token,
           refresh_token: dto.refresh_token,
           expires_at: dto.expires_at,
@@ -131,13 +129,13 @@ export class DiscordService {
         displayname: dto.global_name, 
         username: dto.username, 
         avatar: dto.avatar,
-        emailVerified: true, 
-        roleId: userRole.id,
+        email_verified: true, 
+        role_id: userRole.id,
         accounts: {
           create: {
             type: dto.type || 'oauth',
             provider: dto.provider,
-            providerAccountId: dto.discordId,
+            provider_account_id: dto.discordId,
             access_token: dto.access_token,
             refresh_token: dto.refresh_token,
             expires_at: dto.expires_at,
@@ -146,7 +144,7 @@ export class DiscordService {
           },
         },
       },
-      include: { role: true }, // Luôn include role để trả về cho hàm tạo token
+      include: { roles: true }, // Luôn include role để trả về cho hàm tạo token
     });
     console.log('Created new user via Discord:', newUser.email);
     return this._createTokensAndSession(newUser);

@@ -7,47 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Role {
-  id               BigInt          @id @default(autoincrement())
-  name             String?         @unique @db.VarChar
-  description      String?
-  created_at       DateTime?       @db.Timestamptz(6)
-  updated_at       DateTime?       @db.Timestamptz(6)
-  user_guild_roles UserGuildRole[]
-  users            User[]
-
-  @@map("roles")
-}
-
-model User {
-  id               BigInt          @id @default(autoincrement())
-  email            String?         @unique @db.VarChar
-  username         String?         @db.VarChar
-  displayname      String?         @db.VarChar
-  password         String?         @db.VarChar
-  role_id          BigInt?
-  birth            String?         @db.VarChar
-  avatar           String?         @db.VarChar
-  email_verified   Boolean?
-  created_at       DateTime?       @db.Timestamptz(6)
-  updated_at       DateTime?       @db.Timestamptz(6)
-  accounts         Account[]
-  comments         comments[]
-  downloads        downloads[]
-  follows          follows[]
-  notifications    notifications[]
-  ratings          ratings[]
-  sessions         Session[]
-  uploads          uploads[]
-  user_guild_roles UserGuildRole[]
-  roles            Role?           @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@map("users")
-}
-
-model Account {
-  id                  BigInt  @id @default(autoincrement())
-  user_id             BigInt?
+model accounts {
+  id                  String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id             String? @db.Uuid
   type                String? @db.VarChar
   provider            String? @db.VarChar
   provider_account_id String? @db.VarChar
@@ -59,87 +21,48 @@ model Account {
   id_token            String?
   session_state       String? @db.VarChar
   metadata            Json?   @db.Json
-  users               User?   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users               users?  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@unique([provider, provider_account_id], map: "accounts_provider_provider_account_id_idx")
-  @@map("accounts")
-}
-
-model Session {
-  id            BigInt    @id @default(autoincrement())
-  session_token String?   @unique @db.VarChar
-  user_id       BigInt?
-  expires       DateTime? @db.Timestamptz(6)
-  created_at    DateTime? @db.Timestamptz(6)
-  updated_at    DateTime? @db.Timestamptz(6)
-  users         User?     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@map("sessions")
-}
-
-model UserGuildRole {
-  id       BigInt  @id @default(autoincrement())
-  user_id  BigInt?
-  guild_id BigInt?
-  role_id  BigInt?
-  roles    Role?   @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users    User?   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([user_id, guild_id, role_id], map: "user_guild_roles_user_id_guild_id_role_id_idx")
-  @@map("user_guild_roles")
-}
-
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-model VerificationToken {
-  identifier String?   @db.VarChar
-  token      String?   @unique @db.VarChar
-  expires    DateTime? @db.Timestamptz(6)
-
-  @@unique([identifier, token], map: "verification_tokens_identifier_token_idx")
-  @@map("verification_tokens")
-  @@ignore
+  @@unique([provider, provider_account_id])
 }
 
 model classification_levels {
-  id          BigInt  @id @default(autoincrement())
+  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   name        String? @db.VarChar
   description String?
   tags        tags[]
 }
 
 model comments {
-  id                   BigInt                 @id @default(autoincrement())
-  user_id              BigInt?
-  resource_id          BigInt?
-  folder_id            BigInt?
-  parent_id            BigInt?
+  id                   String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id              String?                @db.Uuid
+  resource_id          String?                @db.Uuid
+  folder_id            String?                @db.Uuid
+  parent_id            String?                @db.Uuid
   content              String?
   is_deleted           Boolean?               @default(false)
-  created_at           DateTime?              @db.Timestamptz(6)
-  updated_at           DateTime?              @db.Timestamptz(6)
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
   folders              folders?               @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   comments             comments?              @relation("commentsTocomments", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   other_comments       comments[]             @relation("commentsTocomments")
   resources            resources?             @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users                User?                  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                users?                 @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   notification_targets notification_targets[] @ignore
-
-  @@index([folder_id])
-  @@index([resource_id])
 }
 
 model downloads {
-  id            BigInt     @id @default(autoincrement())
-  user_id       BigInt?
-  resource_id   BigInt?
-  downloaded_at DateTime?  @db.Timestamptz(6)
+  id            String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id       String?    @db.Uuid
+  resource_id   String?    @db.Uuid
+  downloaded_at DateTime?  @default(now()) @db.Timestamptz(6)
   resources     resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users         User?      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users         users?     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model folder_files {
-  folder_id   BigInt
-  resource_id BigInt
+  folder_id   String    @db.Uuid
+  resource_id String    @db.Uuid
   folders     folders   @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   resources   resources @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -147,8 +70,8 @@ model folder_files {
 }
 
 model folder_tags {
-  folder_id BigInt
-  tag_id    BigInt
+  folder_id String  @db.Uuid
+  tag_id    String  @db.Uuid
   folders   folders @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   tags      tags    @relation(fields: [tag_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -156,10 +79,10 @@ model folder_tags {
 }
 
 model folders {
-  id                   BigInt                 @id @default(autoincrement())
+  id                   String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   name                 String?                @db.VarChar
   visibility           Visibility?
-  created_at           DateTime?              @db.Timestamptz(6)
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
   comments             comments[]
   folder_files         folder_files[]
   folder_tags          folder_tags[]
@@ -169,69 +92,63 @@ model folders {
 }
 
 model follows {
-  user_id     BigInt
-  folder_id   BigInt
-  followed_at DateTime? @db.Timestamptz(6)
+  user_id     String    @db.Uuid
+  folder_id   String    @db.Uuid
+  followed_at DateTime? @default(now()) @db.Timestamptz(6)
   folders     folders   @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users       User      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users       users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@id([user_id, folder_id])
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model notification_targets {
-  notification_id BigInt?
-  resource_id     BigInt?
-  folder_id       BigInt?
-  comment_id      BigInt?
+  notification_id String?        @db.Uuid
+  resource_id     String?        @db.Uuid
+  folder_id       String?        @db.Uuid
+  comment_id      String?        @db.Uuid
   comments        comments?      @relation(fields: [comment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   folders         folders?       @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   notifications   notifications? @relation(fields: [notification_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   resources       resources?     @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@index([notification_id, comment_id])
-  @@index([notification_id, folder_id])
-  @@index([notification_id, resource_id])
   @@ignore
 }
 
 model notifications {
-  id                   BigInt                 @id @default(autoincrement())
-  actor_id             BigInt?
+  id                   String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  actor_id             String?                @db.Uuid
   type                 NotificationType?
   message              String?
   is_read              Boolean?               @default(false)
-  created_at           DateTime?              @db.Timestamptz(6)
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
   read_at              DateTime?              @db.Timestamptz(6)
   notification_targets notification_targets[] @ignore
-  users                User?                  @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                users?                 @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model rating_targets {
-  id          BigInt     @id @default(autoincrement())
-  rating_id   BigInt?
-  resource_id BigInt?
-  folder_id   BigInt?
+  id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  rating_id   String?    @db.Uuid
+  resource_id String?    @db.Uuid
+  folder_id   String?    @db.Uuid
   folders     folders?   @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   ratings     ratings?   @relation(fields: [rating_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   resources   resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@index([folder_id])
-  @@index([resource_id])
 }
 
 model ratings {
-  id             BigInt           @id @default(autoincrement())
-  user_id        BigInt?
+  id             String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id        String?          @db.Uuid
   value          Int?
-  rated_at       DateTime?        @db.Timestamptz(6)
+  rated_at       DateTime?        @default(now()) @db.Timestamptz(6)
   rating_targets rating_targets[]
-  users          User?            @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users          users?           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model resource_tags {
-  resource_id BigInt
-  tag_id      BigInt
+  resource_id String    @db.Uuid
+  tag_id      String    @db.Uuid
   resources   resources @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   tags        tags      @relation(fields: [tag_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -239,10 +156,10 @@ model resource_tags {
 }
 
 model resources {
-  id                   BigInt                 @id @default(autoincrement())
+  id                   String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   title                String?                @db.VarChar
   visibility           Visibility?
-  created_at           DateTime?              @db.Timestamptz(6)
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
   comments             comments[]
   downloads            downloads[]
   folder_files         folder_files[]
@@ -252,25 +169,90 @@ model resources {
   uploads              uploads[]
 }
 
+model roles {
+  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name             RoleType?          @unique
+  description      String?
+  created_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  user_guild_roles user_guild_roles[]
+  users            users[]
+}
+
+model sessions {
+  id            String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  session_token String?   @unique @db.VarChar
+  user_id       String?   @db.Uuid
+  expires       DateTime? @db.Timestamptz(6)
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+  users         users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
 model tags {
-  id                    BigInt                 @id @default(autoincrement())
-  classification_id     BigInt?
-  name                  String?                @unique @db.VarChar
+  id                    String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  level_id              String?                @db.Uuid
+  name                  String?                @db.VarChar
   description           String?
   folder_tags           folder_tags[]
   resource_tags         resource_tags[]
-  classification_levels classification_levels? @relation(fields: [classification_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  classification_levels classification_levels? @relation(fields: [level_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model uploads {
-  id          BigInt     @id @default(autoincrement())
-  user_id     BigInt?
-  resource_id BigInt?
-  uploaded_at DateTime?  @db.Timestamptz(6)
+  id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id     String?    @db.Uuid
+  resource_id String?    @db.Uuid
+  uploaded_at DateTime?  @default(now()) @db.Timestamptz(6)
   version     Int?
   note        String?
   resources   resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users       User?      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users       users?     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user_guild_roles {
+  id        String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id   String?   @db.Uuid
+  guild_id  String?   @db.Uuid
+  role_name RoleType?
+  roles     roles?    @relation(fields: [role_name], references: [name], onDelete: NoAction, onUpdate: NoAction)
+  users     users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([user_id, guild_id, role_name])
+}
+
+model users {
+  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email            String?            @unique @db.VarChar
+  username         String?            @db.VarChar
+  displayname      String?            @db.VarChar
+  password         String?            @db.VarChar
+  role_name        RoleType
+  birth            String?            @db.VarChar
+  avatar           String?            @db.VarChar
+  email_verified   Boolean?           @default(false)
+  created_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  accounts         accounts[]
+  comments         comments[]
+  downloads        downloads[]
+  follows          follows[]
+  notifications    notifications[]
+  ratings          ratings[]
+  sessions         sessions[]
+  uploads          uploads[]
+  user_guild_roles user_guild_roles[]
+  roles            roles              @relation(fields: [role_name], references: [name], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model verification_tokens {
+  identifier String?   @db.VarChar
+  token      String?   @unique @db.VarChar
+  expires    DateTime? @db.Timestamptz(6)
+
+  @@unique([identifier, token])
+  @@ignore
 }
 
 enum NotificationType {
@@ -281,6 +263,11 @@ enum NotificationType {
   RATING
   FOLLOW
   SYSTEM
+}
+
+enum RoleType {
+  USER
+  ADMIN
 }
 
 enum Visibility {

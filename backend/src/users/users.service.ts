@@ -13,18 +13,18 @@ export class UsersService {
         username: true,
         displayname: true,
         birth: true,
-        role: {
+        roles: {
           select: {
             id: true,
             name: true,
           },
         },
-        createdAt: true,
-        updatedAt: true,
+        created_at: true,
+        updated_at: true,
       },
     });
   }
-  async findOne(id: string) {
+  async findOne(id: bigint) {
     const user = await this.prisma.user.findUnique({
       where: { id },
       select: {
@@ -33,14 +33,14 @@ export class UsersService {
         username: true,
         displayname: true,
         birth: true,
-        role: {
+        roles: {
           select: {
             id: true,
             name: true,
           },
         },
-        createdAt: true,
-        updatedAt: true,
+        created_at: true,
+        updated_at: true,
       },
     });
 
@@ -74,7 +74,7 @@ export class UsersService {
       data: {
         ...createUserDto,
         password: hashedPassword,
-        role: { connect: { id: defaultRole.id } }
+        roles: { connect: { id: defaultRole.id } }
       },
       select: {
         id: true,
@@ -82,18 +82,18 @@ export class UsersService {
         username: true,
         displayname: true,
         birth: true,
-        role: {
+        roles: {
           select: {
             id: true,
             name: true,
           },
         },
-        createdAt: true,
-        updatedAt: true,
+        created_at: true,
+        updated_at: true,
       },
     });
   }
-  async update(id: string, updateUserDto: UpdateUserDto) {
+  async update(id: bigint, updateUserDto: UpdateUserDto) {
     // ✅ 1. Parallel validation - chạy song song để tối ưu tốc độ
     const [existingUser, emailCheck, roleCheck] = await Promise.all([
       this.prisma.user.findUnique({
@@ -113,8 +113,8 @@ export class UsersService {
         }
       }) : null, // trả về null nếu không có email bị duplicate
 
-      updateUserDto.roleId ? this.prisma.role.findUnique({
-        where: { id: updateUserDto.roleId },
+      updateUserDto.role_id ? this.prisma.role.findUnique({
+        where: { id: updateUserDto.role_id },
         select: { id: true }
       }) : null // trả về null nếu không có roleId 
     ])
@@ -126,8 +126,8 @@ export class UsersService {
     if (emailCheck && updateUserDto.email) {
       throw new ConflictException('Email already exists');
     }
-    if (!roleCheck && updateUserDto.roleId) {
-      throw new NotFoundException(`Role with ID ${updateUserDto.roleId} not found`);
+    if (!roleCheck && updateUserDto.role_id) {
+      throw new NotFoundException(`Role with ID ${updateUserDto.role_id} not found`);
     }
     // ✅ 3.update user 
     const updateUser = await this.prisma.user.update({
@@ -136,13 +136,13 @@ export class UsersService {
         ...updateUserDto,
         password: updateUserDto.password ? await bcrypt.hash(updateUserDto.password, 10) : existingUser.password,
       },
-      include: { role: true }
+      include: { roles: true }
     })
     const { password, ...result } = updateUser;
     return result;
   }
 
-  async delete(id: string) {
+  async delete(id: bigint) {
     await this.findOne(id)
     return this.prisma.user.delete({
       where: { id }

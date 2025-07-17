@@ -15,8 +15,8 @@ export class NextAuthController {
     const session = await this.sessionService.createSession(body.userId, expiresAt);
     
     return {
-      sessionToken: session.sessionToken,
-      userId: session.userId,
+      sessionToken: session.session_token,
+      userId: session.user_id,
       expires: session.expires,
     };
   }
@@ -30,18 +30,18 @@ export class NextAuthController {
       return null;
     }
     return {
-      sessionToken: session.sessionToken,
-      userId: session.userId,
+      sessionToken: session.session_token,
+      userId: session.user_id,
       expires: session.expires,
       user: {
-        id: session.user.id,
-        email: session.user.email,
-        name: session.user.displayname,
-        username: session.user.username,
-        role: session.user.role.name,
-        birth: session.user.birth,
-        avatar: session.user.avatar,
-        emailVerified: session.user.emailVerified,
+        id: session.users.id,
+        email: session.users.email,
+        name: session.users.displayname,
+        username: session.users.username,
+        role: session.users.role.name,
+        birth: session.users.birth,
+        avatar: session.users.avatar,
+        emailVerified: session.users.emailVerified,
       },
     };
   }
@@ -65,11 +65,11 @@ export class NextAuthController {
   @Post('user/:userId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get user by ID' })
-  async getUser(@Param('userId') userId: string) {
+  async getUser(@Param('userId') userId: bigint) {
     // This will be used by NextAuth to get user data
     const user = await this.sessionService.prisma.user.findUnique({
       where: { id: userId },
-      include: { role: true },
+      include: { roles: true },
     });
 
     if (!user) {
@@ -81,10 +81,10 @@ export class NextAuthController {
       email: user.email,
       name: user.displayname,
       username: user.username,
-      role: user.role.name,
+      role: user.roles.name,
       birth: user.birth,
       avatar: user.avatar,
-      emailVerified: user.emailVerified,
+      emailVerified: user.email_verified,
     };
   }
 }

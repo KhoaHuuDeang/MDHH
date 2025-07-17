@@ -52,7 +52,7 @@ export class UpdateUserDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  roleId: string;
+  role_id: bigint;
 }
 
 export class LoginDto {

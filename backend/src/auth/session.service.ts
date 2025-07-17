@@ -6,14 +6,14 @@ import { randomBytes } from 'crypto';
 export class SessionService {
   constructor(public prisma: PrismaService) {}
 
-  async createSession(userId: string, expiresAt: Date) {
+  async createSession(userId: bigint, expiresAt: Date) {
     const sessionToken = randomBytes(32).toString('hex');
     
     const session = await this.prisma.session.create({
       data: {
-        sessionToken,
+        session_token: sessionToken,
         expires: expiresAt,
-        userId
+        user_id: userId
       },
     });
 
@@ -21,43 +21,45 @@ export class SessionService {
   }
 
   async getSession(sessionToken: string) {
-    const session = await this.prisma.session.findUnique({
-      where: { sessionToken },
-      include: {
-        user: {
-          include: {
-            role: true,
+    try{
+      const session = await this.prisma.session.findUnique({
+        where: { session_token : sessionToken },
+        include: {
+          users: {
+            include: {
+              roles: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!session || session.expires < new Date()) {
-      if (session) {
+    if ( session?.expires < new Date()) {
         await this.deleteSession(sessionToken);
-      }
       return null;
     }
 
     return session;
+  }catch(error){
+    console.error('Session doesnt exist:', error);
+    return null;
   }
-
+  }
   async updateSession(sessionToken: string, expiresAt: Date) {
     return this.prisma.session.update({
-      where: { sessionToken },
+      where: { session_token: sessionToken },
       data: { expires: expiresAt },
     });
   }
 
   async deleteSession(sessionToken: string) {
     return this.prisma.session.delete({
-      where: { sessionToken },
+      where: { session_token : sessionToken },
     });
   }
 
-  async deleteUserSessions(userId: string) {
+  async deleteUserSessions(userId: bigint) {
     return this.prisma.session.deleteMany({
-      where: { userId },
+      where: { user_id : userId },
     });
   }
 }

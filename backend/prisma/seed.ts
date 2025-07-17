@@ -31,7 +31,7 @@ async function main() {
                 username: 'admin',
                 displayname: 'Admin User',
                 password: hashedPassword,
-                roleId: adminRole.id,
+                role_id: adminRole.id,
                 birth: '1990-01-01',
             },
             {
@@ -39,7 +39,7 @@ async function main() {
                 username: 'user1',
                 displayname: 'Regular User 1',
                 password: hashedPassword,
-                roleId: userRole.id,
+                role_id: userRole.id,
                 birth: '1995-06-15',
             }
         ],
