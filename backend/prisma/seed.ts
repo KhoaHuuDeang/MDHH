@@ -6,32 +6,32 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('🌱 Starting seed...');
     const [adminRole, userRole] = await Promise.all([
-        prisma.role.upsert({
-            where: { name: 'admin' },
+        prisma.roles.upsert({
+            where: { name: 'ADMIN' },
             update: {},
             create: {
-                name: 'admin',
+                name: 'ADMIN',
                 description: 'Administrator with full access',
             },
         }),
-        prisma.role.upsert({
-            where: { name: 'user' },
+        prisma.roles.upsert({
+            where: { name: 'USER' },
             update: {},
             create: {
-                name: 'user',
+                name: 'USER',
                 description: 'Regular user with limited access',
             },
         }),
     ]);
-    console.log('✅ Roles created: admin, user');    // Hash mật khẩu
-    const hashedPassword = await bcrypt.hash('password123', 10);    await prisma.user.createMany({
+    console.log('✅ rolesss created: admin, user');    // Hash mật khẩu
+    const hashedPassword = await bcrypt.hash('password123', 10);    await prisma.users.createMany({
         data: [
             {
                 email: 'admin@example.com',
                 username: 'admin',
                 displayname: 'Admin User',
                 password: hashedPassword,
-                role_id: adminRole.id,
+                role_name : adminRole.name!,
                 birth: '1990-01-01',
             },
             {
@@ -39,7 +39,7 @@ async function main() {
                 username: 'user1',
                 displayname: 'Regular User 1',
                 password: hashedPassword,
-                role_id: userRole.id,
+                role_name: userRole.name!,
                 birth: '1995-06-15',
             }
         ],

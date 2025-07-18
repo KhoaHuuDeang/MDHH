@@ -1,6 +1,7 @@
 import { Controller, Post, Get, Delete, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { SessionService } from './session.service';
+import { SessionUser } from 'src/users/user.dto';
 
 @ApiTags('NextAuth API')
 @Controller('api/auth')
@@ -25,7 +26,6 @@ export class NextAuthController {
   @ApiOperation({ summary: 'Get session' })
   async getSession(@Param('sessionToken') sessionToken: string) {
     const session = await this.sessionService.getSession(sessionToken);
-    
     if (!session) {
       return null;
     }
@@ -34,14 +34,14 @@ export class NextAuthController {
       userId: session.user_id,
       expires: session.expires,
       user: {
-        id: session.users.id,
-        email: session.users.email,
-        name: session.users.displayname,
-        username: session.users.username,
-        role: session.users.role.name,
-        birth: session.users.birth,
-        avatar: session.users.avatar,
-        emailVerified: session.users.emailVerified,
+        id: session.user_id,
+        email: session.users?.email,
+        name: session.users?.displayname,
+        username: session.users?.username,
+        role: session.users?.role_name,
+        birth: session.users?.birth,
+        avatar: session.users?.avatar,
+        emailVerified: session.users?.email_verified,
       },
     };
   }
@@ -65,9 +65,9 @@ export class NextAuthController {
   @Post('user/:userId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get user by ID' })
-  async getUser(@Param('userId') userId: bigint) {
+  async getUser(@Param('userId') userId: string) {
     // This will be used by NextAuth to get user data
-    const user = await this.sessionService.prisma.user.findUnique({
+    const user = await this.sessionService.prisma.users.findUnique({
       where: { id: userId },
       include: { roles: true },
     });

@@ -14,7 +14,7 @@ export class AuthService {
     ) { }
 
     async validateUser(email: string, password: string) {
-        const user = await this.prisma.user.findUnique({
+        const user = await this.prisma.users.findUnique({
             where: { email },
             include: { roles: true }
         })
@@ -62,12 +62,12 @@ export class AuthService {
 
     async register(createUserDto: CreateUserDto) {
         const [existingUser, RoleCheck] = await Promise.all([
-            this.prisma.user.findUnique({
+            this.prisma.users.findUnique({
                 where: { email: createUserDto.email },
                 select: { id: true }
             }),
-            this.prisma.role.findUnique({
-                where: { name: 'user' },
+            this.prisma.roles.findUnique({
+                where: { name: 'USER' },
                 select: { id: true }
             })
         ])
@@ -80,7 +80,7 @@ export class AuthService {
             throw new InternalServerErrorException('Role not found');
         } try {
             const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-            const newUser = await this.prisma.user.create({
+            const newUser = await this.prisma.users.create({
                 data: {
                     ...createUserDto,
                     password: hashedPassword,

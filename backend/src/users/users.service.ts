@@ -6,7 +6,7 @@ import { UpdateUserDto,CreateUserDto } from './user.dto';
 export class UsersService {
   constructor(private prisma: PrismaService) { }
   async findAll() {
-    return this.prisma.user.findMany({
+    return this.prisma.users.findMany({
       select: {
         id: true,
         email: true,
@@ -24,8 +24,8 @@ export class UsersService {
       },
     });
   }
-  async findOne(id: bigint) {
-    const user = await this.prisma.user.findUnique({
+  async findOne(id: string) {
+    const user = await this.prisma.users.findUnique({
       where: { id },
       select: {
         id: true,
@@ -52,7 +52,7 @@ export class UsersService {
   }
   async create(createUserDto: CreateUserDto) {
     // Kiểm tra email đã tồn tại
-    const existingUser = await this.prisma.user.findUnique({
+    const existingUser = await this.prisma.users.findUnique({
       where: { email: createUserDto.email }
     })
 
@@ -62,15 +62,15 @@ export class UsersService {
 
 
     // Tìm role 'user' mặc định
-    const defaultRole = await this.prisma.role.findUnique({
-      where: { name: 'user' }
+    const defaultRole = await this.prisma.roles.findUnique({
+      where: { name: 'USER' }
     });
 
     if (!defaultRole) {
       throw new BadRequestException('Default user role not found');
     }
 
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10); return this.prisma.user.create({
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10); return this.prisma.users.create({
       data: {
         ...createUserDto,
         password: hashedPassword,
@@ -93,17 +93,17 @@ export class UsersService {
       },
     });
   }
-  async update(id: bigint, updateUserDto: UpdateUserDto) {
+  async update(id: string, updateUserDto: UpdateUserDto) {
     // ✅ 1. Parallel validation - chạy song song để tối ưu tốc độ
     const [existingUser, emailCheck, roleCheck] = await Promise.all([
-      this.prisma.user.findUnique({
+      this.prisma.users.findUnique({
         where: { id },
         select: {
           id: true, email: true, username: true, password: true
         }
       }),
 
-      updateUserDto.email ? this.prisma.user.findUnique({
+      updateUserDto.email ? this.prisma.users.findUnique({
         where: {
           email: updateUserDto.email,
           NOT: { id } // ngoại trừ người dùng hiện tại
@@ -113,7 +113,7 @@ export class UsersService {
         }
       }) : null, // trả về null nếu không có email bị duplicate
 
-      updateUserDto.role_id ? this.prisma.role.findUnique({
+      updateUserDto.role_id ? this.prisma.roles.findUnique({
         where: { id: updateUserDto.role_id },
         select: { id: true }
       }) : null // trả về null nếu không có roleId 
@@ -129,8 +129,8 @@ export class UsersService {
     if (!roleCheck && updateUserDto.role_id) {
       throw new NotFoundException(`Role with ID ${updateUserDto.role_id} not found`);
     }
-    // ✅ 3.update user 
-    const updateUser = await this.prisma.user.update({
+    // ✅ 3.update user
+    const updateUser = await this.prisma.users.update({
       where: { id },
       data: {
         ...updateUserDto,
@@ -142,9 +142,9 @@ export class UsersService {
     return result;
   }
 
-  async delete(id: bigint) {
+  async delete(id: string) {
     await this.findOne(id)
-    return this.prisma.user.delete({
+    return this.prisma.users.delete({
       where: { id }
     });
   }

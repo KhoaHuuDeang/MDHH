@@ -63,7 +63,7 @@ export class DiscordService {
     // --- KỊCH BẢN 1: USER CŨ QUAY LẠI ---
     // Tìm tài khoản liên kết (account) bằng provider và discordId
 
-    const existingAccount = await this.prisma.account.findUnique({
+    const existingAccount = await this.prisma.accounts.findUnique({
       where: {
         provider_provider_account_id: {
           provider: dto.provider,
@@ -74,23 +74,29 @@ export class DiscordService {
     });
 
     if (existingAccount) {
-       console.log('TỒN TẠI USER ACCOUNT');
-      // Nếu tìm thấy, user đã tồn tại. Cập nhật thông tin mới nếu cần và đăng nhập
-      const updatedUser = await this.prisma.user.update({
-        where: { id: existingAccount.user_id },
-        data: {
-          displayname: dto.global_name, // Cập nhật tên
-          avatar: dto.avatar, // Cập nhật avatar
-        },
-        include: { roles: true },
-      });
-      console.log('Existing Discord user logged in:', updatedUser.email);
-      return this._createTokensAndSession(updatedUser);
+      // Kiểm tra tính đúng đắn của việc cập nhật thông tin user như avatar và displayName
+      const shouldUpdate = existingAccount.users?.displayname !== dto.global_name ||
+        existingAccount.users.avatar !== dto.avatar;
+
+      let user =  existingAccount.users; 
+      if(user && shouldUpdate){
+        user = await this.prisma.users.update({
+          where : {id : user.id},
+          data:  {
+            displayname : dto.global_name,
+            username : dto.username,
+            // bổ sung các trường thêm ở đây nếu có
+          },
+          include : { 
+            roles : true
+          }
+        })
+      }
     }
 
     // --- KỊCH BẢN 2: USER ĐÃ CÓ TÀI KHOẢN EMAIL, NAY LIÊN KẾT DISCORD ---
     // Nếu không có account, tìm user bằng email
-    const userByEmail = await this.prisma.user.findUnique({
+    const userByEmail = await this.prisma.users.findUnique({
       where: { email: dto.email },
       include: { roles: true }
     });
@@ -98,7 +104,7 @@ export class DiscordService {
     if (userByEmail) {
       console.log('TỒN TẠI USER EMAIL ');
       // Nếu có user với email này, tạo một 'account' mới và liên kết nó
-      await this.prisma.account.create({
+      await this.prisma.accounts.create({
         data: {
           user_id: userByEmail.id,
           type: dto.type || 'oauth',
@@ -118,19 +124,19 @@ export class DiscordService {
 
     // --- KỊCH BẢN 3: USER HOÀN TOÀN MỚI ---
     // Nếu không có cả account và user, tạo mới hoàn toàn
-    const userRole = await this.prisma.role.findUnique({ where: { name: 'user' } });
+    const userRole = await this.prisma.roles.findUnique({ where: { name: 'USER' } });
     if (!userRole) {
       throw new InternalServerErrorException('Default user role not found.');
     }
     console.log('TẠO USER MỚI ');
-    const newUser = await this.prisma.user.create({
+    const newUser = await this.prisma.users.create({
       data: {
         email: dto.email,
-        displayname: dto.global_name, 
-        username: dto.username, 
+        displayname: dto.global_name,
+        username: dto.username,
         avatar: dto.avatar,
-        email_verified: true, 
-        role_id: userRole.id,
+        email_verified: true,
+        role_name: "USER",
         accounts: {
           create: {
             type: dto.type || 'oauth',
