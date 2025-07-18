@@ -1,6 +1,6 @@
 import { IsEmail, IsString, IsNotEmpty, MinLength, IsOptional, isString, isNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-
+import { RoleType } from '@prisma/client';
 export class CreateUserDto {
   @ApiProperty()
   @IsEmail()
@@ -52,7 +52,7 @@ export class UpdateUserDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  roleId: string;
+  role_id: string;
 }
 
 export class LoginDto {
@@ -116,6 +116,25 @@ export class DiscordSignInDto {
   global_name: string; // Tên này sẽ hiện cho người khác thấy 
 }
 
+
+
+export type SessionUser = {
+  session_token: string | null; 
+  user_id: string | null; 
+  expires: Date | null; 
+  users: {
+    email: string | null;
+    username: string | null;
+    displayname: string | null;
+    role_name: RoleType | null;
+    birth: string | null;
+    avatar: string | null;
+    email_verified: boolean | null; 
+    roles: {
+      name: RoleType | null; 
+    } | null;
+  } | null;
+};
 
 
 
