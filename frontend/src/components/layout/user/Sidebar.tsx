@@ -53,6 +53,7 @@ export default function Sidebar({
     }
   };
   const handleSignOut = async () => {
+    setIsSigningOut(true);
     await signOut({
       callbackUrl: '/auth/signin',
       redirect: true
@@ -293,23 +294,24 @@ export default function Sidebar({
                         ) : (
                           item.action && (
                             <button
-                              disabled={isSigningOut && item.action === 'signout'}
-                              className="flex items-center gap-2 w-full rounded-xl transition-all duration-300
+                              disabled={isSigningOut && item.id === 'signout'}
+                              className={`flex items-center gap-2 w-full rounded-xl transition-all duration-300
                                 text-sm h-11 px-4 text-white font-medium
                                 hover:bg-gradient-to-r hover:from-[#386641]/20 hover:to-[#2d4a2d]/50
                                 hover:text-[#6A994E] hover:shadow-lg hover:shadow-[#386641]/20
-                                border border-transparent hover:border-[#386641]/30 cursor-pointer"
+                                border border-transparent hover:border-[#386641]/30 cursor-pointer
+                                ${isSigningOut && item.id === 'signout' ? 'opacity-50 cursor-not-allowed' : ''}
+                                ${item.id === 'signout' ? 'hover:bg-red-500/20 hover:text-red-400' : ''}`}
                               onClick={() => item.action && handleAction(item.action, item.label)}
                             >
-
-                              {isSigningOut && item.action === 'signout' ?
+                              {isSigningOut && item.id === 'signout' ?
                                 (<div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />)
                                 : (
                                   item.icon &&
                                   getIcon(item.icon, 20, 'hover:text-[#6A994E] transition-colors duration-200')
                                 )}
                               <span>
-                                {isSigningOut && item.action === 'signout' ? 'Đang đăng xuất...' : item.label}
+                                {isSigningOut && item.id === 'signout' ? 'Đang đăng xuất...' : item.label}
                               </span>
                             </button>
                           )
