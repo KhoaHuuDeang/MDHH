@@ -7,96 +7,270 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Role {
-  id          String   @id @default(cuid())
-  name        String   @unique
+model accounts {
+  id                  String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id             String? @db.Uuid
+  type                String? @db.VarChar
+  provider            String? @db.VarChar
+  provider_account_id String? @db.VarChar
+  refresh_token       String?
+  access_token        String?
+  expires_at          Int?
+  token_type          String? @db.VarChar
+  scope               String? @db.VarChar
+  id_token            String?
+  session_state       String? @db.VarChar
+  metadata            Json?   @db.Json
+  users               users?  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([provider, provider_account_id])
+}
+
+model classification_levels {
+  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name        String? @db.VarChar
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  users       User[]   @relation("UserRoles")
-  guildRoles UserGuildRole[]   @relation("DiscordRoles")
-  
-  @@map("roles")
+  tags        tags[]
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  username  String?   
-  displayname  String   
-  password  String?  // Made nullable for OAuth
-  roleId    String  
-  birth     String?
-  avatar    String?  // Avatar from OAuth providers
-  emailVerified Boolean @default(false) // Email verification status
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relations
-  role      Role     @relation("UserRoles",fields: [roleId], references: [id])
-  accounts  Account[]
-  sessions  Session[]
-  guildRoles UserGuildRole[]
-  
-  @@map("users")
+model comments {
+  id                   String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id              String?                @db.Uuid
+  resource_id          String?                @db.Uuid
+  folder_id            String?                @db.Uuid
+  parent_id            String?                @db.Uuid
+  content              String?
+  is_deleted           Boolean?               @default(false)
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  folders              folders?               @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  comments             comments?              @relation("commentsTocomments", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  other_comments       comments[]             @relation("commentsTocomments")
+  resources            resources?             @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                users?                 @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  notification_targets notification_targets[] @ignore
 }
 
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-  metadata          Json?   // Discord guilds, roles, etc.
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
+model downloads {
+  id            String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id       String?    @db.Uuid
+  resource_id   String?    @db.Uuid
+  downloaded_at DateTime?  @default(now()) @db.Timestamptz(6)
+  resources     resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users         users?     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique                 //tạo bằng randomByte, chuỗi hóa hệ 10 
-  userId       String                           // khóa ngoại của bảng user
-  expires      DateTime                         //hardcode 30 ngày 
-  createdAt    DateTime @default(now())       
-  updatedAt    DateTime @updatedAt
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)  // ràng buộc nhiều session chỉ thuộc về  1 user 
-  @@map("sessions")
+model folder_files {
+  folder_id   String    @db.Uuid
+  resource_id String    @db.Uuid
+  folders     folders   @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  resources   resources @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([folder_id, resource_id])
 }
 
+model folder_tags {
+  folder_id String  @db.Uuid
+  tag_id    String  @db.Uuid
+  folders   folders @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tags      tags    @relation(fields: [tag_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-model UserGuildRole  {
-  id String  @id @default(cuid())
-  userId String
-  guildId String
-  roleId String  
-
-  //relationship
-  user User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role Role   @relation("DiscordRoles", fields: [roleId], references: [id])
-
-  @@unique([userId, guildId, roleId]) 
-  @@map("user_guild_roles")
+  @@id([folder_id, tag_id])
 }
 
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-  
+model folders {
+  id                   String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name                 String?                @db.VarChar
+  visibility           Visibility?
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  comments             comments[]
+  folder_files         folder_files[]
+  folder_tags          folder_tags[]
+  follows              follows[]
+  notification_targets notification_targets[] @ignore
+  rating_targets       rating_targets[]
+}
+
+model follows {
+  user_id     String    @db.Uuid
+  folder_id   String    @db.Uuid
+  followed_at DateTime? @default(now()) @db.Timestamptz(6)
+  folders     folders   @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users       users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([user_id, folder_id])
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model notification_targets {
+  notification_id String?        @db.Uuid
+  resource_id     String?        @db.Uuid
+  folder_id       String?        @db.Uuid
+  comment_id      String?        @db.Uuid
+  comments        comments?      @relation(fields: [comment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  folders         folders?       @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  notifications   notifications? @relation(fields: [notification_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  resources       resources?     @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@ignore
+}
+
+model notifications {
+  id                   String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  actor_id             String?                @db.Uuid
+  type                 NotificationType?
+  message              String?
+  is_read              Boolean?               @default(false)
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  read_at              DateTime?              @db.Timestamptz(6)
+  notification_targets notification_targets[] @ignore
+  users                users?                 @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model rating_targets {
+  id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  rating_id   String?    @db.Uuid
+  resource_id String?    @db.Uuid
+  folder_id   String?    @db.Uuid
+  folders     folders?   @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ratings     ratings?   @relation(fields: [rating_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  resources   resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model ratings {
+  id             String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id        String?          @db.Uuid
+  value          Int?
+  rated_at       DateTime?        @default(now()) @db.Timestamptz(6)
+  rating_targets rating_targets[]
+  users          users?           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model resource_tags {
+  resource_id String    @db.Uuid
+  tag_id      String    @db.Uuid
+  resources   resources @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tags        tags      @relation(fields: [tag_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([resource_id, tag_id])
+}
+
+model resources {
+  id                   String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  title                String?                @db.VarChar
+  visibility           Visibility?
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  comments             comments[]
+  downloads            downloads[]
+  folder_files         folder_files[]
+  notification_targets notification_targets[] @ignore
+  rating_targets       rating_targets[]
+  resource_tags        resource_tags[]
+  uploads              uploads[]
+}
+
+model roles {
+  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name             RoleType?          @unique
+  description      String?
+  created_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  user_guild_roles user_guild_roles[]
+  users            users[]
+}
+
+model sessions {
+  id            String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  session_token String?   @unique @db.VarChar
+  user_id       String?   @db.Uuid
+  expires       DateTime? @db.Timestamptz(6)
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+  users         users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tags {
+  id                    String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  level_id              String?                @db.Uuid
+  name                  String?                @db.VarChar
+  description           String?
+  folder_tags           folder_tags[]
+  resource_tags         resource_tags[]
+  classification_levels classification_levels? @relation(fields: [level_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model uploads {
+  id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id     String?    @db.Uuid
+  resource_id String?    @db.Uuid
+  uploaded_at DateTime?  @default(now()) @db.Timestamptz(6)
+  version     Int?
+  note        String?
+  resources   resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users       users?     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user_guild_roles {
+  id        String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id   String?   @db.Uuid
+  guild_id  String?   @db.Uuid
+  role_name RoleType?
+  roles     roles?    @relation(fields: [role_name], references: [name], onDelete: NoAction, onUpdate: NoAction)
+  users     users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([user_id, guild_id, role_name])
+}
+
+model users {
+  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email            String?            @unique @db.VarChar
+  username         String?            @db.VarChar
+  displayname      String?            @db.VarChar
+  password         String?            @db.VarChar
+  role_name        RoleType
+  birth            String?            @db.VarChar
+  avatar           String?            @db.VarChar
+  email_verified   Boolean?           @default(false)
+  created_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  accounts         accounts[]
+  comments         comments[]
+  downloads        downloads[]
+  follows          follows[]
+  notifications    notifications[]
+  ratings          ratings[]
+  sessions         sessions[]
+  uploads          uploads[]
+  user_guild_roles user_guild_roles[]
+  roles            roles              @relation(fields: [role_name], references: [name], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model verification_tokens {
+  identifier String?   @db.VarChar
+  token      String?   @unique @db.VarChar
+  expires    DateTime? @db.Timestamptz(6)
+
   @@unique([identifier, token])
-  @@map("verification_tokens")
+  @@ignore
 }
 
+enum NotificationType {
+  UPLOAD
+  DOWNLOAD
+  COMMENT
+  REPLY
+  RATING
+  FOLLOW
+  SYSTEM
+}
+
+enum RoleType {
+  USER
+  ADMIN
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVATE
+}

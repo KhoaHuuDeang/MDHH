@@ -1,5 +1,5 @@
 // import { authOptions } from "@/lib/auth";
-import SidebarItems from "@/data/SidebarItems";
+import { SidebarItems } from "@/data/SidebarItems";
 import { mockUserData } from '@/data/MockUser'
 import profileItems from '@/data/profileMenuItem'
 // import { getServerSession } from "next-auth";
