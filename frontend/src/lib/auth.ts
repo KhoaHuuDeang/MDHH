@@ -99,11 +99,11 @@ export const authOptions: NextAuthOptions = {
         })
     ], callbacks: {
         async signIn({ user, account, profile }) {
+            console.log("INFORMATION SIGNIN :", { user, account, profile });
             // Handle credentials login
             if (account?.provider === "credentials") {
                 return true
             }
-
             // Handle Discord OAuth
             if (account?.provider === 'discord' && profile) {
                 try {
@@ -156,6 +156,7 @@ export const authOptions: NextAuthOptions = {
         },
         async jwt({ token, user, account }) {
             // Handle credentials login
+
             if (user && account?.provider === "credentials") {
                 token.id = user.id
                 token.role = user.role

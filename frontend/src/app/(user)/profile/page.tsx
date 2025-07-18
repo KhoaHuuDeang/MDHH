@@ -1,17 +1,26 @@
 'use client'
+import { useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import useNotifications from '@/hooks/useNotifications'
 import * as LucideIcons from 'lucide-react'
 import { LucideIcon } from 'lucide-react'
-
 import Image from 'next/image'
 
 export default function ProfilePage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const toast = useNotifications()
+
+  // States for editing
+  const [editingField, setEditingField] = useState<string | null>(null)
+  const [tempValues, setTempValues] = useState<Record<string, string>>({})
+  const [showSensitiveData, setShowSensitiveData] = useState({
+    email: false,
+    phone: false
+  })
+
   const getIcon = (iconName: string, size = 20, className?: string) => {
     const IconComponent = LucideIcons[iconName as keyof typeof LucideIcons] as LucideIcon
     return IconComponent ? <IconComponent size={size} className={className} /> : null
@@ -37,6 +46,49 @@ export default function ProfilePage() {
 
   if (!session) return null
 
+  // User data with fallbacks
+  const userData = {
+    displayName: session.user?.name || 'Người dùng',
+    username: session.user?.username || 'username',
+    email: session.user?.email || 'user@example.com',
+    phone: '0987654321', // This would come from session or API
+    avatar: session.user?.avatar,
+    joinDate: 'Tháng 7, 2025'
+  }
+
+  const maskEmail = (email: string) => {
+    const [local, domain] = email.split('@')
+    return `${'*'.repeat(local.length)}@${domain}`
+  }
+
+  const maskPhone = (phone: string) => {
+    return `${'*'.repeat(phone.length - 4)}${phone.slice(-4)}`
+  }
+
+  const handleEdit = (field: string) => {
+    setEditingField(field)
+    setTempValues({ ...tempValues, [field]: userData[field as keyof typeof userData] as string })
+  }
+
+  const handleSave = (field: string) => {
+    // Here you would typically make an API call to update the user data
+    toast.success(`${field} đã được cập nhật`)
+    setEditingField(null)
+    setTempValues({})
+  }
+
+  const handleCancel = () => {
+    setEditingField(null)
+    setTempValues({})
+  }
+
+  const toggleSensitiveData = (field: 'email' | 'phone') => {
+    setShowSensitiveData(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }))
+  }
+
   const stats = [
     { label: 'Uploads', value: '47', icon: 'Upload', color: 'text-[#6A994E]' },
     { label: 'Upvotes', value: '324', icon: 'ThumbsUp', color: 'text-[#6A994E]' },
@@ -54,67 +106,241 @@ export default function ProfilePage() {
   ]
 
   return (
-    <div className="min-h-screen bg-white py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <div className="min-h-screen bg-white py-8 px-4">
+      <div className=" mx-auto px-4 sm:px-6 lg:px-8 space-y-8 bg-gradient-to-r from-gray-50 to-gray-100 rounded-3xl p-8 border border-gray-200 shadow-lg relative overflow-hidden">
 
-        {/* Header Profile Section */}
-        <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-3xl p-8 border border-gray-200 shadow-lg relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-50/30 to-transparent pointer-events-none"></div>
-          <div className="relative z-10">
-            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
-              {/* Avatar */}
-              <div className="relative group">
-                <div className="h-32 w-32 rounded-full border-4 border-gray-300 shadow-lg hover:shadow-xl hover:shadow-gray-300/50 transition-all duration-100 group-hover:scale-105 overflow-hidden">
-                  {session.user?.avatar ? (
-                    <Image
-                      src={session.user.avatar}
-                      alt="Profile"
-                      width={128}
-                      height={128}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center text-white text-4xl font-bold">
-                      {session.user?.name?.charAt(0) || 'U'}
-                    </div>
-                  )}
-                </div>
-                <div className="absolute -bottom-2 -right-2 h-8 w-8 bg-[#386641] rounded-full border-4 border-white flex items-center justify-center">
-                  {getIcon('CheckCircle', 16, 'text-white')}
-                </div>
-              </div>
+        {/* Discord-style Profile Header */}
+        <div className="bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-200">
+          <div className="relative">
+            {/* Banner */}
+            <div
+              className="h-32 sm:h-40 bg-gradient-to-r from-[#6A994E] to-[#386641] bg-cover bg-center"
+              style={{
+                backgroundImage: "url('https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1074&q=80')"
+              }}
+            />
 
-              {/* User Info */}
-              <div className="flex-1 text-center lg:text-left">
-                <div className="mb-4">
-                  <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-                    {session.user?.name || 'Tên người dùng'}
-                  </h1>
-                  <p className="text-gray-600 text-lg mb-2">{session.user?.email || 'Email người dùng'}</p>
-                  <div className="flex items-center justify-center lg:justify-start gap-2 text-gray-500">
-                    {getIcon('MapPin', 16)}
-                    <span>Việt Nam</span>
-                    <span className="mx-2">•</span>
-                    {getIcon('Calendar', 16)}
-                    <span>Tham gia tháng 7, 2025</span>
+            {/* Avatar and Logout Button */}
+            <div className="px-4 sm:px-6">
+              <div className="relative flex flex-col sm:flex-row sm:justify-between sm:items-end w-full -mt-12 sm:-mt-16">
+                <div className="relative mb-4 sm:mb-0">
+                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white overflow-hidden shadow-lg">
+                    {userData.avatar ? (
+                      <Image
+                        src={userData.avatar}
+                        alt="Profile"
+                        width={128}
+                        height={128}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-[#6A994E] to-[#386641] flex items-center justify-center text-white text-2xl sm:text-3xl font-bold">
+                        {userData.displayName.charAt(0)}
+                      </div>
+                    )}
                   </div>
+                  <div className="absolute bottom-1 right-1 w-6 h-6 sm:w-8 sm:h-8 bg-green-500 border-4 border-white rounded-full"></div>
                 </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex flex-col gap-3">
-                <button className="px-6 py-3 bg-[#6A994E] hover:bg-[#386641] text-white rounded-xl font-semibold transition-all duration-100 cursor-pointer hover:scale-105 shadow-md hover:shadow-lg flex items-center gap-2">
-                  {getIcon('Edit', 18)}
-                  Chỉnh sửa
-                </button>
                 <button
                   onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-                  className="px-6 py-3 bg-[#BC4749]  text-white rounded-xl font-semibold transition-all duration-100 cursor-pointer hover:scale-105 shadow-md hover:shadow-lg flex items-center gap-2"
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-xl text-2xl sm:text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105 w-full sm:w-auto"
                 >
-                  {getIcon('LogOut', 18)}
-                  Đăng xuất
+                  {getIcon('LogOut', 20)}
+                  <span>Đăng xuất</span>
                 </button>
               </div>
+
+              {/* User Name and Badges */}
+              <div className="mt-4 pb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                  <h1 className="text-gray-900 text-2xl sm:text-3xl font-bold">{userData.displayName}</h1>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-[#6A994E] rounded-lg flex items-center justify-center shadow-md">
+                      {getIcon('Star', 16, 'text-white')}
+                    </div>
+                    <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shadow-md">
+                      {getIcon('Shield', 16, 'text-white')}
+                    </div>
+                    <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center shadow-md">
+                      {getIcon('Crown', 16, 'text-white')}
+                    </div>
+                  </div>
+                </div>
+                <p className="text-gray-600 mt-2">Thành viên từ {userData.joinDate}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* User Info Card */}
+          <div className="bg-gray-50 mx-4 sm:mx-6 mb-6 p-4 sm:p-6 rounded-xl border border-gray-200">
+            <div className="space-y-6">
+
+              {/* Display Name */}
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                <div className="flex-grow">
+                  <h2 className="text-lg font-bold uppercase text-gray-500 mb-2">Tên hiển thị</h2>
+                  {editingField === 'displayName' ? (
+                    <input
+                      type="text"
+                      value={tempValues.displayName || ''}
+                      onChange={(e) => setTempValues({ ...tempValues, displayName: e.target.value })}
+                      className="w-full bg-white border-2 border-blue-500 rounded-lg px-4 py-2 text-gray-900 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      autoFocus
+                    />
+                  ) : (
+                    <span className="text-gray-900 text-base font-medium">{userData.displayName}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  {editingField === 'displayName' && (
+                    <button
+                      onClick={handleCancel}
+                      className="text-gray-600 hover:text-gray-800 text-2xl font-medium hover:underline transition-colors duration-200"
+                    >
+                      Hủy
+                    </button>
+                  )}
+                  <button
+                    onClick={() => editingField === 'displayName' ? handleSave('displayName') : handleEdit('displayName')}
+                    className="bg-gray-600 cursor-pointer hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                  >
+                    {editingField === 'displayName' ? 'Lưu' : 'Sửa'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="border-b border-gray-300"></div>
+
+              {/* Username */}
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                <div className="flex-grow">
+                  <h2 className="text-lg font-bold uppercase text-gray-500 mb-2">Tên người dùng</h2>
+                  {editingField === 'username' ? (
+                    <input
+                      type="text"
+                      value={tempValues.username || ''}
+                      onChange={(e) => setTempValues({ ...tempValues, username: e.target.value })}
+                      className="w-full bg-white border-2 border-blue-500 rounded-lg px-4 py-2 text-gray-900 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      autoFocus
+                    />
+                  ) : (
+                    <span className="text-gray-900 text-base font-medium">{userData.username}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  {editingField === 'username' && (
+                    <button
+                      onClick={handleCancel}
+                      className="text-gray-600 hover:text-gray-800 text-lg font-medium hover:underline transition-colors duration-200"
+                    >
+                      Hủy
+                    </button>
+                  )}
+                  <button
+                    onClick={() => editingField === 'username' ? handleSave('username') : handleEdit('username')}
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 cursor-pointer"
+                  >
+                    {editingField === 'username' ? 'Lưu' : 'Sửa'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="border-b border-gray-300"></div>
+
+              {/* Email */}
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                <div className="flex-grow">
+                  <h2 className="text-lg font-bold uppercase text-gray-500 mb-2">Email</h2>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    {editingField === 'email' ? (
+                      <input
+                        type="email"
+                        value={tempValues.email || ''}
+                        onChange={(e) => setTempValues({ ...tempValues, email: e.target.value })}
+                        className="w-full bg-white border-2 border-blue-500 rounded-lg px-4 py-2 text-gray-900 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        autoFocus
+                      />
+                    ) : (
+                      <>
+                        <span className="text-gray-900 text-base font-medium">
+                          {showSensitiveData.email ? userData.email : maskEmail(userData.email)}
+                        </span>
+                        <button
+                          onClick={() => toggleSensitiveData('email')}
+                          className="text-blue-600 hover:text-blue-800 text-lg font-medium hover:underline transition-colors duration-200"
+                        >
+                          {showSensitiveData.email ? 'Ẩn' : 'Hiện'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {editingField === 'email' && (
+                    <button
+                      onClick={handleCancel}
+                      className="text-gray-600 hover:text-gray-800 text-lg font-medium hover:underline transition-colors duration-200"
+                    >
+                      Hủy
+                    </button>
+                  )}
+                  <button
+                    onClick={() => editingField === 'email' ? handleSave('email') : handleEdit('email')}
+                    className="bg-gray-600 cursor-pointer hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                  >
+                    {editingField === 'email' ? 'Lưu' : 'Sửa'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="border-b border-gray-300"></div>
+
+              {/* Phone */}
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                <div className="flex-grow">
+                  <h2 className="text-lg font-bold uppercase text-gray-500 mb-2">Số điện thoại</h2>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    {editingField === 'phone' ? (
+                      <input
+                        type="tel"
+                        value={tempValues.phone || ''}
+                        onChange={(e) => setTempValues({ ...tempValues, phone: e.target.value })}
+                        className="w-full bg-white border-2 border-blue-500 rounded-lg px-4 py-2 text-gray-900 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        autoFocus
+                      />
+                    ) : (
+                      <>
+                        <span className="text-gray-900 text-base font-medium">
+                          {showSensitiveData.phone ? userData.phone : maskPhone(userData.phone)}
+                        </span>
+                        <button
+                          onClick={() => toggleSensitiveData('phone')}
+                          className="text-blue-600 hover:text-blue-800 text-lg font-medium hover:underline transition-colors duration-200"
+                        >
+                          {showSensitiveData.phone ? 'Ẩn' : 'Hiện'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {editingField === 'phone' && (
+                    <button
+                      onClick={handleCancel}
+                      className="text-gray-600 hover:text-gray-800 text-lg font-medium hover:underline transition-colors duration-200"
+                    >
+                      Hủy
+                    </button>
+                  )}
+                  <button
+                    onClick={() => editingField === 'phone' ? handleSave('phone') : handleEdit('phone')}
+                    className="bg-gray-600 hover:bg-gray-700 cursor-pointer text-white px-4 py-2 rounded-lg text-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                  >
+                    {editingField === 'phone' ? 'Lưu' : 'Sửa'}
+                  </button>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
@@ -129,19 +355,19 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between mb-4">
                 <div
                   className={`
-            h-12 w-12 rounded-full flex items-center justify-center
-            bg-gray-100
-            group-hover:bg-[#386641]
-            group-hover:text-white
-            transition-all duration-200
-            text-[#6A994E]
-          `}
+                    h-12 w-12 rounded-full flex items-center justify-center
+                    bg-gray-100
+                    group-hover:bg-[#386641]
+                    group-hover:text-white
+                    transition-all duration-200
+                    text-[#6A994E]
+                  `}
                 >
                   {getIcon(stat.icon, 24, "transition-all duration-200")}
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-                  <div className="text-gray-500 text-sm ">
+                  <div className="text-gray-500  ">
                     {stat.label}
                   </div>
                 </div>
@@ -152,7 +378,7 @@ export default function ProfilePage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Achievements */}
-          <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+          <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-gray-200 shadow-sm ">
             <div className="flex items-center gap-3 mb-6">
               <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center">
                 {getIcon('Award', 20, 'text-amber-600')}
@@ -176,7 +402,7 @@ export default function ProfilePage() {
                       {achievement.title}
                     </h3>
                   </div>
-                  <p className={`text-sm ${achievement.unlocked ? 'text-gray-600' : 'text-gray-400'}`}>
+                  <p className={`text-lg ${achievement.unlocked ? 'text-gray-600' : 'text-gray-400'}`}>
                     {achievement.description}
                   </p>
                 </div>
@@ -193,7 +419,6 @@ export default function ProfilePage() {
               <h2 className="text-2xl font-bold text-gray-900">Hoạt động gần đây</h2>
             </div>
             <div className="space-y-4">
-              {/* mốt tách ra mảng riêng sài chung với homePage */}
               {[
                 { action: 'Tải lên "Bài tập Toán cao cấp A1"', time: '2 giờ trước', icon: 'Upload', color: 'text-slate-600' },
                 { action: 'Truy cập folder "Lập trình Python"', time: '5 giờ trước', icon: 'Folder', color: 'text-slate-600' },
@@ -207,7 +432,7 @@ export default function ProfilePage() {
                     {getIcon(activity.icon, 16)}
                   </div>
                   <div className="flex-1">
-                    <p className="text-gray-900 text-sm font-medium">{activity.action}</p>
+                    <p className="text-gray-900 text-lg font-medium">{activity.action}</p>
                     <p className="text-gray-500 text-xs">{activity.time}</p>
                   </div>
                 </div>
