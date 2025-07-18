@@ -99,7 +99,6 @@ export const authOptions: NextAuthOptions = {
         })
     ], callbacks: {
         async signIn({ user, account, profile }) {
-            console.log("SignIn callback:", { user, account, profile })
             // Handle credentials login
             if (account?.provider === "credentials") {
                 return true

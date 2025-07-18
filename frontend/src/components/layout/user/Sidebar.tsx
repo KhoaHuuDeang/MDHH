@@ -5,7 +5,7 @@ import Link from 'next/link';
 import * as LucideIcons from 'lucide-react';
 import { SidebarProfileMenuProps, SidebarMenuItems } from '@/types/user.types';
 import { LucideIcon } from 'lucide-react';
-
+import { signOut } from 'next-auth/react';
 // Define AdminSidebarItems
 const AdminSidebarItems = [
   { id: 'admin-dashboard', label: 'Bảng điều khiển Quản trị', icon: 'LayoutDashboard', href: '/admin/dashboard' },
@@ -26,7 +26,7 @@ export default function Sidebar({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-
+  const [isSigningOut, setIsSigningOut] = useState(false);
   // Chuyển đổi trạng thái thu gọn của toàn bộ sidebar
   const toggleSidebar = () => {
     setIsCollapsed((prev) => !prev);
@@ -42,9 +42,22 @@ export default function Sidebar({
   };
 
   // Hàm xử lý các hành động như mở tìm kiếm hoặc tạo mục mới
-  const handleAction = (action: string, item: string) => {
-    console.log(`Action: ${action} for item: ${item}`);
+  const handleAction = async (action: string, item: string) => {
+    switch (action) {
+      case '/signout':
+        await handleSignOut();
+        break;
+      //other cases 
+      default:
+        console.log(`Unhandled action : ${action}`)
+    }
   };
+  const handleSignOut = async () => {
+    await signOut({
+      callbackUrl: '/auth/signin',
+      redirect: true
+    })
+  }
 
   const getIcon = (iconName: string, size = 18, classname?: string): JSX.Element => {
     const IconComponent = LucideIcons[iconName as keyof typeof LucideIcons] as LucideIcon;
@@ -67,9 +80,8 @@ export default function Sidebar({
         <div className="flex h-full flex-col relative z-10">
           {/* Header */}
           <header
-            className={`flex items-center justify-center h-20 flex-shrink-0 ${
-              isCollapsed ? 'px-0' : 'px-6'
-            } border-b border-[#386641]/20`}
+            className={`flex items-center justify-center h-20 flex-shrink-0 ${isCollapsed ? 'px-0' : 'px-6'
+              } border-b border-[#386641]/20`}
           >
             <Link
               href="/"
@@ -129,8 +141,7 @@ export default function Sidebar({
                           {getIcon(
                             'ChevronDown',
                             18,
-                            `transition-all duration-300 group-hover/submenu:text-[#6A994E] ${
-                              openMenus[item.id] ? 'rotate-180' : ''
+                            `transition-all duration-300 group-hover/submenu:text-[#6A994E] ${openMenus[item.id] ? 'rotate-180' : ''
                             }`
                           )}
                         </>
@@ -200,37 +211,36 @@ export default function Sidebar({
 
             {/* Admin Menu Items (only for admin users) */}
             {/* {user.role === 'admin' && ( */}
-              <>
-                <div className="my-4 border-t border-[#386641]/20" /> {/* Separator */}
-                <h3
-                  className={`text-sm font-semibold text-gray-300 px-4 ${
-                    isCollapsed ? 'text-center' : ''
+            <>
+              <div className="my-4 border-t border-[#386641]/20" /> {/* Separator */}
+              <h3
+                className={`text-sm font-semibold text-gray-300 px-4 ${isCollapsed ? 'text-center' : ''
                   }`}
-                >
-                  {!isCollapsed && ''}
-                </h3>
-                <ul className={`flex flex-col space-y-2 ${isCollapsed ? 'items-center' : ''}`}>
-                  {AdminSidebarItems.map((item) => (
-                    <li key={item.id} className="relative group/menu-item">
-                      {item.href && (
-                        <Link
-                          href={item.href}
-                          className="flex items-center w-full gap-4 rounded-xl transition-all duration-300
+              >
+                {!isCollapsed && ''}
+              </h3>
+              <ul className={`flex flex-col space-y-2 ${isCollapsed ? 'items-center' : ''}`}>
+                {AdminSidebarItems.map((item) => (
+                  <li key={item.id} className="relative group/menu-item">
+                    {item.href && (
+                      <Link
+                        href={item.href}
+                        className="flex items-center w-full gap-4 rounded-xl transition-all duration-300
                             text-sm h-12 px-4 text-white font-medium tracking-wide
                             hover:bg-gradient-to-r hover:from-[#386641]/20 hover:to-[#2d4a2d]/50
                             hover:text-[#6A994E] hover:shadow-lg hover:shadow-[#386641]/20
                             focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50
                             border border-transparent hover:border-[#386641]/30
                             group/link"
-                        >
-                          {item.icon && getIcon(item.icon, 20, 'group-hover/link:text-[#6A994E] transition-colors duration-300')}
-                          {!isCollapsed && <span>{item.label}</span>}
-                        </Link>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </>
+                      >
+                        {item.icon && getIcon(item.icon, 20, 'group-hover/link:text-[#6A994E] transition-colors duration-300')}
+                        {!isCollapsed && <span>{item.label}</span>}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
             {/* )} */}
           </nav>
 
@@ -264,8 +274,10 @@ export default function Sidebar({
                   <ul className="space-y-1.5">
                     {userItems.map((item) => (
                       <li key={item.id}>
+                        {/* HREFS */}
                         {item.href ? (
                           <Link
+
                             href={item.href}
                             className="flex items-center gap-4 w-full rounded-xl transition-all duration-300
                               text-sm h-11 px-4 text-white font-medium
@@ -273,6 +285,7 @@ export default function Sidebar({
                               hover:text-[#6A994E] hover:shadow-lg hover:shadow-[#386641]/20
                               border border-transparent hover:border-[#386641]/30"
                           >
+
                             {item.icon &&
                               getIcon(item.icon, 20, 'hover:text-[#6A994E] transition-colors duration-200')}
                             <span>{item.label}</span>
@@ -280,6 +293,7 @@ export default function Sidebar({
                         ) : (
                           item.action && (
                             <button
+                              disabled={isSigningOut && item.action === 'signout'}
                               className="flex items-center gap-2 w-full rounded-xl transition-all duration-300
                                 text-sm h-11 px-4 text-white font-medium
                                 hover:bg-gradient-to-r hover:from-[#386641]/20 hover:to-[#2d4a2d]/50
@@ -287,9 +301,16 @@ export default function Sidebar({
                                 border border-transparent hover:border-[#386641]/30 cursor-pointer"
                               onClick={() => item.action && handleAction(item.action, item.label)}
                             >
-                              {item.icon &&
-                                getIcon(item.icon, 20, 'hover:text-[#6A994E] transition-colors duration-200')}
-                              {item.label}
+
+                              {isSigningOut && item.action === 'signout' ?
+                                (<div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />)
+                                : (
+                                  item.icon &&
+                                  getIcon(item.icon, 20, 'hover:text-[#6A994E] transition-colors duration-200')
+                                )}
+                              <span>
+                                {isSigningOut && item.action === 'signout' ? 'Đang đăng xuất...' : item.label}
+                              </span>
                             </button>
                           )
                         )}
@@ -298,7 +319,6 @@ export default function Sidebar({
                   </ul>
                 </div>
               )}
-
               {/* Footer Controls */}
               <div className="flex items-center justify-between">
                 {/* User Avatar Button */}
