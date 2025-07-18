@@ -1,142 +1,184 @@
-import { Injectable, ConflictException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, ConflictException, InternalServerErrorException, UnauthorizedException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { DiscordSignInDto } from 'src/users/user.dto';
 import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { SessionService } from './session.service';
+
 @Injectable()
 export class DiscordService {
-  constructor(private prisma: PrismaService,
+  private readonly logger = new Logger(DiscordService.name);
+
+  constructor(
+    private prisma: PrismaService,
     private authService: AuthService,
     private readonly jwtService: JwtService,
     private readonly sessionService: SessionService
-
   ) { }
 
-
-  private async _createTokensAndSession(user: any & { role: any }) {
-    if (!user || !user.role) {
-      throw new InternalServerErrorException('User data is incomplete for token creation.');
-    }
-
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 ngày
-    const session = await this.sessionService.createSession(user.id, expiresAt);
-
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role.name,
-      displayname: user.displayname,
-    };
-
-    return {
-      accessToken: this.jwtService.sign(payload),
-      sessionToken: session.session_token,
-      expires: session.expires,
-      user: {
-        id: user.id,
-        email: user.email,
-        displayname: user.displayname,
-        username: user.username,
-        role: user.role.name,
-        avatar: user.avatar,
-        emailVerified: user.emailVerified,
-      },
-    };
-  }
-
-
-
   /**
-   * Xử lý đăng nhập/đăng ký qua Discord OAuth
-   * - Nếu đã có account liên kết Discord, trả về token đăng nhập
-   * - Nếu chưa, tìm user theo email để liên kết hoặc tạo mới
-   * - Nếu user đã tồn tại (đăng ký bằng phương thức khác), tạo account Discord cho user đó
-   * - Nếu user chưa tồn tại, tạo mới cả user và account
-   * - Trả về token đăng nhập cho user
+   * ✅ BEST PRACTICE: Optimized Discord OAuth Handler
+   * - Transaction-based operations for data consistency
+   * - Proper error handling and logging
+   * - Clean separation of concerns
+   * - Optimized database queries
    */
   async handleDiscordOAuth(dto: DiscordSignInDto) {
-    if (!dto.discordId || !dto.provider) {
-      throw new UnauthorizedException('Provider ID is missing. Cannot authenticate.');
+    // ✅ Input validation
+    this.validateDiscordDto(dto);
+
+    try {
+      // ✅ Use transaction for data consistency
+      return await this.prisma.$transaction(async (tx) => {
+        // Scenario 1: Check existing Discord account
+        const existingAccount = await this.findExistingDiscordAccount(tx, dto);
+        if (existingAccount) {
+          this.logger.log(`Existing Discord user login: ${dto.email}`);
+          return await this.handleExistingDiscordUser(tx, existingAccount, dto);
+        }
+
+        // Scenario 2: Check existing user by email
+        const userByEmail = await this.findUserByEmail(tx, dto.email);
+        if (userByEmail) {
+          this.logger.log(`Linking Discord to existing user: ${dto.email}`);
+          return await this.linkDiscordToExistingUser(tx, userByEmail, dto);
+        }
+
+        // Scenario 3: Create new user
+        this.logger.log(`Creating new Discord user: ${dto.email}`);
+        return await this.createNewDiscordUser(tx, dto);
+      });
+    } catch (error) {
+      this.logger.error(`Discord OAuth failed for ${dto.email}:`, error);
+      throw new InternalServerErrorException('Discord authentication failed');
     }
+  }
 
-    // --- KỊCH BẢN 1: USER CŨ QUAY LẠI ---
-    // Tìm tài khoản liên kết (account) bằng provider và discordId
+  private validateDiscordDto(dto: DiscordSignInDto): void {
+    if (!dto.discordId || !dto.provider) {
+      throw new UnauthorizedException('Discord ID and provider are required');
+    }
+    if (!dto.email) {
+      throw new UnauthorizedException('Email is required for Discord authentication');
+    }
+  }
 
-    const existingAccount = await this.prisma.accounts.findUnique({
+  private async findExistingDiscordAccount(tx: any, dto: DiscordSignInDto) {
+    return await tx.accounts.findUnique({
       where: {
         provider_provider_account_id: {
           provider: dto.provider,
           provider_account_id: dto.discordId,
         },
       },
-      include: { users: { include: { roles: true } } }, // Lấy kèm thông tin user và role
-    });
-
-    if (existingAccount) {
-      // Kiểm tra tính đúng đắn của việc cập nhật thông tin user như avatar và displayName
-      const shouldUpdate = existingAccount.users?.displayname !== dto.global_name ||
-        existingAccount.users.avatar !== dto.avatar;
-
-      let user =  existingAccount.users; 
-      if(user && shouldUpdate){
-        user = await this.prisma.users.update({
-          where : {id : user.id},
-          data:  {
-            displayname : dto.global_name,
-            username : dto.username,
-            // bổ sung các trường thêm ở đây nếu có
-          },
-          include : { 
-            roles : true
+      include: {
+        users: {
+          include: {
+            roles: {
+              select: {
+                name: true,
+                id: true
+              }
+            }
           }
-        })
+        }
+      },
+    });
+  }
+
+  private async findUserByEmail(tx: any, email: string) {
+    return await tx.users.findUnique({
+      where: { email },
+      include: {
+        roles: {
+          select: {
+            name: true,
+            id: true
+          }
+        }
       }
+    });
+  }
+
+  private async handleExistingDiscordUser(tx: any, existingAccount: any, dto: DiscordSignInDto) {
+    let user = existingAccount.users;
+
+    if (!user) {
+      throw new InternalServerErrorException('Account exists but user data is missing');
     }
 
-    // --- KỊCH BẢN 2: USER ĐÃ CÓ TÀI KHOẢN EMAIL, NAY LIÊN KẾT DISCORD ---
-    // Nếu không có account, tìm user bằng email
-    const userByEmail = await this.prisma.users.findUnique({
-      where: { email: dto.email },
-      include: { roles: true }
+
+    const needsUpdate = this.shouldUpdateUserProfile(user, dto);
+
+    if (needsUpdate) {
+      user = await this.updateUserProfile(tx, user.id, dto);
+      this.logger.log(`Updated profile for user: ${user.email}`);
+    }
+
+    if (dto.access_token) {
+      await this.updateAccountTokens(tx, existingAccount.id, dto);
+    }
+
+    return this._createTokensAndSession(user);
+  }
+
+
+  private async linkDiscordToExistingUser(tx: any, userByEmail: any, dto: DiscordSignInDto) {
+
+    const existingDiscordLink = await tx.accounts.findFirst({
+      where: {
+        provider: dto.provider,
+        provider_account_id: dto.discordId,
+      }
     });
 
-    if (userByEmail) {
-      console.log('TỒN TẠI USER EMAIL ');
-      // Nếu có user với email này, tạo một 'account' mới và liên kết nó
-      await this.prisma.accounts.create({
-        data: {
-          user_id: userByEmail.id,
-          type: dto.type || 'oauth',
-          provider: dto.provider,
-          provider_account_id: dto.discordId,
-          access_token: dto.access_token,
-          refresh_token: dto.refresh_token,
-          expires_at: dto.expires_at,
-          token_type: dto.token_type,
-          scope: dto.scope,
-        },
-      });
-      console.log('Linked Discord to existing user:', userByEmail.email);
-      // Trả về token cho user đã tồn tại này
-      return this._createTokensAndSession(userByEmail);
+    if (existingDiscordLink) {
+      throw new ConflictException('This Discord account is already linked to another user');
     }
 
-    // --- KỊCH BẢN 3: USER HOÀN TOÀN MỚI ---
-    // Nếu không có cả account và user, tạo mới hoàn toàn
-    const userRole = await this.prisma.roles.findUnique({ where: { name: 'USER' } });
-    if (!userRole) {
-      throw new InternalServerErrorException('Default user role not found.');
+    await tx.accounts.create({
+      data: {
+        user_id: userByEmail.id,
+        type: dto.type || 'oauth',
+        provider: dto.provider,
+        provider_account_id: dto.discordId,
+        access_token: dto.access_token,
+        refresh_token: dto.refresh_token,
+        expires_at: dto.expires_at,
+        token_type: dto.token_type,
+        scope: dto.scope,
+      },
+    });
+    let updatedUser = userByEmail;
+    if (this.shouldUpdateUserProfile(userByEmail, dto)) {
+      updatedUser = await this.updateUserProfile(tx, userByEmail.id, dto);
     }
-    console.log('TẠO USER MỚI ');
-    const newUser = await this.prisma.users.create({
+
+    return this._createTokensAndSession(updatedUser);
+  }
+
+
+  private async createNewDiscordUser(tx: any, dto: DiscordSignInDto) {
+    const userRole = await tx.roles.findUnique({
+      where: { name: 'USER' },
+      select: { id: true, name: true }
+    });
+
+    if (!userRole) {
+      throw new InternalServerErrorException('Default user role not found');
+    }
+
+    const uniqueUsername = await this.generateUniqueUsername(tx, dto.username);
+
+
+    const newUser = await tx.users.create({
       data: {
         email: dto.email,
-        displayname: dto.global_name,
-        username: dto.username,
+        displayname: dto.global_name || dto.username,
+        username: uniqueUsername,
         avatar: dto.avatar,
         email_verified: true,
-        role_name: "USER",
+        role_name: userRole.name,
         accounts: {
           create: {
             type: dto.type || 'oauth',
@@ -150,38 +192,163 @@ export class DiscordService {
           },
         },
       },
-      include: { roles: true }, // Luôn include role để trả về cho hàm tạo token
+      include: {
+        roles: {
+          select: {
+            name: true,
+            id: true
+          }
+        }
+      },
     });
-    console.log('Created new user via Discord:', newUser.email);
+
     return this._createTokensAndSession(newUser);
   }
 
 
+  private shouldUpdateUserProfile(user: any, dto: DiscordSignInDto): boolean {
+    return (
+      user.displayname !== (dto.global_name || dto.username) ||
+      user.avatar !== dto.avatar ||
+      user.username !== dto.username
+    );
+  }
 
 
+  private async updateUserProfile(tx: any, userId: string, dto: DiscordSignInDto) {
+    return await tx.users.update({
+      where: { id: userId },
+      data: {
+        displayname: dto.global_name || dto.username,
+        username: dto.username,
+        avatar: dto.avatar,
 
+        updated_at: new Date(),
+      },
+      include: {
+        roles: {
+          select: {
+            name: true,
+            id: true
+          }
+        }
+      }
+    });
+  }
+
+
+  private async updateAccountTokens(tx: any, accountId: string, dto: DiscordSignInDto) {
+    return await tx.accounts.update({
+      where: { id: accountId },
+      data: {
+        access_token: dto.access_token,
+        refresh_token: dto.refresh_token,
+        expires_at: dto.expires_at,
+      },
+    });
+  }
+
+
+  private async generateUniqueUsername(tx: any, baseUsername: string): Promise<string> {
+    if (!baseUsername) {
+      baseUsername = 'user';
+    }
+
+    let username = baseUsername;
+    let counter = 1;
+
+    while (await tx.users.findUnique({ where: { username } })) {
+      username = `${baseUsername}_${counter}`;
+      counter++;
+    }
+
+    return username;
+  }
+
+
+  private async _createTokensAndSession(user: any) {
+    if (!user) {
+      throw new InternalServerErrorException('User data is missing');
+    }
+
+    if (!user.roles) {
+      throw new InternalServerErrorException('User role information is missing');
+    }
+
+    try {
+
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+      const session = await this.sessionService.createSession(user.id, expiresAt);
+
+
+      const payload = {
+        sub: user.id,
+        email: user.email,
+        role: user.roles.name,
+        displayname: user.displayname,
+        username: user.username,
+        iat: Math.floor(Date.now() / 1000),
+      };
+
+      return {
+        accessToken: this.jwtService.sign(payload),
+        sessionToken: session.session_token,
+        expires: session.expires,
+        user: {
+          id: user.id,
+          email: user.email,
+          displayname: user.displayname,
+          username: user.username,
+          role: user.roles.name,
+          avatar: user.avatar,
+          emailVerified: user.email_verified,
+        },
+      };
+    } catch (error) {
+      this.logger.error('Token creation failed:', error);
+      throw new InternalServerErrorException('Failed to create authentication tokens');
+    }
+  }
 
 
   private determineRoleFromDiscordRoles(discordRoles: string[]): string {
-    // Define your Discord role ID to app role mapping
+
     const roleMapping: Record<string, string> = {
-      // Example: Replace with your actual Discord role IDs
-      '123456789012345678': 'admin',     // Discord Admin role ID
-      '987654321098765432': 'moderator', // Discord Mod role ID
-      // Add more mappings as needed
+      [process.env.DISCORD_ADMIN_ROLE_ID || '']: 'ADMIN',
+      [process.env.DISCORD_MOD_ROLE_ID || '']: 'MODERATOR',
+      [process.env.DISCORD_PREMIUM_ROLE_ID || '']: 'PREMIUM',
     };
 
-    // Check for admin role first (highest priority)
-    for (const roleId of discordRoles) {
-      if (roleMapping[roleId] === 'admin') return 'admin';
+
+    const rolePriority = ['ADMIN', 'MODERATOR', 'PREMIUM'];
+
+    for (const priority of rolePriority) {
+      for (const roleId of discordRoles) {
+        if (roleMapping[roleId] === priority) {
+          return priority;
+        }
+      }
     }
 
-    // Check for other roles
-    for (const roleId of discordRoles) {
-      if (roleMapping[roleId]) return roleMapping[roleId];
-    }
 
-    // Default role
-    return 'user';
+    return 'USER';
+  }
+
+  async cleanupExpiredSessions(): Promise<void> {
+    try {
+      const result = await this.prisma.sessions.deleteMany({
+        where: {
+          expires: {
+            lt: new Date(),
+          },
+        },
+      });
+
+      if (result.count > 0) {
+        this.logger.log(`Cleaned up ${result.count} expired sessions`);
+      }
+    } catch (error) {
+      this.logger.error('Failed to cleanup expired sessions:', error);
+    }
   }
 }
