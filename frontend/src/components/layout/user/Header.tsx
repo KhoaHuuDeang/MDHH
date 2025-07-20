@@ -23,10 +23,6 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
             : <></>
     }
 
-    const handleAction = (action: string, item: string) => {
-        console.log(`Action: ${action} for item: ${item}`);
-    };
-
     // Mock data for notifications
     const notifications = [
         {
@@ -71,39 +67,11 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
         }
     ];
 
-    const messages = [
-        {
-            id: 1,
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-            name: 'Nguyễn Văn A',
-            lastMessage: 'Cảm ơn bạn đã chia sẻ tài liệu!',
-            time: '10 phút trước',
-            isRead: false
-        },
-        {
-            id: 2,
-            avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b5bc?w=100&h=100&fit=crop&crop=face',
-            name: 'Trần Thị B',
-            lastMessage: 'Bạn có thể gửi thêm tài liệu về chủ đề này không?',
-            time: '2 giờ trước',
-            isRead: false
-        },
-        {
-            id: 3,
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-            name: 'Lê Văn C',
-            lastMessage: 'OK, tôi sẽ kiểm tra lại',
-            time: '1 ngày trước',
-            isRead: true
-        }
-    ];
-
     const filteredNotifications = activeNotificationFilter === 'all'
         ? notifications
         : notifications.filter(n => !n.isRead);
 
     const unreadCount = notifications.filter(n => !n.isRead).length;
-    const unreadMessageCount = messages.filter(m => !m.isRead).length;
 
     // Close dropdowns when clicking outside
     useEffect(() => {
@@ -111,11 +79,7 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
             if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
                 setIsNotificationOpen(false);
             }
-            if (messageRef.current && !messageRef.current.contains(event.target as Node)) {
-                setIsMessageOpen(false);
-            }
         };
-
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
@@ -276,89 +240,6 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
                                 )}
                             </div>
 
-                            {/* Message Button */}
-                            <div className="relative" ref={messageRef}>
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setIsMessageOpen(!isMessageOpen);
-                                        setIsNotificationOpen(false);
-                                    }}
-                                    className="hidden md:flex relative p-3 rounded-xl transition-all duration-300
-                                             text-white hover:text-[#6A994E] hover:bg-[#386641]/20
-                                             hover:shadow-lg hover:shadow-[#386641]/25 hover:scale-105
-                                             border border-transparent hover:border-[#386641]/30
-                                             focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50"
-                                >
-                                    {getIcons('MessageCircle', 20)}
-                                    {unreadMessageCount > 0 && (
-                                        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#6A994E] border-2 border-[#386641] 
-                                                       flex items-center justify-center text-xs font-bold text-white">
-                                            {unreadMessageCount}
-                                        </span>
-                                    )}
-                                </button>
-
-                                {/* Message Dropdown */}
-                                {isMessageOpen && (
-                                    <div className="absolute top-full right-0 mt-2 w-[340px] bg-[#2d4a2d] rounded-xl shadow-2xl border-2 border-[#386641]/40 z-50 overflow-hidden">
-                                        {/* Header */}
-                                        <div className="p-4 border-b border-[#386641]/30">
-                                            <div className="flex justify-between items-center">
-                                                <h2 className="text-xl font-bold text-white">Tin nhắn</h2>
-                                                <button className="w-8 h-8 flex items-center justify-center rounded-full bg-[#386641]/20 hover:bg-[#386641]/40 transition-colors">
-                                                    {getIcons('Edit3', 16, 'text-white')}
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Message List */}
-                                        <div className="max-h-[400px] overflow-y-auto">
-                                            {messages.map((message) => (
-                                                <div
-                                                    key={message.id}
-                                                    className={`flex items-center gap-3 p-4 hover:bg-[#386641]/20 cursor-pointer border-b border-[#386641]/20 transition-colors ${!message.isRead ? 'bg-[#386641]/10' : ''
-                                                        }`}
-                                                >
-                                                    <div className="relative flex-shrink-0">
-                                                        <Image
-                                                            src={message.avatar}
-                                                            alt=""
-                                                            width={40}
-                                                            height={40}
-                                                            className="w-10 h-10 rounded-full object-cover"
-                                                        />
-                                                        {!message.isRead && (
-                                                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#6A994E] rounded-full border border-[#2d4a2d]"></div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex justify-between items-start mb-1">
-                                                            <p className="text-sm font-semibold text-white truncate">
-                                                                {message.name}
-                                                            </p>
-                                                            <p className="text-xs text-gray-400 ml-2 flex-shrink-0">
-                                                                {message.time}
-                                                            </p>
-                                                        </div>
-                                                        <p className="text-sm text-gray-300 truncate">
-                                                            {message.lastMessage}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        {/* Footer */}
-                                        <div className="p-3 border-t border-[#386641]/30">
-                                            <button className="w-full bg-[#386641]/30 text-white text-sm font-semibold py-2 rounded-lg hover:bg-[#386641]/50 transition-colors">
-                                                Xem tất cả tin nhắn
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
 
                             {/* User Avatar Dropdown - Rest of existing code... */}
                             <div className="relative">
@@ -397,7 +278,6 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
                                                         </Link>
                                                     ) : item.action && (
                                                         <button
-                                                            onClick={() => item.action && handleAction(item.action, item.label)}
                                                             className='flex items-center gap-4 w-full rounded-xl transition-all duration-300
                                                                      text-sm h-11 px-4 text-white font-medium
                                                                      hover:bg-gradient-to-r hover:from-[#386641]/20 hover:to-[#2d4a2d]/50
