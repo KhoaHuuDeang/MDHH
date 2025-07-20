@@ -1,6 +1,6 @@
 export const SidebarItems = [
     { id: 'videos', label: 'Videos', icon: 'Youtube', href: '/videos' },
-    { id: 'upload', label: 'Upload', icon: 'CloudUpload', href: '/upload', action: 'create' },
+    { id: 'upload', label: 'Upload', icon: 'CloudUpload', href: '/uploads', action: 'create' },
     {
         id: 'documents',
         label: 'Documents',
