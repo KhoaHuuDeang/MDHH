@@ -39,7 +39,7 @@ const UploadPage = () => {
     }
   }, [submitFiles, submitButtonState.disabled]);
 
-  const handleReset = React.useCallback(() => {
+  const handleReset = useCallback(() => {
     if (window.confirm('Bạn có chắc muốn xóa tất cả file đã upload?')) {
       resetUpload();
     }
@@ -60,12 +60,11 @@ const UploadPage = () => {
           </h2>
           <FileUploadArea />
         </section>
-
         {files.length > 0 && (
           <section aria-labelledby="files-list-title" className="mt-8">
             <div className="flex justify-between items-center mb-4">
               <h2 id="files-list-title" className="text-lg font-semibold text-gray-800">
-                File đã chọn ({files.length})
+                File uploaded({files.length})
               </h2>
               <button
                 onClick={handleReset}

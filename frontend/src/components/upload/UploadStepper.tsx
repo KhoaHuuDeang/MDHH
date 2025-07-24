@@ -1,28 +1,83 @@
 // components/upload/UploadStepper.tsx
-import React from 'react';
+"use client";
+import { useUploadStore } from '@/store/uploadStore';
+import { getIcon } from '@/utils/getIcon';
 
 export default function UploadStepper() {
+  const { currentStep, validateCurrentStep } = useUploadStore();
+  
+  const steps = [
+    { 
+      id: 1, 
+      title: 'Upload Files', 
+      description: 'Chọn và tải lên tài liệu',
+      icon: 'Upload' 
+    },
+    { 
+      id: 2, 
+      title: 'Add Details', 
+      description: 'Điền thông tin chi tiết',
+      icon: 'FileText' 
+    },
+    { 
+      id: 3, 
+      title: 'Review & Submit', 
+      description: 'Xem lại và hoàn thành',
+      icon: 'CheckCircle' 
+    }
+  ];
+
+  const getStepStatus = (stepId: number) => {
+    if (stepId < currentStep) return 'completed';
+    if (stepId === currentStep) return 'current';
+    return 'upcoming';
+  };
+
   return (
-    <div className="w-full max-w-2xl mx-auto mb-12">
-      <div className="flex items-center">
-        {/* Step 1: Upload */}
-        <div className="flex items-center text-blue-600 relative">
-          <div className="rounded-full h-8 w-8 flex items-center justify-center bg-blue-600 text-white font-bold">1</div>
-        <div className="absolute top-0 -ml-12 text-center mt-12 w-32 text-xs font-medium uppercase text-blue-600">Upload</div>
-      </div>
-      <div className="flex-auto border-t-2 border-blue-600"></div>
-      {/* Step 2: Details */}
-      <div className="flex items-center text-gray-500 relative">
-        <div className="rounded-full h-8 w-8 flex items-center justify-center bg-gray-300">2</div>
-        <div className="absolute top-0 -ml-12 text-center mt-12 w-32 text-xs font-medium uppercase text-gray-500">Details</div>
-      </div>
-      <div className="flex-auto border-t-2 border-gray-300"></div>
-      {/* Step 3: Done */}
-      <div className="flex items-center text-gray-500 relative">
-        <div className="rounded-full h-8 w-8 flex items-center justify-center bg-gray-300">3</div>
-        <div className="absolute top-0 -ml-11 text-center mt-12 w-32 text-xs font-medium uppercase text-gray-500">Done</div>
+    <div className="w-full max-w-4xl mx-auto mb-8">
+      <div className="flex items-center justify-between"> //fix lại 
+        {steps.map((step, index) => {
+          const status = getStepStatus(step.id);
+          return (  
+            <div key={step.id} className="flex items-center flex-1">
+              {/* Step Circle */}
+              <div className="flex flex-col items-center">
+                <div className={`
+                  w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm
+                  ${status === 'completed' ? 'bg-green-500 text-white' : ''}
+                  ${status === 'current' ? 'bg-blue-500 text-white' : ''}
+                  ${status === 'upcoming' ? 'bg-gray-300 text-gray-600' : ''}
+                `}>
+                  {status === 'completed' ? 
+                    getIcon('Check', 20) : 
+                    step.id
+                  }
+                </div>
+                
+                {/* Step Info */}
+                <div className="mt-3 text-center">
+                  <div className={`text-sm font-medium ${
+                    status === 'current' ? 'text-blue-600' : 
+                    status === 'completed' ? 'text-green-600' : 'text-gray-500'
+                  }`}>
+                    {step.title}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {step.description}
+                  </div>
+                </div>
+              </div>
+
+              {/* Connector Line */}
+              {index < steps.length - 1 && (
+                <div className={`flex-1 h-0.5 mx-4 ${
+                  step.id < currentStep ? 'bg-green-500' : 'bg-gray-300'
+                }`} />
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
-  </div>
-);
+  );
 }
