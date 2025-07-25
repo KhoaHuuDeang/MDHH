@@ -48,7 +48,7 @@ model comments {
   other_comments       comments[]             @relation("commentsTocomments")
   resources            resources?             @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                users?                 @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  notification_targets notification_targets[] @ignore
+  notification_targets notification_targets[]
 }
 
 model downloads {
@@ -87,7 +87,7 @@ model folders {
   folder_files         folder_files[]
   folder_tags          folder_tags[]
   follows              follows[]
-  notification_targets notification_targets[] @ignore
+  notification_targets notification_targets[]
   rating_targets       rating_targets[]
 }
 
@@ -123,7 +123,7 @@ model notifications {
   is_read              Boolean?               @default(false)
   created_at           DateTime?              @default(now()) @db.Timestamptz(6)
   read_at              DateTime?              @db.Timestamptz(6)
-  notification_targets notification_targets[] @ignore
+  notification_targets notification_targets[]
   users                users?                 @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
@@ -160,10 +160,14 @@ model resources {
   title                String?                @db.VarChar
   visibility           Visibility?
   created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  key                  String?                @db.VarChar
+  fileName             String?                @db.VarChar
+  mimeType             String?                @db.VarChar
+  description          String?                @db.VarChar
   comments             comments[]
   downloads            downloads[]
   folder_files         folder_files[]
-  notification_targets notification_targets[] @ignore
+  notification_targets notification_targets[]
   rating_targets       rating_targets[]
   resource_tags        resource_tags[]
   uploads              uploads[]
@@ -204,8 +208,7 @@ model uploads {
   user_id     String?    @db.Uuid
   resource_id String?    @db.Uuid
   uploaded_at DateTime?  @default(now()) @db.Timestamptz(6)
-  version     Int?
-  note        String?
+  created_at  DateTime?  @default(now()) @db.Timestamptz(6)
   resources   resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users       users?     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
