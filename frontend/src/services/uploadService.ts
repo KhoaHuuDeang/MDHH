@@ -1,1 +1,255 @@
- 
+import {
+  FileUploadMetadata,
+  PreSignedUploadResult,
+  UploadMetadata,
+  UploadResponse,
+  PaginatedUploads,
+} from '@/types/FileUploadInterface';
+
+// Backend API response types (matching uploadsService.md patterns)
+interface PreSignedUrlResponseDto {
+  sessionId: string;
+  preSignedData: PreSignedFileData[];
+  expiresIn: number;
+}
+
+interface PreSignedFileData {
+  s3Key: string;
+  preSignedUrl: string;
+  originalFilename: string;
+  fileSize: number;
+  mimetype: string;
+}
+
+interface ResourceResponseDto {
+  resource: {
+    id: string;
+    title: string;
+    description: string;
+    category?: string;
+    visibility: string;
+    status: string;
+    created_at: Date;
+  };
+  uploads: {
+    id: string;
+    user_id: string;
+    resource_id: string;
+    file_name: string;
+    mime_type: string;
+    file_size: number;
+    s3_key: string;
+    status: string;
+    created_at: Date;
+  }[];
+}
+
+class UploadService {
+  private baseUrl = process.env.NEXT_PUBLIC_API_URL;
+  private maxRetries = 3;
+  private retryDelay = 1000; // 1 second
+
+  private async makeRequest<T>(
+    url: string,
+    options: RequestInit
+  ): Promise<T> {
+    let lastError: Error;
+
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      try {
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.getToken()}`,
+            ...options.headers,
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        lastError = error as Error;
+        
+        if (attempt < this.maxRetries) {
+          await this.delay(this.retryDelay * attempt);
+          continue;
+        }
+      }
+    }
+
+    throw lastError!;
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Step 1: Request pre-signed URLs (2-step pattern from uploadsService.md)
+   * No DB writes, only validation and URL generation
+   */
+  async requestPreSignedUrls(
+    files: FileUploadMetadata[]
+  ): Promise<PreSignedUrlResponseDto> {
+    return this.makeRequest<PreSignedUrlResponseDto>(`${this.baseUrl}/uploads/request-presigned-urls`, {
+      method: 'POST',
+      body: JSON.stringify({
+        files: files.map(file => ({
+          originalFilename: file.originalFilename,
+          mimetype: file.mimetype,
+          fileSize: file.fileSize,
+          folderId: file.folder
+        }))
+      }),
+    });
+  }
+
+  /**
+   * Step 2: Create resource with uploads (database transaction)
+   * Creates both resource and upload records atomically
+   */
+  async createResourceWithUploads(
+    metadata: UploadMetadata,
+    fileData: { originalFilename: string; mimetype: string; fileSize: number; s3Key: string }[]
+  ): Promise<ResourceResponseDto> {
+    return this.makeRequest<ResourceResponseDto>(`${this.baseUrl}/uploads/create-resource`, {
+      method: 'POST',
+      body: JSON.stringify({
+        title: metadata.title,
+        description: metadata.description,
+        category: metadata.category,
+        visibility: metadata.visibility?.toUpperCase() || 'PUBLIC',
+        files: fileData
+      }),
+    });
+  }
+
+  /**
+   * Upload file to S3 using pre-signed URL
+   * Direct browser-to-S3 upload with progress tracking
+   */
+  async uploadToS3(
+    file: File,
+    preSignedUrl: string,
+    onProgress?: (progress: number) => void,
+    signal?: AbortSignal
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      if (signal) {
+        signal.addEventListener('abort', () => {
+          xhr.abort();
+          reject(new Error('Upload aborted'));
+        });
+      }
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const progress = Math.round((event.loaded * 100) / event.total);
+          onProgress(progress);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          resolve();
+        } else {
+          reject(new Error(`Upload failed with status: ${xhr.status}`));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error('Network error during upload'));
+      };
+
+      xhr.ontimeout = () => {
+        reject(new Error('Upload timeout'));
+      };
+
+      xhr.open('PUT', preSignedUrl);
+      xhr.setRequestHeader('Content-Type', file.type);
+      xhr.timeout = 300000; // 5 minutes
+      xhr.send(file);
+    });
+  }
+
+  /**
+   * Step 3: Complete upload process (optional verification)
+   * Verifies S3 uploads and updates status to completed
+   */
+  async completeUpload(resourceId: string): Promise<void> {
+    await this.makeRequest(`${this.baseUrl}/uploads/complete/${resourceId}`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  }
+
+  /**
+   * Get user's uploads with pagination
+   * Matches backend /uploads/my-uploads endpoint
+   */
+  async getUserUploads(page = 1, limit = 10, status?: string): Promise<PaginatedUploads> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (status) {
+      params.append('status', status);
+    }
+
+    return this.makeRequest<PaginatedUploads>(
+      `${this.baseUrl}/uploads/my-uploads?${params.toString()}`,
+      { method: 'GET' }
+    );
+  }
+
+  /**
+   * Delete resource and associated files
+   * Matches backend DELETE /uploads/resource/:resourceId
+   */
+  async deleteUpload(resourceId: string): Promise<void> {
+    await this.makeRequest(`${this.baseUrl}/uploads/resource/${resourceId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
+   * Generate download URL for uploaded file
+   * Matches backend GET /uploads/download/:uploadId
+   */
+  async generateDownloadUrl(uploadId: string): Promise<{ downloadUrl: string }> {
+    return this.makeRequest<{ downloadUrl: string }>(
+      `${this.baseUrl}/uploads/download/${uploadId}`,
+      { method: 'GET' }
+    );
+  }
+
+  /**
+   * Retry failed upload
+   * Uses the retry endpoint for failed uploads
+   */
+  async retryUpload(uploadId: string): Promise<PreSignedUrlResponseDto> {
+    return this.makeRequest<PreSignedUrlResponseDto>(`${this.baseUrl}/uploads/retry`, {
+      method: 'POST',
+      body: JSON.stringify({
+        uploadId,
+      }),
+    });
+  }
+
+  private getToken(): string {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token') || '';
+    }
+    return '';
+  }
+}
+
+export const uploadService = new UploadService();

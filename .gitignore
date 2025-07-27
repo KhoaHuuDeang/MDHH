@@ -8,3 +8,4 @@ package-lock.json
 dist/* 
 dist
 backend/dist/tsconfig.build.tsbuildinfo
+.github
