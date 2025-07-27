@@ -48,7 +48,7 @@ model comments {
   other_comments       comments[]             @relation("commentsTocomments")
   resources            resources?             @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                users?                 @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  notification_targets notification_targets[]
+  notification_targets notification_targets[] @ignore
 }
 
 model downloads {
@@ -87,7 +87,7 @@ model folders {
   folder_files         folder_files[]
   folder_tags          folder_tags[]
   follows              follows[]
-  notification_targets notification_targets[]
+  notification_targets notification_targets[] @ignore
   rating_targets       rating_targets[]
 }
 
@@ -123,7 +123,7 @@ model notifications {
   is_read              Boolean?               @default(false)
   created_at           DateTime?              @default(now()) @db.Timestamptz(6)
   read_at              DateTime?              @db.Timestamptz(6)
-  notification_targets notification_targets[]
+  notification_targets notification_targets[] @ignore
   users                users?                 @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
@@ -158,16 +158,15 @@ model resource_tags {
 model resources {
   id                   String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   title                String?                @db.VarChar
-  visibility           Visibility?
+  description          String?
+  category             String?                @db.VarChar
+  visibility           Visibility?            @default(PUBLIC)
+  status               ResourceStatus?        @default(PENDING)
   created_at           DateTime?              @default(now()) @db.Timestamptz(6)
-  key                  String?                @db.VarChar
-  fileName             String?                @db.VarChar
-  mimeType             String?                @db.VarChar
-  description          String?                @db.VarChar
   comments             comments[]
   downloads            downloads[]
   folder_files         folder_files[]
-  notification_targets notification_targets[]
+  notification_targets notification_targets[] @ignore
   rating_targets       rating_targets[]
   resource_tags        resource_tags[]
   uploads              uploads[]
@@ -204,13 +203,18 @@ model tags {
 }
 
 model uploads {
-  id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  user_id     String?    @db.Uuid
-  resource_id String?    @db.Uuid
-  uploaded_at DateTime?  @default(now()) @db.Timestamptz(6)
-  created_at  DateTime?  @default(now()) @db.Timestamptz(6)
-  resources   resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users       users?     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id          String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id     String?       @db.Uuid
+  resource_id String?       @db.Uuid
+  file_name   String?       @db.VarChar
+  mime_type   String?       @db.VarChar
+  file_size   Int?
+  s3_key      String?       @db.VarChar
+  status      UploadStatus? @default(PENDING)
+  created_at  DateTime?     @default(now()) @db.Timestamptz(6)
+  uploaded_at DateTime?     @db.Timestamptz(6)
+  resources   resources?    @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users       users?        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model user_guild_roles {
@@ -227,7 +231,7 @@ model user_guild_roles {
 model users {
   id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   email            String?            @unique @db.VarChar
-  username         String?            @db.VarChar
+  username         String             @unique @db.VarChar
   displayname      String?            @db.VarChar
   password         String?            @db.VarChar
   role_name        RoleType
@@ -268,9 +272,21 @@ enum NotificationType {
   SYSTEM
 }
 
+enum ResourceStatus {
+  PENDING
+  ACTIVE
+  ARCHIVED
+}
+
 enum RoleType {
   USER
   ADMIN
+}
+
+enum UploadStatus {
+  PENDING
+  COMPLETED
+  FAILED
 }
 
 enum Visibility {
