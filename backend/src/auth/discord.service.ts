@@ -16,35 +16,24 @@ export class DiscordService {
     private readonly sessionService: SessionService
   ) { }
 
-  /**
-   * ✅ BEST PRACTICE: Optimized Discord OAuth Handler
-   * - Transaction-based operations for data consistency
-   * - Proper error handling and logging
-   * - Clean separation of concerns
-   * - Optimized database queries
-   */
   async handleDiscordOAuth(dto: DiscordSignInDto) {
     // ✅ Input validation
     this.validateDiscordDto(dto);
 
     try {
-      // ✅ Use transaction for data consistency
       return await this.prisma.$transaction(async (tx) => {
-        // Scenario 1: Check existing Discord account
         const existingAccount = await this.findExistingDiscordAccount(tx, dto);
         if (existingAccount) {
           this.logger.log(`Existing Discord user login: ${dto.email}`);
           return await this.handleExistingDiscordUser(tx, existingAccount, dto);
         }
 
-        // Scenario 2: Check existing user by email
         const userByEmail = await this.findUserByEmail(tx, dto.email);
         if (userByEmail) {
           this.logger.log(`Linking Discord to existing user: ${dto.email}`);
           return await this.linkDiscordToExistingUser(tx, userByEmail, dto);
         }
 
-        // Scenario 3: Create new user
         this.logger.log(`Creating new Discord user: ${dto.email}`);
         return await this.createNewDiscordUser(tx, dto);
       });
@@ -119,7 +108,7 @@ export class DiscordService {
       await this.updateAccountTokens(tx, existingAccount.id, dto);
     }
 
-    return this._createTokensAndSession(user);
+    return this._createTokensAndSession(user, tx);
   }
 
 
@@ -154,7 +143,7 @@ export class DiscordService {
       updatedUser = await this.updateUserProfile(tx, userByEmail.id, dto);
     }
 
-    return this._createTokensAndSession(updatedUser);
+    return this._createTokensAndSession(updatedUser, tx);
   }
 
 
@@ -201,8 +190,8 @@ export class DiscordService {
         }
       },
     });
-
-    return this._createTokensAndSession(newUser);
+    console.log('New user created aaaa:', newUser);
+    return this._createTokensAndSession(newUser, tx);
   }
 
 
@@ -265,8 +254,7 @@ export class DiscordService {
     return username;
   }
 
-
-  private async _createTokensAndSession(user: any) {
+  private async _createTokensAndSession(user: any, tx?: any) {
     if (!user) {
       throw new InternalServerErrorException('User data is missing');
     }
@@ -276,33 +264,28 @@ export class DiscordService {
     }
 
     try {
-
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
-      const session = await this.sessionService.createSession(user.id, expiresAt);
-
+      // Truyền transaction context vào SessionService
+      const session = await this.sessionService.createSession(user.id, expiresAt, tx);
 
       const payload = {
-        sub: user.id,
+        sub: user.id,              
         email: user.email,
         role: user.roles.name,
-        displayname: user.displayname,
-        username: user.username,
-        iat: Math.floor(Date.now() / 1000),
+        displayname: user.displayname || user.username,
       };
 
+      const accessToken = this.jwtService.sign(payload);
+      console.log('Access Token created:', accessToken);
       return {
-        accessToken: this.jwtService.sign(payload),
-        sessionToken: session.session_token,
-        expires: session.expires,
         user: {
           id: user.id,
           email: user.email,
-          displayname: user.displayname,
           username: user.username,
           role: user.roles.name,
-          avatar: user.avatar,
-          emailVerified: user.email_verified,
+          displayname: user.displayname,
         },
+        accessToken, 
       };
     } catch (error) {
       this.logger.error('Token creation failed:', error);

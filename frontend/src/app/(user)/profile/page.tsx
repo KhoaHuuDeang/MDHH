@@ -4,10 +4,8 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import useNotifications from '@/hooks/useNotifications'
-import * as LucideIcons from 'lucide-react'
-import { LucideIcon } from 'lucide-react'
 import Image from 'next/image'
-
+import { getIcon } from '@/utils/getIcon'
 export default function ProfilePage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -21,10 +19,6 @@ export default function ProfilePage() {
     phone: false
   })
 
-  const getIcon = (iconName: string, size = 20, className?: string) => {
-    const IconComponent = LucideIcons[iconName as keyof typeof LucideIcons] as LucideIcon
-    return IconComponent ? <IconComponent size={size} className={className} /> : null
-  }
 
   useEffect(() => {
     if (status === 'unauthenticated') {

@@ -11,7 +11,8 @@ declare module "next-auth" {
     birth?: string
     avatar?: string
     emailVerified?: boolean
-    accessToken: string
+    backendToken?: string
+    accessToken?: string
     sessionToken?: string
   }
   interface Session {

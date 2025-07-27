@@ -1,0 +1,147 @@
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import {
+  RequestPreSignedUrlsDto,
+  PreSignedUrlResponseDto,
+  CreateResourceWithUploadsDto,
+  ResourceResponseDto,
+  CompleteUploadDto,
+} from './uploads.dto';
+import { UploadsService } from './upload.service';
+
+@ApiTags('uploads')
+@Controller('uploads')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
+export class UploadsController {
+  constructor(private readonly uploadsService: UploadsService) {}
+
+  /**
+   * Step 1: Request pre-signed URLs for file uploads
+   */
+  @Post('request-presigned-urls')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ 
+    summary: 'Request pre-signed URLs for file uploads',
+    description: 'Validates files and returns S3 pre-signed URLs. No database writes performed.'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Pre-signed URLs generated successfully',
+    type: PreSignedUrlResponseDto
+  })
+  @ApiResponse({ status: 400, description: 'Invalid file metadata' })
+  async requestPreSignedUrls(
+    @Body() requestDto: RequestPreSignedUrlsDto,
+    @Request() req: any
+  ): Promise<PreSignedUrlResponseDto> {
+    return await this.uploadsService.requestPreSignedUrls(requestDto, req.user.userId);
+  }
+
+  /**
+   * Step 2: Create resource with upload records
+   */
+  @Post('create-resource')
+  @ApiOperation({ 
+    summary: 'Create resource with upload records',
+    description: 'Creates resource and upload records in database after metadata confirmation.'
+  })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Resource and uploads created successfully',
+    type: ResourceResponseDto
+  })
+  @ApiResponse({ status: 400, description: 'Invalid resource data' })
+  async createResourceWithUploads(
+    @Body() createResourceDto: CreateResourceWithUploadsDto,
+    @Request() req: any
+  ): Promise<ResourceResponseDto> {
+    // Ensure userId matches authenticated user
+    createResourceDto.userId = req.user.userId;
+    return await this.uploadsService.createResourceWithUploads(createResourceDto);
+  }
+
+  /**
+   * Step 3: Complete upload process (optional verification)
+   */
+  @Post('complete/:resourceId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ 
+    summary: 'Complete upload process',
+    description: 'Verifies S3 uploads and updates status to completed.'
+  })
+  @ApiResponse({ status: 200, description: 'Upload completed successfully' })
+  @ApiResponse({ status: 400, description: 'S3 verification failed' })
+  @ApiResponse({ status: 404, description: 'Resource not found' })
+  async completeUpload(
+    @Param('resourceId') resourceId: string,
+    @Body() completeDto: CompleteUploadDto
+  ): Promise<{ message: string }> {
+    completeDto.resourceId = resourceId;
+    await this.uploadsService.completeUpload(completeDto);
+    return { message: 'Upload completed successfully' };
+  }
+
+  /**
+   * Get user's uploads with pagination
+   */
+  @Get('my-uploads')
+  @ApiOperation({ summary: 'Get user uploads with pagination' })
+  @ApiResponse({ status: 200, description: 'User uploads retrieved successfully' })
+  async getUserUploads(
+    @Request() req: any,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('status') status?: string
+  ) {
+    return await this.uploadsService.getUserUploads(
+      req.user.userId,
+      parseInt(page),
+      parseInt(limit),
+      status
+    );
+  }
+
+  /**
+   * Generate download URL for uploaded file
+   */
+  @Get('download/:uploadId')
+  @ApiOperation({ summary: 'Generate download URL for uploaded file' })
+  @ApiResponse({ status: 200, description: 'Download URL generated successfully' })
+  @ApiResponse({ status: 404, description: 'Upload not found' })
+  async generateDownloadUrl(
+    @Param('uploadId') uploadId: string,
+    @Request() req: any
+  ): Promise<{ downloadUrl: string }> {
+    const downloadUrl = await this.uploadsService.generateDownloadUrl(uploadId, req.user.userId);
+    return { downloadUrl };
+  }
+
+  /**
+   * Delete resource and associated files
+   */
+  @Delete('resource/:resourceId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete resource and associated files' })
+  @ApiResponse({ status: 204, description: 'Resource deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Resource not found' })
+  async deleteResource(
+    @Param('resourceId') resourceId: string,
+    @Request() req: any
+  ): Promise<void> {
+    await this.uploadsService.deleteResource(resourceId, req.user.userId);
+  }
+}

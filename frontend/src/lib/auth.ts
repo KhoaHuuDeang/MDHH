@@ -146,6 +146,8 @@ export const authOptions: NextAuthOptions = {
                     user.role = data.user.role;
                     user.username = data.user.username;
                     user.birth = data.user.birth;
+                    user.accessToken = account.access_token!;
+                    user.backendToken = data.accessToken!;
                     return true;
                 } catch (error) {
                     console.error("SignIn callback error:", error);
@@ -162,7 +164,7 @@ export const authOptions: NextAuthOptions = {
                 token.role = user.role
                 token.username = user.username
                 token.birth = user.birth
-                token.accessToken = user.accessToken
+                token.accessToken = user.backendToken!
                 token.provider = "credentials"
             }
 
@@ -177,7 +179,7 @@ export const authOptions: NextAuthOptions = {
                 token.birth = user.birth
                 token.image = user.avatar
                 // @ts-ignore
-                token.accessToken = user.backendToken || account.access_token
+                token.accessToken = user.backendToken!
             }
 
             return token
@@ -201,7 +203,7 @@ export const authOptions: NextAuthOptions = {
                     session.user.provider = "credentials"
                 }
             }
-            session.accessToken = token.accessToken as string || ""
+            session.accessToken = token.accessToken!;
             return session
         },
     },

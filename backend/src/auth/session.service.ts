@@ -8,10 +8,10 @@ import { SessionUser } from 'src/users/user.dto';
 export class SessionService {
   constructor(public prisma: PrismaService) { }
 
-  async createSession(userId: string, expiresAt: Date) {
+  async createSession(userId: string, expiresAt: Date, tx?: any) {
     const sessionToken = randomBytes(32).toString('hex');
 
-    const session = await this.prisma.sessions.create({
+    const session = await (tx || this.prisma).sessions.create({
       data: {
         session_token: sessionToken,
         expires: expiresAt,
