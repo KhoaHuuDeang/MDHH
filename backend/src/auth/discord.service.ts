@@ -269,27 +269,23 @@ export class DiscordService {
       const session = await this.sessionService.createSession(user.id, expiresAt, tx);
 
       const payload = {
-        sub: user.id,
+        sub: user.id,              
         email: user.email,
         role: user.roles.name,
-        displayname: user.displayname,
-        username: user.username,
-        iat: Math.floor(Date.now() / 1000),
+        displayname: user.displayname || user.username,
       };
 
+      const accessToken = this.jwtService.sign(payload);
+      console.log('Access Token created:', accessToken);
       return {
-        accessToken: this.jwtService.sign(payload),
-        sessionToken: session.session_token,
-        expires: session.expires,
         user: {
           id: user.id,
           email: user.email,
-          displayname: user.displayname,
           username: user.username,
           role: user.roles.name,
-          avatar: user.avatar,
-          emailVerified: user.email_verified,
+          displayname: user.displayname,
         },
+        accessToken, 
       };
     } catch (error) {
       this.logger.error('Token creation failed:', error);
