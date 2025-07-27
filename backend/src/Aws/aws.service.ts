@@ -16,7 +16,7 @@ export class S3Service {
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ];
-    private readonly MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    private readonly MAX_FILE_SIZE = 50 * 1024 * 1024; 
     private readonly MAX_FILES_PER_RESOURCE = 10;
 
     constructor(private configService: ConfigService) {
@@ -27,7 +27,7 @@ export class S3Service {
                 secretAccessKey: this.configService.get('AWS_SECRET_ACCESS_KEY')!,
             },
         });
-        this.bucketName = this.configService.get('AWS_S3_BUCKET_NAME')!;
+        this.bucketName = this.configService.get('S3_BUCKET')!;
     }
 
     /**
@@ -82,7 +82,9 @@ export class S3Service {
         for (const file of files) {
             try {
                 const s3Key = this.generateS3Key(userId, file.originalFilename);
+                this.logger.log(`Generating pre-signed URL for ${file.originalFilename} with key ${s3Key}`);
                 const preSignedUrl = await this.generatePreSignedUrl(s3Key, file.mimetype);
+                this.logger.log(`Pre-signed URL generated for ${file.originalFilename}: ${preSignedUrl}`);
 
                 preSignedFiles.push({
                     s3Key,
@@ -113,6 +115,7 @@ export class S3Service {
      * Generate pre-signed URL for file upload
      */
     private async generatePreSignedUrl(s3Key: string, mimetype: string): Promise<string> {
+        console.log(`Bucketttttt: ${this.bucketName}`);
         const command = new PutObjectCommand({
             Bucket: this.bucketName,
             Key: s3Key,
