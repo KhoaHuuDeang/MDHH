@@ -1,10 +1,11 @@
+
 import {
   FileUploadMetadata,
-  PreSignedUploadResult,
   UploadMetadata,
-  UploadResponse,
   PaginatedUploads,
 } from '@/types/FileUploadInterface';
+import { getSession } from 'next-auth/react';
+
 
 // Backend API response types (matching uploadsService.md patterns)
 interface PreSignedUrlResponseDto {
@@ -54,14 +55,14 @@ class UploadService {
     options: RequestInit
   ): Promise<T> {
     let lastError: Error;
-
+    console.log()
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       try {
         const response = await fetch(url, {
           ...options,
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.getToken()}`,
+            'Authorization': `Bearer ${await this.getToken()}`,
             ...options.headers,
           },
         });
@@ -74,7 +75,7 @@ class UploadService {
         return await response.json();
       } catch (error) {
         lastError = error as Error;
-        
+
         if (attempt < this.maxRetries) {
           await this.delay(this.retryDelay * attempt);
           continue;
@@ -199,7 +200,7 @@ class UploadService {
       page: page.toString(),
       limit: limit.toString(),
     });
-    
+
     if (status) {
       params.append('status', status);
     }
@@ -244,9 +245,14 @@ class UploadService {
     });
   }
 
-  private getToken(): string {
+  /**
+   * Get JWT token from NextAuth session (not localStorage)
+   * This fixes the 401 authentication errors
+   */
+  private async getToken(): Promise<string> {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('token') || '';
+      const session = await getSession();
+      return session?.accessToken!;
     }
     return '';
   }
