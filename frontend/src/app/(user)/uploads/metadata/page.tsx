@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useUploadStore } from '@/store/uploadStore';
 import UploadStepper from '@/components/upload/UploadStepper';
 import { getIcon } from '@/utils/getIcon';
+import { DocumentCategory } from '@/types/FileUploadInterface';
 
 // Constants theo pattern của codebase
 const SUBJECTS = [
@@ -16,10 +17,10 @@ const SUBJECTS = [
 ] as const;
 
 const DOCUMENT_CATEGORIES = [
-  { value: 'bai-giang', label: 'Bài giảng', icon: 'BookOpen' },
-  { value: 'de-thi', label: 'Đề thi', icon: 'FileText' },
-  { value: 'bai-tap', label: 'Bài tập', icon: 'PenTool' },
-  { value: 'tai-lieu-tham-khao', label: 'Tài liệu tham khảo', icon: 'Book' },
+  { value: DocumentCategory.LECTURE, label: 'Bài giảng', icon: 'BookOpen' },
+  { value: DocumentCategory.EXAM, label: 'Đề thi', icon: 'FileText' },
+  { value: DocumentCategory.EXERCISE, label: 'Bài tập', icon: 'PenTool' },
+  { value: DocumentCategory.REFERENCE, label: 'Tài liệu tham khảo', icon: 'Book' },
 ] as const;
 
 const VISIBILITY_OPTIONS = [
@@ -34,26 +35,25 @@ export default function MetadataPage() {
     updateMetadata, 
     nextStep, 
     prevStep,
-    validateCurrentStep,
+    validateStep,
     files 
   } = useUploadStore();
 
   // Validation state với useMemo để tối ưu performance
   const validationState = useMemo(() => {
-    const isValid = validateCurrentStep();
+    const isValid = validateStep(2);
     const missingFields = [];
     
     if (!metadata.title?.trim()) missingFields.push('Tiêu đề');
-    if (!metadata.subject) missingFields.push('Môn học');
     if (!metadata.category) missingFields.push('Loại tài liệu');
     if (!metadata.description?.trim()) missingFields.push('Mô tả');
 
     return {
       isValid,
       missingFields,
-      canProceed: isValid && files.filter(f => f.status === 'success').length > 0
+      canProceed: isValid && files.filter(f => f.status === 'completed').length > 0
     };
-  }, [metadata, validateCurrentStep, files]);
+  }, [metadata, validateStep, files]);
 
   // Handlers với useCallback để tránh re-render
   const handleNext = useCallback(() => {
@@ -129,27 +129,6 @@ export default function MetadataPage() {
               >
                 Môn học *
               </label>
-              <div className="relative">
-                <select
-                  id="subject-select"
-                  value={metadata.subject || ''}
-                  onChange={(e) => handleFieldChange('subject', e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#6A994E] appearance-none ${
-                    !metadata.subject ? 'border-red-300' : 'border-gray-300 hover:border-[#6A994E]'
-                  }`}
-                  required
-                >
-                  <option value="">Chọn môn học</option>
-                  {SUBJECTS.map(subject => (
-                    <option key={subject.value} value={subject.value}>
-                      {subject.label}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  {getIcon('ChevronDown', 20, 'text-gray-400')}
-                </div>
-              </div>
             </div>
 
             <div>
@@ -326,7 +305,7 @@ export default function MetadataPage() {
           
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-500">
-              {files.filter(f => f.status === 'success').length} file đã sẵn sàng
+              {files.filter(f => f.status === 'completed').length} file đã sẵn sàng
             </span>
             <button
               type="button"
