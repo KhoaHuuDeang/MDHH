@@ -8,24 +8,32 @@ import UploadedFilesList from '@/components/upload/UploadedFilesList';
 import { useUploadStore } from '@/store/uploadStore';
 
 const UploadPage = () => {
-  const { 
-    files, 
-    isSubmitting, 
-    removeFile, 
-    submitFiles, 
-    resetUpload 
-  } = useUploadStore();
-
+  const files = useUploadStore(state => state.files);
+  const isSubmitting = useUploadStore(state => state.isSubmitting);
+  const removeFile = useUploadStore(state => state.removeFile);
+  const submitUpload = useUploadStore(state => state.submitUpload);
+  const resetUpload = useUploadStore(state => state.resetUpload);
+  
+  // Debug: Track files array changes
+  React.useEffect(() => {
+    console.log(`📋 UploadPage: Files array updated:`, files.map(f => ({
+      name: f.name,
+      status: f.status,
+      progress: f.progress
+    })));
+  }, [files]);
+  
   const submitButtonState = useMemo(() => {
+    
     // lọc ra file có status thành công
-    const successFiles = files.filter(f => f.status === 'success');
+    const successFiles = files.filter(f => f.status === 'completed');
     // Kiểm tra có file hay chưa, nếu có -> true, chưa -> 6
     const isDisabled = successFiles.length === 0 || isSubmitting;
-    
+
 
     // xử lý trạng thái || className
     return {
-      disabled: isDisabled, 
+      disabled: isDisabled,
       text: isSubmitting ? 'is processing...' : 'next',
       ariaLabel: isDisabled
         ? 'At least one file must be successfully uploaded to continue'
@@ -35,9 +43,9 @@ const UploadPage = () => {
 
   const handleSubmit = useCallback(async () => {
     if (!submitButtonState.disabled) {
-      await submitFiles();
+      await submitUpload();
     }
-  }, [submitFiles, submitButtonState.disabled]);
+  }, [submitUpload, submitButtonState.disabled]);
 
   const handleReset = useCallback(() => {
     if (window.confirm('Bạn có chắc muốn xóa tất cả file đã upload?')) {
@@ -49,7 +57,7 @@ const UploadPage = () => {
     <>
       <main className="max-w-4xl mx-auto px-4 py-12" role="main">
         <UploadHeader />
-        
+
         <nav aria-label="Upload progress" className="mb-8">
           <UploadStepper />
         </nav>
@@ -80,10 +88,10 @@ const UploadPage = () => {
 
         <footer className="mt-8 flex justify-between items-center">
           <div className="text-sm text-gray-500">
-            {files.filter(f => f.status === 'success').length} / {files.length} succeed in uploading files
+            {files.filter(f => f.status === 'completed').length} / {files.length} succeed in uploading files
           </div>
-          
-          <button 
+
+          <button
             onClick={handleSubmit}
             disabled={submitButtonState.disabled}
             className="bg-[#386641] text-white font-semibold px-10 py-3 rounded-lg hover:bg-[#2d4f31] transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#386641] focus:ring-offset-2"
