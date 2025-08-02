@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useMemo } from 'react';
+import React, { memo, useEffect, useMemo } from 'react';
 import { FileUploadInterface } from '@/types/FileUploadInterface';
 import { formatBytes } from '@/data/FileUploadMockdata';
 import { getIcon } from '@/utils/getIcon';
@@ -10,14 +10,19 @@ interface FileItemProps {
   onRemove: (fileId: string) => void;
 }
 function FileItem({ file, onRemove }: FileItemProps) {
-  const isSuccess = file.status === 'success';
+  const isCompleted = file.status === 'completed';
   const isError = file.status === 'error';
-  const isUploading = file.status === 'uploading';
+  const isUploading = file.status === 'uploading'; 
 
+  // Force re-render on file changes - debug helper
+  useEffect(() => {
+    console.log(`🔄 FileItem re-rendered for ${file.name}: status=${file.status}, progress=${file.progress}`);
+  }, [file.status, file.progress, file.name]); 
 
   const statusConfig = useMemo(() => {
+    console.log(`🔍 File ${file.name} status: ${file.status}, progress: ${file.progress}`);
     switch (file.status) {
-      case 'success':
+      case 'completed':
         return {
           containerClass: 'bg-white border-gray-200',
           icon: 'CheckCircle',
@@ -31,14 +36,21 @@ function FileItem({ file, onRemove }: FileItemProps) {
           iconClass: 'text-red-600',
           ariaLabel: 'Upload failed'
         }
-      default:
+      case 'uploading':
         return {
           containerClass: 'bg-blue-50 border-blue-200',
           icon: 'Clock',
           iconClass: 'text-blue-600',
           ariaLabel: 'Uploading'
         }
-    }}, [file.status]);
+      default:
+        return {
+          containerClass: 'bg-gray-50 border-gray-200',
+          icon: 'Clock',
+          iconClass: 'text-gray-600',
+          ariaLabel: 'Pending'
+        }
+    }}, [file.status, file.progress, file.name]); // Add file.name to dependencies
 
 
     const progressBarWidth = useMemo(() =>
@@ -75,46 +87,49 @@ function FileItem({ file, onRemove }: FileItemProps) {
         </header>
 
         <div className="pl-8">
-          {isSuccess && (
+          {/* OPTIMIZATION: Universal progress display logic */}
+          {((isCompleted) || (isUploading) || (file.status === 'pending' && (file.progress || 0) > 0)) && (
             <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-500 flex-shrink-0">
-                {formatBytes(file.size)}
+              <span className={`text-xs flex-shrink-0 ${
+                isCompleted ? 'text-gray-500' : 
+                isUploading ? 'text-blue-600' : 
+                'text-orange-600'
+              }`}>
+                {isCompleted ? formatBytes(file.size) :
+                 isUploading ? 'Đang tải lên...' :
+                 'Đang khởi tạo upload...'
+                }
               </span>
               <div className="w-full bg-gray-200 rounded-full h-1.5 flex-1">
                 <div
-                  className="bg-green-500 h-1.5 rounded-full transition-all duration-300"
-                  style={{ width: progressBarWidth }}
-                  role="progressbar"
-                  aria-valuenow={file.progress || 100}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-label="Upload progress"
-                />
-              </div>
-              <span className="text-xs text-gray-500 font-semibold flex-shrink-0">
-                {file.progress || 100}%
-              </span>
-            </div>
-          )}
-
-          {isUploading && (
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-blue-600 flex-shrink-0">
-                Đang tải lên...
-              </span>
-              <div className="w-full bg-gray-200 rounded-full h-1.5 flex-1">
-                <div
-                  className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    isCompleted ? 'bg-green-500' :
+                    isUploading ? 'bg-blue-500' :
+                    'bg-orange-500'
+                  }`}
                   style={{ width: progressBarWidth }}
                   role="progressbar"
                   aria-valuenow={file.progress || 0}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-label="Upload progress"
+                  aria-label={`Upload progress: ${file.progress || 0}%`}
                 />
               </div>
-              <span className="text-xs text-blue-600 font-semibold flex-shrink-0">
+              <span className={`text-xs font-semibold flex-shrink-0 ${
+                isCompleted ? 'text-gray-500' : 
+                isUploading ? 'text-blue-600' : 
+                'text-orange-600'
+              }`}>
                 {file.progress || 0}%
+              </span>
+            </div>
+          )}
+
+          {/* Show file size for truly pending files (no progress yet) */}
+          {file.status === 'pending' && (file.progress || 0) === 0 && (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-500 flex-shrink-0">
+                {formatBytes(file.size)} • Chờ upload...
               </span>
             </div>
           )}
@@ -131,4 +146,27 @@ function FileItem({ file, onRemove }: FileItemProps) {
 
   FileItem.displayName = 'FileItem';
 
-  export default memo(FileItem);
+  // Fixed: Custom comparison function for React.memo 
+  // Return TRUE = skip re-render (props are same)
+  // Return FALSE = do re-render (props changed)
+  export default memo(FileItem, (prevProps, nextProps) => {
+    const prevFile = prevProps.file;
+    const nextFile = nextProps.file;
+    
+    // Skip re-render ONLY if ALL critical properties are identical
+    const arePropsEqual = (
+      prevFile.id === nextFile.id &&
+      prevFile.status === nextFile.status &&
+      prevFile.progress === nextFile.progress &&
+      prevFile.name === nextFile.name &&
+      prevFile.errorMessage === nextFile.errorMessage &&
+      prevProps.onRemove === nextProps.onRemove
+    );
+    
+    // Debug log for memo decisions
+    if (!arePropsEqual) {
+      console.log(`🔄 FileItem memo: RE-RENDERING ${nextFile.name} due to prop changes`);
+    }
+    
+    return arePropsEqual; // true = skip re-render, false = do re-render
+  });

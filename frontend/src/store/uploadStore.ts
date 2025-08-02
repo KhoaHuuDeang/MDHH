@@ -134,7 +134,7 @@ export const useUploadStore = create<UploadState>()(
           }
         },
 
-        // Step 1: Request pre-signed URLs and start uploads
+        // Request pre-signed URLs and start uploads
         requestPreSignedUrls: async (fileObjects: FileUploadInterface[]) => {
           try {
             const fileMetadata = fileObjects.map(fileObj => ({

@@ -4,7 +4,7 @@ import { useUploadStore } from '@/store/uploadStore';
 import { getIcon } from '@/utils/getIcon';
 
 export default function UploadStepper() {
-  const { currentStep, validateCurrentStep } = useUploadStore();
+  const { currentStep, validateStep } = useUploadStore();
 
   const steps = [
     {
