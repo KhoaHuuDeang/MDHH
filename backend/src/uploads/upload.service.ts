@@ -124,10 +124,10 @@ export class UploadsService {
     // Comprehensive input validation
     this.validateUploadRequest(requestDto.files, userId);
 
-    // Database health check
+    // Database health check - bằng 1 truy vấn nhỏ tí tí 
     await this.verifyDatabaseConnection();
 
-    // Validate user exists (security check)
+    // Validate user exists (security check) - Tìm user với id được chỉ định, chỉ chọn mỗi id 
     const userExists = await this.prisma.users.findUnique({
       where: { id: userId },
       select: { id: true }
@@ -138,21 +138,23 @@ export class UploadsService {
     }
 
     // Rate limiting check - prevent abuse
+    // Check và đếm trong bản upload lần tải xuống gần nhất 
     const recentRequests = await this.prisma.uploads.count({
       where: {
         user_id: userId,
         created_at: {
-          gte: new Date(Date.now() - this.RATE_LIMIT_WINDOW)
+          gte: new Date(Date.now() - this.RATE_LIMIT_WINDOW) // khoảng thời gian vd : 13h, -> 13-1 = 12
         }
       }
     });
-
+     // nếu user có lần request nhiều hơn quy định theo quy ước RATE_LIMIT_REQUESTS, thì ngừng user lại 
     if (recentRequests > this.RATE_LIMIT_REQUESTS) {
       throw new BadRequestException('Rate limit exceeded. Please wait before making more requests.');
     }
 
     // Retry logic for S3 operations
     let lastError: Error | undefined;
+
     for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
       try {
         this.logger.log(`Requesting pre-signed URLs for ${requestDto.files.length} files for user ${userId} (attempt ${attempt})`);
@@ -169,17 +171,19 @@ export class UploadsService {
           preSignedData,
           expiresIn: 3600, // 1 hour expiry
         };
-      } catch (error) {
-        lastError = error as Error;
+      } catch (error) {             // error
+        lastError = error as Error; // => Ép kiểu cho error
         this.logger.warn(`Pre-signed URL generation attempt ${attempt} failed:`, error);
         
         // Don't retry on validation errors
-        if (error instanceof BadRequestException) {
+        if (error instanceof BadRequestException) { // Kiểu lỗi là BadRequestException => cook
           throw error;
         }
         
         // Wait before retrying
-        if (attempt < this.MAX_RETRIES) {
+        if (attempt < this.MAX_RETRIES) {     
+          // so sánh lần thử hiện tại(current) và lần thử tối đa(3)
+          // => Đợi x ms, rồi thử lại
           await new Promise(resolve => setTimeout(resolve, this.calculateRetryDelay(attempt)));
         }
       }

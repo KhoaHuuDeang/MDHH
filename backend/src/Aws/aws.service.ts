@@ -16,7 +16,7 @@ export class S3Service {
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ];
-    private readonly MAX_FILE_SIZE = 50 * 1024 * 1024; 
+    private readonly MAX_FILE_SIZE = 50 * 1024 * 1024;
     private readonly MAX_FILES_PER_RESOURCE = 10;
 
     constructor(private configService: ConfigService) {
@@ -32,7 +32,9 @@ export class S3Service {
 
     /**
      * Validate file metadata before generating pre-signed URLs
+     *         // Nếu có lỗi trong các case -> throw lỗi
      */
+
     validateFileMetadata(file: FileMetadataDto): void {
         // Check file type
         if (!this.ALLOWED_MIME_TYPES.includes(file.mimetype)) {
@@ -78,11 +80,13 @@ export class S3Service {
 
         // Generate pre-signed URLs
         const preSignedFiles: PreSignedFileData[] = [];
-
+        // qua mỗi lần lặp mỗi file sẽ được thêm s3key và presign tương ứng
         for (const file of files) {
             try {
+                // s3Key trả về return `${userId}/resources/${uniqueId}-${sanitizedFilename}`;
                 const s3Key = this.generateS3Key(userId, file.originalFilename);
                 this.logger.log(`Generating pre-signed URL for ${file.originalFilename} with key ${s3Key}`);
+                //presign được generate ở đây 
                 const preSignedUrl = await this.generatePreSignedUrl(s3Key, file.mimetype);
                 this.logger.log(`Pre-signed URL generated for ${file.originalFilename}: ${preSignedUrl}`);
 
@@ -115,7 +119,6 @@ export class S3Service {
      * Generate pre-signed URL for file upload
      */
     private async generatePreSignedUrl(s3Key: string, mimetype: string): Promise<string> {
-        console.log(`Bucketttttt: ${this.bucketName}`);
         const command = new PutObjectCommand({
             Bucket: this.bucketName,
             Key: s3Key,
@@ -170,13 +173,13 @@ export class S3Service {
      * Generate download URL for uploaded file
      */
     async generateDownloadUrl(s3Key: string): Promise<string> {
-        try{
+        try {
             const command = new GetObjectCommand({
-                Bucket :this.bucketName,
-                Key : s3Key,
-                ResponseContentDisposition : "attachment"
+                Bucket: this.bucketName,
+                Key: s3Key,
+                ResponseContentDisposition: "attachment"
             })
-            return await getSignedUrl(this.s3,command,{expiresIn : 3600})
+            return await getSignedUrl(this.s3, command, { expiresIn: 3600 })
         } catch (error) {
             this.logger.error(`Failed to generate download URL for ${s3Key}:`, error);
             throw new BadRequestException('Failed to generate download URL');
