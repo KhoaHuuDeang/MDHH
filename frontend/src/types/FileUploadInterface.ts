@@ -2,7 +2,7 @@ export interface FileUploadInterface {
   id: string;
   name: string;
   size: number;
-  status: 'pending' | 'uploading' | 'success' | 'error';
+  status: 'pending' | 'uploading' | 'completed' | 'error';
   progress: number;
   uploadedAt: string;
   file?: File;
