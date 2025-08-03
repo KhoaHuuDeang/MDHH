@@ -5,21 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useUploadStore } from '@/store/uploadStore';
 import UploadStepper from '@/components/upload/UploadStepper';
 import { getIcon } from '@/utils/getIcon';
-
-// Constants theo pattern của codebase
-const SUBJECTS = [
-  { value: 'he-csdl', label: 'Hệ CSDL' },
-  { value: 'giai-tich-1', label: 'Giải tích 1' },
-  { value: 'lap-trinh', label: 'Lập trình' },
-  { value: 'toan-cao-cap', label: 'Toán cao cấp' },
-  { value: 'vat-ly', label: 'Vật lý đại cương' },
-] as const;
+import { DocumentCategory } from '@/types/FileUploadInterface';
 
 const DOCUMENT_CATEGORIES = [
-  { value: 'bai-giang', label: 'Bài giảng', icon: 'BookOpen' },
-  { value: 'de-thi', label: 'Đề thi', icon: 'FileText' },
-  { value: 'bai-tap', label: 'Bài tập', icon: 'PenTool' },
-  { value: 'tai-lieu-tham-khao', label: 'Tài liệu tham khảo', icon: 'Book' },
+  { value: DocumentCategory.LECTURE, label: 'Lecture', icon: 'BookOpen' },
+  { value: DocumentCategory.EXAM, label: 'Exam', icon: 'FileText' },
+  { value: DocumentCategory.EXERCISE, label: 'Exercise', icon: 'PenTool' },
+  { value: DocumentCategory.REFERENCE, label: 'Reference', icon: 'Book' },
 ] as const;
 
 const VISIBILITY_OPTIONS = [
@@ -29,31 +21,30 @@ const VISIBILITY_OPTIONS = [
 
 export default function MetadataPage() {
   const router = useRouter();
-  const { 
-    metadata, 
-    updateMetadata, 
-    nextStep, 
+  const {
+    metadata,
+    updateMetadata,
+    nextStep,
     prevStep,
-    validateCurrentStep,
-    files 
+    validateStep,
+    files
   } = useUploadStore();
 
   // Validation state với useMemo để tối ưu performance
   const validationState = useMemo(() => {
-    const isValid = validateCurrentStep();
+    const isValid = validateStep(2);
     const missingFields = [];
-    
+
     if (!metadata.title?.trim()) missingFields.push('Tiêu đề');
-    if (!metadata.subject) missingFields.push('Môn học');
     if (!metadata.category) missingFields.push('Loại tài liệu');
     if (!metadata.description?.trim()) missingFields.push('Mô tả');
 
     return {
       isValid,
       missingFields,
-      canProceed: isValid && files.filter(f => f.status === 'success').length > 0
+      canProceed: isValid && files.filter(f => f.status === 'completed').length > 0
     };
-  }, [metadata, validateCurrentStep, files]);
+  }, [metadata, validateStep, files]);
 
   // Handlers với useCallback để tránh re-render
   const handleNext = useCallback(() => {
@@ -67,7 +58,6 @@ export default function MetadataPage() {
     prevStep();
     router.push('/uploads');
   }, [prevStep, router]);
-
   const handleTagsChange = useCallback((value: string) => {
     const tags = value.split(',').map(tag => tag.trim()).filter(Boolean);
     updateMetadata({ tags });
@@ -83,91 +73,68 @@ export default function MetadataPage() {
       <nav aria-label="Upload progress" className="mb-8">
         <UploadStepper />
       </nav>
-      
+
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
         <header className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Thông tin tài liệu
+            Folder Information {/* ✅ Changed from "Document Information" */}
           </h1>
           <p className="text-gray-600">
-            Vui lòng điền đầy đủ thông tin để tài liệu được phân loại chính xác
+            Organize your educational materials with proper classification and metadata
           </p>
         </header>
 
         <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
           {/* Title Field */}
           <section>
-            <label 
+            <label
               htmlFor="document-title"
               className="block text-sm font-semibold text-gray-700 mb-3"
             >
-              Tiêu đề tài liệu *
+              Document Title *
             </label>
             <input
               id="document-title"
               type="text"
               value={metadata.title || ''}
               onChange={(e) => handleFieldChange('title', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#6A994E] focus:border-transparent ${
-                !metadata.title?.trim() ? 'border-red-300' : 'border-gray-300 hover:border-[#6A994E]'
-              }`}
+              className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#6A994E] focus:border-transparent ${!metadata.title?.trim() ? 'border-red-300' : 'border-gray-300 hover:border-[#6A994E]'
+                }`}
               placeholder="Ví dụ: Bài giảng Chương 1 - Giới thiệu về CSDL"
               required
               aria-describedby="title-help"
             />
             <p id="title-help" className="mt-1 text-xs text-gray-500">
-              Tiêu đề ngắn gọn, mô tả chính xác nội dung tài liệu
+              A concise title that accurately describes the document's content
             </p>
           </section>
 
           {/* Subject & Category Grid */}
           <section className="grid md:grid-cols-2 gap-6">
             <div>
-              <label 
+              <label
                 htmlFor="subject-select"
                 className="block text-sm font-semibold text-gray-700 mb-3"
               >
-                Môn học *
+                Subject *
               </label>
-              <div className="relative">
-                <select
-                  id="subject-select"
-                  value={metadata.subject || ''}
-                  onChange={(e) => handleFieldChange('subject', e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#6A994E] appearance-none ${
-                    !metadata.subject ? 'border-red-300' : 'border-gray-300 hover:border-[#6A994E]'
-                  }`}
-                  required
-                >
-                  <option value="">Chọn môn học</option>
-                  {SUBJECTS.map(subject => (
-                    <option key={subject.value} value={subject.value}>
-                      {subject.label}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  {getIcon('ChevronDown', 20, 'text-gray-400')}
-                </div>
-              </div>
             </div>
 
             <div>
-              <label 
+              <label
                 htmlFor="category-select"
                 className="block text-sm font-semibold text-gray-700 mb-3"
               >
-                Loại tài liệu *
+                Document Type *
               </label>
               <div className="space-y-3">
                 {DOCUMENT_CATEGORIES.map(category => (
-                  <label 
+                  <label
                     key={category.value}
-                    className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all duration-200 hover:border-[#6A994E] ${
-                      metadata.category === category.value 
-                        ? 'border-[#6A994E] bg-green-50' 
-                        : 'border-gray-200'
-                    }`}
+                    className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all duration-200 hover:border-[#6A994E] ${metadata.category === category.value
+                      ? 'border-[#6A994E] bg-green-50'
+                      : 'border-gray-200'
+                      }`}
                   >
                     <input
                       type="radio"
@@ -177,11 +144,10 @@ export default function MetadataPage() {
                       onChange={(e) => handleFieldChange('category', e.target.value)}
                       className="sr-only"
                     />
-                    <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${
-                      metadata.category === category.value 
-                        ? 'border-[#6A994E] bg-[#6A994E]' 
-                        : 'border-gray-300'
-                    }`}>
+                    <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${metadata.category === category.value
+                      ? 'border-[#6A994E] bg-[#6A994E]'
+                      : 'border-gray-300'
+                      }`}>
                       {metadata.category === category.value && (
                         <div className="w-2 h-2 rounded-full bg-white" />
                       )}
@@ -198,7 +164,7 @@ export default function MetadataPage() {
 
           {/* Description */}
           <section>
-            <label 
+            <label
               htmlFor="description"
               className="block text-sm font-semibold text-gray-700 mb-3"
             >
@@ -209,9 +175,8 @@ export default function MetadataPage() {
               value={metadata.description || ''}
               onChange={(e) => handleFieldChange('description', e.target.value)}
               rows={4}
-              className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#6A994E] resize-vertical ${
-                !metadata.description?.trim() ? 'border-red-300' : 'border-gray-300 hover:border-[#6A994E]'
-              }`}
+              className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#6A994E] resize-vertical ${!metadata.description?.trim() ? 'border-red-300' : 'border-gray-300 hover:border-[#6A994E]'
+                }`}
               placeholder="Mô tả nội dung chính, chương trình liên quan, độ khó..."
               required
               aria-describedby="description-help"
@@ -223,7 +188,7 @@ export default function MetadataPage() {
 
           {/* Tags */}
           <section>
-            <label 
+            <label
               htmlFor="tags"
               className="block text-sm font-semibold text-gray-700 mb-3"
             >
@@ -243,7 +208,7 @@ export default function MetadataPage() {
             {metadata.tags && metadata.tags.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {metadata.tags.map((tag, index) => (
-                  <span 
+                  <span
                     key={index}
                     className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full border border-green-200"
                   >
@@ -262,13 +227,12 @@ export default function MetadataPage() {
               </legend>
               <div className="space-y-3">
                 {VISIBILITY_OPTIONS.map(option => (
-                  <label 
+                  <label
                     key={option.value}
-                    className={`flex items-start p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:border-[#6A994E] ${
-                      metadata.visibility === option.value 
-                        ? 'border-[#6A994E] bg-green-50' 
-                        : 'border-gray-200'
-                    }`}
+                    className={`flex items-start p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:border-[#6A994E] ${metadata.visibility === option.value
+                      ? 'border-[#6A994E] bg-green-50'
+                      : 'border-gray-200'
+                      }`}
                   >
                     <input
                       type="radio"
@@ -278,11 +242,10 @@ export default function MetadataPage() {
                       onChange={(e) => handleFieldChange('visibility', e.target.value)}
                       className="sr-only"
                     />
-                    <div className={`w-5 h-5 rounded-full border-2 mr-3 mt-0.5 flex items-center justify-center ${
-                      metadata.visibility === option.value 
-                        ? 'border-[#6A994E] bg-[#6A994E]' 
-                        : 'border-gray-300'
-                    }`}>
+                    <div className={`w-5 h-5 rounded-full border-2 mr-3 mt-0.5 flex items-center justify-center ${metadata.visibility === option.value
+                      ? 'border-[#6A994E] bg-[#6A994E]'
+                      : 'border-gray-300'
+                      }`}>
                       {metadata.visibility === option.value && (
                         <div className="w-2 h-2 rounded-full bg-white" />
                       )}
@@ -323,10 +286,10 @@ export default function MetadataPage() {
             {getIcon('ChevronLeft', 18)}
             Quay lại
           </button>
-          
+
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-500">
-              {files.filter(f => f.status === 'success').length} file đã sẵn sàng
+              {files.filter(f => f.status === 'completed').length} file đã sẵn sàng
             </span>
             <button
               type="button"

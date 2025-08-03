@@ -150,15 +150,38 @@ class UploadService {
         });
       }
 
+      // Enhanced progress tracking with immediate callback
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable && onProgress) {
           const progress = Math.round((event.loaded * 100) / event.total);
-          onProgress(progress);
+          console.log(`📊 S3 Upload progress: ${progress}%`);
+
+          // Use requestAnimationFrame for smooth UI updates
+          requestAnimationFrame(() => {
+            onProgress(progress);
+          });
+        }
+      };
+
+      // Ensure we start with 0% progress
+      xhr.upload.onloadstart = () => {
+        console.log(`🚀 S3 Upload started for file: ${file.name}`);
+        if (onProgress) {
+          requestAnimationFrame(() => {
+            onProgress(0);
+          });
         }
       };
 
       xhr.onload = () => {
-        if (xhr.status === 200) {
+        console.log(`✅ S3 Upload completed with status: ${xhr.status}`);
+        if (xhr.status === 200 || xhr.status === 204) {
+          // Ensure 100% progress on success
+          if (onProgress) {
+            requestAnimationFrame(() => {
+              onProgress(100);
+            });
+          }
           resolve();
         } else {
           reject(new Error(`Upload failed with status: ${xhr.status}`));
@@ -166,16 +189,20 @@ class UploadService {
       };
 
       xhr.onerror = () => {
+        console.error(`❌ S3 Upload network error for file: ${file.name}`);
         reject(new Error('Network error during upload'));
       };
 
       xhr.ontimeout = () => {
+        console.error(`⏰ S3 Upload timeout for file: ${file.name}`);
         reject(new Error('Upload timeout'));
       };
 
       xhr.open('PUT', preSignedUrl);
       xhr.setRequestHeader('Content-Type', file.type);
       xhr.timeout = 300000; // 5 minutes
+
+      console.log(`📤 Starting S3 upload for: ${file.name} (${file.size} bytes)`);
       xhr.send(file);
     });
   }
@@ -232,6 +259,23 @@ class UploadService {
     );
   }
 
+
+
+
+  async deleteS3File(s3Key: string): Promise<void> {
+    return this.makeRequest<void>(`${this.baseUrl}/uploads/delete-s3-file`, {
+      method: 'DELETE',
+      body: JSON.stringify({ s3Key }),
+    });
+  }
+
+  // Batch deletion for multiple files
+  async deleteMultipleS3Files(s3Keys: string[]): Promise<void> {
+    return this.makeRequest<void>(`${this.baseUrl}/uploads/delete-multiple-s3-files`, {
+      method: 'DELETE',
+      body: JSON.stringify({ s3Keys }),
+    });
+  }
   /**
    * Retry failed upload
    * Uses the retry endpoint for failed uploads

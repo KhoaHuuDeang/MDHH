@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
-import { PrismaService } from 'src/prisma.service'; 
+import { PrismaService } from 'src/prisma.service';
 import { S3Service } from 'src/Aws/aws.service';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -26,7 +26,7 @@ export class UploadsService {
   constructor(
     private prisma: PrismaService,
     private s3Service: S3Service,
-  ) {}
+  ) { }
 
   /**
    * Exponential backoff delay calculation
@@ -56,11 +56,11 @@ export class UploadsService {
       if (!file.originalFilename || typeof file.originalFilename !== 'string') {
         throw new BadRequestException(`File ${index + 1}: Invalid filename`);
       }
-      
+
       if (!file.mimetype || typeof file.mimetype !== 'string') {
         throw new BadRequestException(`File ${index + 1}: Invalid MIME type`);
       }
-      
+
       if (!file.fileSize || typeof file.fileSize !== 'number' || file.fileSize <= 0) {
         throw new BadRequestException(`File ${index + 1}: Invalid file size`);
       }
@@ -124,35 +124,37 @@ export class UploadsService {
     // Comprehensive input validation
     this.validateUploadRequest(requestDto.files, userId);
 
-    // Database health check
+    // Database health check - bằng 1 truy vấn nhỏ tí tí 
     await this.verifyDatabaseConnection();
 
-    // Validate user exists (security check)
+    // Validate user exists (security check) - Tìm user với id được chỉ định, chỉ chọn mỗi id 
     const userExists = await this.prisma.users.findUnique({
       where: { id: userId },
       select: { id: true }
     });
-    
+
     if (!userExists) {
       throw new BadRequestException('Invalid user ID');
     }
 
     // Rate limiting check - prevent abuse
+    // Check và đếm trong bản upload lần tải xuống gần nhất 
     const recentRequests = await this.prisma.uploads.count({
       where: {
         user_id: userId,
         created_at: {
-          gte: new Date(Date.now() - this.RATE_LIMIT_WINDOW)
+          gte: new Date(Date.now() - this.RATE_LIMIT_WINDOW) // khoảng thời gian vd : 13h, -> 13-1 = 12
         }
       }
     });
-
+    // nếu user có lần request nhiều hơn quy định theo quy ước RATE_LIMIT_REQUESTS, thì ngừng user lại 
     if (recentRequests > this.RATE_LIMIT_REQUESTS) {
       throw new BadRequestException('Rate limit exceeded. Please wait before making more requests.');
     }
 
     // Retry logic for S3 operations
     let lastError: Error | undefined;
+
     for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
       try {
         this.logger.log(`Requesting pre-signed URLs for ${requestDto.files.length} files for user ${userId} (attempt ${attempt})`);
@@ -169,22 +171,24 @@ export class UploadsService {
           preSignedData,
           expiresIn: 3600, // 1 hour expiry
         };
-      } catch (error) {
-        lastError = error as Error;
+      } catch (error) {             // error
+        lastError = error as Error; // => Ép kiểu cho error
         this.logger.warn(`Pre-signed URL generation attempt ${attempt} failed:`, error);
-        
+
         // Don't retry on validation errors
-        if (error instanceof BadRequestException) {
+        if (error instanceof BadRequestException) { // Kiểu lỗi là BadRequestException => cook
           throw error;
         }
-        
+
         // Wait before retrying
         if (attempt < this.MAX_RETRIES) {
+          // so sánh lần thử hiện tại(current) và lần thử tối đa(3)
+          // => Đợi x ms, rồi thử lại
           await new Promise(resolve => setTimeout(resolve, this.calculateRetryDelay(attempt)));
         }
       }
     }
-    
+
     this.logger.error('All pre-signed URL generation attempts failed:', lastError);
     throw new BadRequestException('Failed to generate upload URLs after multiple attempts. Please try again later.');
   }
@@ -251,10 +255,10 @@ export class UploadsService {
             id: upload.id,
             user_id: upload.user_id || '',
             resource_id: upload.resource_id || '',
-            file_name: upload.file_name || '', 
+            file_name: upload.file_name || '',
             mime_type: upload.mime_type || '',
-            file_size: upload.file_size || 0, 
-            s3_key: '', 
+            file_size: upload.file_size || 0,
+            s3_key: '',
             status: 'PENDING', // Default status
             created_at: upload.created_at || new Date(),
           })),
@@ -265,7 +269,7 @@ export class UploadsService {
       });
     } catch (error) {
       this.logger.error('Failed to create resource with uploads:', error);
-      
+
       // Enhanced error handling with specific error types
       if (error.code === 'P2002') {
         throw new BadRequestException('Resource with this title already exists');
@@ -274,7 +278,7 @@ export class UploadsService {
       } else if (error.code === 'P2034') {
         throw new BadRequestException('Transaction failed due to write conflict');
       }
-      
+
       throw new BadRequestException('Failed to create resource. Please try again.');
     }
   }
@@ -316,11 +320,11 @@ export class UploadsService {
       });
     } catch (error) {
       this.logger.error('Failed to complete upload:', error);
-      
+
       if (error instanceof NotFoundException) {
         throw error;
       }
-      
+
       throw new BadRequestException('Failed to complete upload. Please try again.');
     }
   }
@@ -336,7 +340,7 @@ export class UploadsService {
     status?: string
   ) {
     const skip = (page - 1) * limit;
-    
+
     const where = {
       user_id: userId,
     };
@@ -414,11 +418,11 @@ export class UploadsService {
       });
     } catch (error) {
       this.logger.error(`Failed to delete resource ${resourceId}:`, error);
-      
+
       if (error instanceof NotFoundException) {
         throw error;
       }
-      
+
       throw new BadRequestException('Failed to delete resource. Please try again.');
     }
   }
@@ -445,11 +449,11 @@ export class UploadsService {
       throw new BadRequestException('Download functionality not yet implemented - S3 key not stored');
     } catch (error) {
       this.logger.error(`Failed to generate download URL for upload ${uploadId}:`, error);
-      
+
       if (error instanceof NotFoundException) {
         throw error;
       }
-      
+
       throw new BadRequestException('Failed to generate download URL');
     }
   }
@@ -487,12 +491,44 @@ export class UploadsService {
       return await this.requestPreSignedUrls(retryRequest, userId);
     } catch (error) {
       this.logger.error(`Failed to retry upload ${uploadId}:`, error);
-      
+
       if (error instanceof NotFoundException) {
         throw error;
       }
-      
+
       throw new BadRequestException('Failed to retry upload. Please try again.');
     }
   }
+
+  async deleteS3File(s3Key: string, userId: string): Promise<void> {
+    // Security: Verify user owns this file
+    let uid = s3Key.split('/')[1];
+    if (userId !== uid) {
+      throw new BadRequestException('Unauthorized: Cannot delete file belonging to another user');
+    }
+    try {
+      await this.s3Service.deleteFile(s3Key);
+      this.logger.log(`S3 file deleted: ${s3Key} by user ${userId}`);
+    } catch (error) {
+      this.logger.error(`Failed to delete S3 file ${s3Key}:`, error);
+      throw new BadRequestException('Failed to delete file from storage');
+    }
+  }
+
+  async deleteMultipleS3Files(s3Keys: string[], userId: string): Promise<void> {
+    // Security: Verify all files belong to user
+    const unauthorizedKeys = s3Keys.filter(key => key.split('/')[1] !== userId);
+    if (unauthorizedKeys.length > 0) {
+      throw new BadRequestException('Unauthorized: Cannot delete files belonging to another user');
+    }
+
+    try {
+      await this.s3Service.deleteMultipleFiles(s3Keys);
+      this.logger.log(`${s3Keys.length} S3 files deleted by user ${userId}`);
+    } catch (error) {
+      this.logger.error(`Failed to delete multiple S3 files:`, error);
+      throw new BadRequestException('Failed to delete files from storage');
+    }
+  }
+
 }

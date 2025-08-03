@@ -1,4 +1,4 @@
-import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, HeadObjectCommandOutput, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, DeleteObjectsCommand, GetObjectCommand, HeadObjectCommand, HeadObjectCommandOutput, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FileMetadataDto, PreSignedFileData } from 'src/uploads/uploads.dto';
@@ -16,7 +16,7 @@ export class S3Service {
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ];
-    private readonly MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    private readonly MAX_FILE_SIZE = 50 * 1024 * 1024;
     private readonly MAX_FILES_PER_RESOURCE = 10;
 
     constructor(private configService: ConfigService) {
@@ -27,12 +27,14 @@ export class S3Service {
                 secretAccessKey: this.configService.get('AWS_SECRET_ACCESS_KEY')!,
             },
         });
-        this.bucketName = this.configService.get('AWS_S3_BUCKET_NAME')!;
+        this.bucketName = this.configService.get('S3_BUCKET')!;
     }
 
     /**
      * Validate file metadata before generating pre-signed URLs
+     *         // Nếu có lỗi trong các case -> throw lỗi
      */
+
     validateFileMetadata(file: FileMetadataDto): void {
         // Check file type
         if (!this.ALLOWED_MIME_TYPES.includes(file.mimetype)) {
@@ -78,11 +80,15 @@ export class S3Service {
 
         // Generate pre-signed URLs
         const preSignedFiles: PreSignedFileData[] = [];
-
+        // qua mỗi lần lặp mỗi file sẽ được thêm s3key và presign tương ứng
         for (const file of files) {
             try {
+                // s3Key trả về return `${userId}/resources/${uniqueId}-${sanitizedFilename}`;
                 const s3Key = this.generateS3Key(userId, file.originalFilename);
+                this.logger.log(`Generating pre-signed URL for ${file.originalFilename} with key ${s3Key}`);
+                //presign được generate ở đây 
                 const preSignedUrl = await this.generatePreSignedUrl(s3Key, file.mimetype);
+                this.logger.log(`Pre-signed URL generated for ${file.originalFilename}: ${preSignedUrl}`);
 
                 preSignedFiles.push({
                     s3Key,
@@ -106,7 +112,7 @@ export class S3Service {
     private generateS3Key(userId: string, filename: string): string {
         const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
         const uniqueId = uuidv4();
-        return `${userId}/resources/${uniqueId}-${sanitizedFilename}`;
+        return `temp/${userId}/${uniqueId}-${sanitizedFilename}`;
     }
 
     /**
@@ -152,28 +158,43 @@ export class S3Service {
      * Delete file from S3 (for cleanup operations)
      */
     async deleteFile(s3Key: string): Promise<void> {
+        const command = new DeleteObjectCommand({
+            Bucket: this.bucketName,
+            Key: s3Key,
+        });
+
         try {
-            await this.s3.send(new DeleteObjectCommand({
-                Bucket: this.bucketName, // required
-                Key: s3Key, // required
-            }))
-        } catch (err) {
-            this.logger.error(`Failed to delete file ${s3Key}:`, err);
-            throw new BadRequestException('Failed to delete file from S3');
+            await this.s3.send(command);
+            this.logger.log(`S3 file deleted: ${s3Key}`);
+        } catch (error) {
+            this.logger.error(`Failed to delete S3 file ${s3Key}:`, error);
+            throw new BadRequestException(`Failed to delete file: ${s3Key}`);
         }
+    }
+    async deleteMultipleFiles(s3Keys: string[]): Promise<void> {
+        if (s3Keys.length === 0) return;
+        const chunks = this.chunkArray(s3Keys, 10);
+    }
+
+    private chunkArray<T>(array: T[], chunkSize: number): T[][] {
+        const chunks: T[][] = [];
+        for (let i = 0; i < array.length; i += chunkSize) {
+            chunks.push(array.slice(i, i + chunkSize));
+        }
+        return chunks;
     }
 
     /**
      * Generate download URL for uploaded file
      */
     async generateDownloadUrl(s3Key: string): Promise<string> {
-        try{
+        try {
             const command = new GetObjectCommand({
-                Bucket :this.bucketName,
-                Key : s3Key,
-                ResponseContentDisposition : "attachment"
+                Bucket: this.bucketName,
+                Key: s3Key,
+                ResponseContentDisposition: "attachment"
             })
-            return await getSignedUrl(this.s3,command,{expiresIn : 3600})
+            return await getSignedUrl(this.s3, command, { expiresIn: 3600 })
         } catch (error) {
             this.logger.error(`Failed to generate download URL for ${s3Key}:`, error);
             throw new BadRequestException('Failed to generate download URL');
@@ -194,4 +215,5 @@ export class S3Service {
             throw new BadRequestException('Failed to get file information');
         }
     }
+
 }

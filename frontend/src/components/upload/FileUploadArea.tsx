@@ -6,7 +6,9 @@ import { useUploadStore } from '@/store/uploadStore';
 
 const FileUploadArea = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { addFiles, dragOver, setDragOver } = useUploadStore();
+  const addFiles = useUploadStore(state => state.addFiles);
+  const dragOver = useUploadStore(state => state.dragOver);
+  const setDragOver = useUploadStore(state => state.setDragOver);
 
   // 1.@files - nhận vào file từ input hoặc drop -> chuyển nó sang array  
   // 2. Filter files hợp lệ và không quá 50mb 
@@ -14,10 +16,11 @@ const FileUploadArea = () => {
     if (!files) return;
 
     const fileArray = Array.from(files);
+    const maxSize = 50 * 1024 * 1024; // 50MB in bytes 
     const validFiles = fileArray.filter(file => {
       const validTypes = ['.pdf', '.doc', '.docx'];
       const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-      return validTypes.includes(fileExtension) && file.size <= 50 * 1024 * 1024; // 50MB limit
+      return validTypes.includes(fileExtension) && file.size <= maxSize;
     });
 
     if (validFiles.length > 0) {

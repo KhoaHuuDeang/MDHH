@@ -2,7 +2,7 @@ export interface FileUploadInterface {
   id: string;
   name: string;
   size: number;
-  status: 'pending' | 'uploading' | 'success' | 'error';
+  status: 'pending' | 'uploading' | 'completed' | 'error';
   progress: number;
   uploadedAt: string;
   file?: File;
@@ -15,10 +15,20 @@ export interface UploadMetadata {
   title: string;
   description: string;
   category: DocumentCategory;
+  folderId?: string;
+  classificationLevelId?: string;
   tags: string[];
-  visibility: VisibilityType;
-  thumbnailFile?: File;
+  visibility: 'public' | 'private';
 }
+
+
+export interface ResourceMetadata {
+  title: string;        // Individual file title
+  description: string;  // File-specific description
+  category: string;     // Resource category
+  visibility: 'public' | 'private';
+}
+
 
 export enum VisibilityType {
   PUBLIC = 'public',
@@ -86,4 +96,9 @@ export interface PaginatedUploads {
     total: number;
     totalPages: number;
   };
+
+
+
+
+
 }
