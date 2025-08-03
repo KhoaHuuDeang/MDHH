@@ -1,4 +1,4 @@
-import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, HeadObjectCommandOutput, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, DeleteObjectsCommand, GetObjectCommand, HeadObjectCommand, HeadObjectCommandOutput, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FileMetadataDto, PreSignedFileData } from 'src/uploads/uploads.dto';
@@ -112,7 +112,7 @@ export class S3Service {
     private generateS3Key(userId: string, filename: string): string {
         const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
         const uniqueId = uuidv4();
-        return `${userId}/resources/${uniqueId}-${sanitizedFilename}`;
+        return `temp/${userId}/${uniqueId}-${sanitizedFilename}`;
     }
 
     /**
@@ -158,15 +158,30 @@ export class S3Service {
      * Delete file from S3 (for cleanup operations)
      */
     async deleteFile(s3Key: string): Promise<void> {
+        const command = new DeleteObjectCommand({
+            Bucket: this.bucketName,
+            Key: s3Key,
+        });
+
         try {
-            await this.s3.send(new DeleteObjectCommand({
-                Bucket: this.bucketName, // required
-                Key: s3Key, // required
-            }))
-        } catch (err) {
-            this.logger.error(`Failed to delete file ${s3Key}:`, err);
-            throw new BadRequestException('Failed to delete file from S3');
+            await this.s3.send(command);
+            this.logger.log(`S3 file deleted: ${s3Key}`);
+        } catch (error) {
+            this.logger.error(`Failed to delete S3 file ${s3Key}:`, error);
+            throw new BadRequestException(`Failed to delete file: ${s3Key}`);
         }
+    }
+    async deleteMultipleFiles(s3Keys: string[]): Promise<void> {
+        if (s3Keys.length === 0) return;
+        const chunks = this.chunkArray(s3Keys, 10);
+    }
+
+    private chunkArray<T>(array: T[], chunkSize: number): T[][] {
+        const chunks: T[][] = [];
+        for (let i = 0; i < array.length; i += chunkSize) {
+            chunks.push(array.slice(i, i + chunkSize));
+        }
+        return chunks;
     }
 
     /**
@@ -200,4 +215,5 @@ export class S3Service {
             throw new BadRequestException('Failed to get file information');
         }
     }
+
 }
