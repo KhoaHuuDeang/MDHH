@@ -27,19 +27,19 @@ import { UploadsService } from './upload.service';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UploadsController {
-  constructor(private readonly uploadsService: UploadsService) {}
+  constructor(private readonly uploadsService: UploadsService) { }
 
   /**
    * Step 1: Request pre-signed URLs for file uploads
    */
   @Post('request-presigned-urls')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Request pre-signed URLs for file uploads',
     description: 'Validates files and returns S3 pre-signed URLs. No database writes performed.'
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Pre-signed URLs generated successfully',
     type: PreSignedUrlResponseDto
   })
@@ -55,12 +55,12 @@ export class UploadsController {
    * Step 2: Create resource with upload records
    */
   @Post('create-resource')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Create resource with upload records',
     description: 'Creates resource and upload records in database after metadata confirmation.'
   })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'Resource and uploads created successfully',
     type: ResourceResponseDto
   })
@@ -79,7 +79,7 @@ export class UploadsController {
    */
   @Post('complete/:resourceId')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Complete upload process',
     description: 'Verifies S3 uploads and updates status to completed.'
   })
@@ -143,5 +143,33 @@ export class UploadsController {
     @Request() req: any
   ): Promise<void> {
     await this.uploadsService.deleteResource(resourceId, req.user.userId);
+  }
+
+
+
+  @Delete('/delete-s3-file')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete single file from S3',
+    description: 'Deletes a file from S3 bucket. Used for cleanup during upload cancellation.'
+  })
+  async deleteS3File(
+    @Body() deleteDto: { s3Key: string },
+    @Request() req: any
+  ): Promise<void> {
+    return await this.uploadsService.deleteS3File(deleteDto.s3Key, req.user.userId);
+  }
+
+  @Delete('/delete-multiple-s3-files')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete multiple files from S3',
+    description: 'Batch delete files from S3 bucket.'
+  })
+  async deleteMultipleS3Files(
+    @Body() deleteDto: { s3Keys: string[] },
+    @Request() req: any
+  ): Promise<void> {
+    return await this.uploadsService.deleteMultipleS3Files(deleteDto.s3Keys, req.user.userId);
   }
 }
