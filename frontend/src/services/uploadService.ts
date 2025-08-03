@@ -155,7 +155,7 @@ class UploadService {
         if (event.lengthComputable && onProgress) {
           const progress = Math.round((event.loaded * 100) / event.total);
           console.log(`📊 S3 Upload progress: ${progress}%`);
-          
+
           // Use requestAnimationFrame for smooth UI updates
           requestAnimationFrame(() => {
             onProgress(progress);
@@ -201,7 +201,7 @@ class UploadService {
       xhr.open('PUT', preSignedUrl);
       xhr.setRequestHeader('Content-Type', file.type);
       xhr.timeout = 300000; // 5 minutes
-      
+
       console.log(`📤 Starting S3 upload for: ${file.name} (${file.size} bytes)`);
       xhr.send(file);
     });
@@ -259,6 +259,23 @@ class UploadService {
     );
   }
 
+
+
+
+  async deleteS3File(s3Key: string): Promise<void> {
+    return this.makeRequest<void>(`${this.baseUrl}/uploads/delete-s3-file`, {
+      method: 'DELETE',
+      body: JSON.stringify({ s3Key }),
+    });
+  }
+
+  // Batch deletion for multiple files
+  async deleteMultipleS3Files(s3Keys: string[]): Promise<void> {
+    return this.makeRequest<void>(`${this.baseUrl}/uploads/delete-multiple-s3-files`, {
+      method: 'DELETE',
+      body: JSON.stringify({ s3Keys }),
+    });
+  }
   /**
    * Retry failed upload
    * Uses the retry endpoint for failed uploads

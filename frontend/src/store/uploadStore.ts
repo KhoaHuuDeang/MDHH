@@ -44,7 +44,7 @@ interface UploadState {
   // Upload flow (updated for 2-step pattern)
   submitUpload: () => Promise<void>;
   resetUpload: () => void;
-
+  removeAllFiles: () => void
   // Upload history
   loadUploadHistory: (page?: number, limit?: number) => Promise<void>;
   deleteUploadSession: (resourceId: string) => Promise<void>; // Changed to resourceId
@@ -83,33 +83,33 @@ export const useUploadStore = create<UploadState>()(
         // File management actions (updated for 2-step pattern)
         addFiles: async (newFiles: File[]) => {
           try {
-            set((state) =>{
+            set((state) => {
               state.errors = {}
             })
 
             // Validate files
-              const validTypes = [
-                'application/pdf',
-                'application/msword',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-              ];
-              const maxSize = 50 * 1024 * 1024; // 50MB
+            const validTypes = [
+              'application/pdf',
+              'application/msword',
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ];
+            const maxSize = 50 * 1024 * 1024; // 50MB
 
-             const validFiles = newFiles.reduce<{
-              valid : File[];
-              error : Record<string,string>
-             }>((acc,file)=>{
-                if(!validTypes.includes(file.type)){
-                  acc.error[file.name] = `File ${file.name} has invalid type`;
-                }
-                else if(file.size > maxSize){
-                  acc.error[file.name] = `File ${file.name} exceeds 50MB limit`;
-                }
-                else{
-                  acc.valid.push(file)
-                }
-                return acc;
-             },{valid : [],error : {}})
+            const validFiles = newFiles.reduce<{
+              valid: File[];
+              error: Record<string, string>
+            }>((acc, file) => {
+              if (!validTypes.includes(file.type)) {
+                acc.error[file.name] = `File ${file.name} has invalid type`;
+              }
+              else if (file.size > maxSize) {
+                acc.error[file.name] = `File ${file.name} exceeds 50MB limit`;
+              }
+              else {
+                acc.valid.push(file)
+              }
+              return acc;
+            }, { valid: [], error: {} })
             // Create file objects
             const fileObjects: FileUploadInterface[] = validFiles.valid.map((file, index) => ({
               id: `${Date.now()}-${index}`,
@@ -172,7 +172,7 @@ export const useUploadStore = create<UploadState>()(
               try {
                 // Add small delay to ensure UI updates are rendered
                 await new Promise(resolve => setTimeout(resolve, 10));
-                
+
                 await uploadService.uploadToS3(
                   fileObj.file!,
                   preSignedData.preSignedUrl,
@@ -196,10 +196,10 @@ export const useUploadStore = create<UploadState>()(
 
               } catch (error) {
                 const err = error as Error;
-                const errorMessage = err.message === 'Upload aborted' 
-                  ? 'Upload cancelled' 
+                const errorMessage = err.message === 'Upload aborted'
+                  ? 'Upload cancelled'
                   : 'Upload failed';
-                
+
                 // Atomic error state update
                 set((state) => {
                   const file = state.files.find((f: FileUploadInterface) => f.id === fileObj.id);
@@ -230,10 +230,21 @@ export const useUploadStore = create<UploadState>()(
           }
         },
 
-        removeFile: (fileId: string) => {
+        removeFile: async (fileId: string) => {
+          set((state) => {
+            state.errors = {}
+          })
           // Cancel upload if in progress
+          const file = get().files.find((f) => f.id === fileId);
           get().cancelFileUpload(fileId);
-
+          if (file?.status === 'completed' && file.s3Key) {
+            try {
+              await uploadService.deleteS3File(file.s3Key)
+              console.log(`deleted statuss: ${file.s3Key}`);
+            } catch (err) {
+              get().setError('upload', `Failed to remove file ${file.name}`);
+            }
+          }
           set((state) => {
             state.files = state.files.filter((file: FileUploadInterface) => file.id !== fileId);
           });
@@ -253,12 +264,12 @@ export const useUploadStore = create<UploadState>()(
               // Ensure progress is within valid bounds and force re-render
               const validProgress = Math.min(100, Math.max(0, Math.round(progress)));
               file.progress = validProgress;
-              
+
               // Force status to 'uploading' if progress > 0 and status is still 'pending'
               if (validProgress > 0 && file.status === 'pending') {
                 file.status = 'uploading';
               }
-              
+
               console.log(`✅ Progress update for ${file.name}: ${validProgress}%`);
             } else {
               console.warn(`❌ File with id ${fileId} not found for progress update`);
@@ -272,7 +283,7 @@ export const useUploadStore = create<UploadState>()(
             if (file) {
               file.status = status;
               file.errorMessage = errorMessage;
-              
+
               // Ensure progress consistency based on status
               if (status === 'completed') {
                 file.progress = 100;
@@ -280,7 +291,7 @@ export const useUploadStore = create<UploadState>()(
                 file.progress = 0;
               }
               // Don't modify progress for 'uploading' and 'error' states
-              
+
               console.log(`✅ Status update for ${file.name}: ${status}${file.progress ? ` (${file.progress}%)` : ''}`);
             } else {
               console.warn(`❌ File with id ${fileId} not found for status update`);
@@ -436,29 +447,75 @@ export const useUploadStore = create<UploadState>()(
           }
         },
 
-        resetUpload: () => {
-          // Cancel all ongoing uploads
-          const { uploadControllers } = get();
-          Object.values(uploadControllers).forEach((controller: AbortController) => controller.abort());
+        resetUpload: async () => {
+          try {
+            // Get current files before clearing state
+            const { files, uploadControllers } = get();
 
-          set((state) => {
-            state.files = [];
-            state.metadata = {
-              title: '',
-              description: '',
-              category: state.metadata.category,
-              tags: [],
-              visibility: state.metadata.visibility,
-              thumbnailFile: undefined,
-            };
-            state.currentStep = 1;
-            state.isSubmitting = false;
-            state.dragOver = false;
-            state.resourceId = undefined;
-            state.sessionId = undefined;
-            state.errors = {};
-            state.uploadControllers = {}; // Reset to empty object instead of Map.clear()
-          });
+            // Cancel all ongoing uploads
+            Object.values(uploadControllers).forEach((controller: AbortController) => controller.abort());
+
+            // Delete completed S3 files
+            const completedFiles = files.filter(f => f.status === 'completed' && f.s3Key);
+            if (completedFiles.length > 0) {
+              try {
+                const s3Keys = completedFiles.map(f => f.s3Key!);
+                await uploadService.deleteMultipleS3Files(s3Keys);
+                console.log(`🗑️ Cleaned up ${s3Keys.length} S3 files during reset`);
+              } catch (error) {
+                console.warn('⚠️ Failed to cleanup S3 files during reset:', error);
+              }
+            }
+
+            // Reset state
+            set((state) => {
+              state.files = [];
+              state.metadata = {
+                title: '',
+                description: '',
+                category: state.metadata.category,
+                tags: [],
+                visibility: state.metadata.visibility,
+              };
+              state.currentStep = 1;
+              state.isSubmitting = false;
+              state.dragOver = false;
+              state.resourceId = undefined;
+              state.sessionId = undefined;
+              state.errors = {};
+              state.uploadControllers = {};
+            });
+
+          } catch (error) {
+            console.error('Error during upload reset:', error);
+            get().setError('reset', 'Failed to reset upload completely');
+          }
+        },
+        removeAllFiles: async () => {
+          try {
+            const { files } = get()
+            // Cancel all uploads
+            files.forEach(file => get().cancelFileUpload(file.id));
+            const s3DeletionPromises = files
+              .filter(file => file.status === 'completed' && file.s3Key)
+              .map(async (file) => {
+                try {
+                  await uploadService.deleteS3File(file.s3Key!);
+                  console.log(`🗑️ S3 file deleted: ${file.s3Key}`);
+                } catch (error) {
+                  console.warn(`⚠️ Failed to delete S3 file ${file.s3Key}:`, error);
+                }
+              });
+            await Promise.all(s3DeletionPromises);
+
+            set((state) => {
+              state.files = [];
+              state.uploadControllers = {};
+            });
+          } catch (error) {
+            console.error('Failed to remove all files:', error);
+            get().setError('remove', 'Failed to remove all files');
+          }
         },
 
         // Upload history
@@ -529,7 +586,6 @@ export const useUploadStore = create<UploadState>()(
       name: 'upload-store',
       partialize: (state) => ({
         metadata: state.metadata,
-        currentStep: state.currentStep,
         resourceId: state.resourceId,
         sessionId: state.sessionId,
       }),
