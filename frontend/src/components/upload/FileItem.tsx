@@ -57,10 +57,10 @@ function FileItem({ file, onRemove }: FileItemProps) {
       `${file.progress || 0}%`, [file.progress]
     );
 
-    const handleRemove = React.useCallback(() => {
+    const handleRemove = React.useCallback(async () => {
       onRemove(file.id);
     }, [file.id, onRemove]);
-
+    
     return (
       <article
         className={`p-4 rounded-lg shadow-sm border flex flex-col gap-2 transition-all duration-200 ${statusConfig.containerClass}`}
@@ -87,7 +87,6 @@ function FileItem({ file, onRemove }: FileItemProps) {
         </header>
 
         <div className="pl-8">
-          {/* OPTIMIZATION: Universal progress display logic */}
           {((isCompleted) || (isUploading) || (file.status === 'pending' && (file.progress || 0) > 0)) && (
             <div className="flex items-center gap-3">
               <span className={`text-xs flex-shrink-0 ${
