@@ -1,13 +1,6 @@
-"use client";
-
 import React from 'react';
 import { getIcon } from '@/utils/getIcon';
-
-interface ClassificationLevel {
-  id: string;
-  name: string;
-  description: string;
-}
+import { ClassificationLevel } from '@/types/FolderInterface';
 
 interface ClassificationLevelSelectorProps {
   levels: ClassificationLevel[];
@@ -16,72 +9,77 @@ interface ClassificationLevelSelectorProps {
   isLoading: boolean;
 }
 
-const ClassificationLevelSelector: React.FC<ClassificationLevelSelectorProps> = ({
-  levels,
-  selectedLevelId,
-  onLevelChange,
-  isLoading
-}) => {
-  if (isLoading) {
-    return (
-      <section>
-        <label className="block text-sm font-semibold text-gray-700 mb-3">
-          Classification Level *
-        </label>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="animate-pulse bg-gray-200 h-20 rounded-lg"></div>
+function ClassificationLevelSelector({ 
+  levels, 
+  selectedLevelId, 
+  onLevelChange, 
+  isLoading 
+}: ClassificationLevelSelectorProps) {
+  return (
+    <section className="space-y-4" aria-labelledby="classification-title">
+      <div className="flex items-center gap-3">
+        {getIcon('BookOpen', 24, 'text-[#6A994E]')}
+        <h2 id="classification-title" className="text-xl font-semibold text-gray-900">
+          Classification Level
+        </h2>
+        <span className="text-red-500" aria-label="required">*</span>
+      </div>
+      
+      <p className="text-gray-600 text-sm">
+        Select the educational level that best describes your content
+      </p>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center p-8">
+          <div className="animate-spin h-8 w-8 border-2 border-[#6A994E] border-t-transparent rounded-full" />
+          <span className="ml-3 text-gray-600">Loading classification levels...</span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {levels.map((level) => (
+            <button
+              key={level.id}
+              type="button"
+              onClick={() => onLevelChange(level.id)}
+              className={`
+                p-4 rounded-lg border-2 text-left transition-all duration-200
+                hover:shadow-md hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50
+                ${selectedLevelId === level.id
+                  ? 'border-[#6A994E] bg-[#F0F7F4] shadow-lg shadow-[#6A994E]/20'
+                  : 'border-gray-200 bg-white hover:border-[#6A994E]/50'
+                }
+              `}
+              aria-pressed={selectedLevelId === level.id}
+              aria-describedby={`level-desc-${level.id}`}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`
+                  w-3 h-3 rounded-full mt-2 transition-colors duration-200
+                  ${selectedLevelId === level.id ? 'bg-[#6A994E]' : 'bg-gray-300'}
+                `} />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 mb-1">
+                    {level.name}
+                  </h3>
+                  <p 
+                    id={`level-desc-${level.id}`}
+                    className="text-sm text-gray-600"
+                  >
+                    {level.description}
+                  </p>
+                  {level.tags && level.tags.length > 0 && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      {level.tags.length} available tags
+                    </div>
+                  )}
+                </div>
+              </div>
+            </button>
           ))}
         </div>
-      </section>
-    );
-  }
-
-  return (
-    <section>
-      <label className="block text-sm font-semibold text-gray-700 mb-3">
-        Classification Level *
-      </label>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {levels.map(level => (
-          <label
-            key={level.id}
-            className={`p-4 border rounded-lg cursor-pointer transition-all duration-300 
-                       hover:shadow-md hover:shadow-[#386641]/20 hover:scale-105 
-                       focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50 ${
-              selectedLevelId === level.id
-                ? 'border-[#6A994E] bg-green-50 shadow-md shadow-[#386641]/20'
-                : 'border-gray-200 hover:border-[#6A994E]'
-            }`}
-          >
-            <input
-              type="radio"
-              name="classificationLevel"
-              value={level.id}
-              checked={selectedLevelId === level.id}
-              onChange={(e) => onLevelChange(e.target.value)}
-              className="sr-only"
-            />
-            
-            <div className="flex items-center gap-3 mb-2">
-              {getIcon('GraduationCap', 20, selectedLevelId === level.id ? 'text-[#6A994E]' : 'text-gray-400')}
-              <div className="font-medium text-gray-900">{level.name}</div>
-            </div>
-            
-            <div className="text-sm text-gray-500">{level.description}</div>
-            
-            {selectedLevelId === level.id && (
-              <div className="mt-2 flex items-center gap-1 text-[#6A994E] text-sm font-medium">
-                {getIcon('Check', 16)}
-                Selected
-              </div>
-            )}
-          </label>
-        ))}
-      </div>
+      )}
     </section>
   );
-};
+}
 
 export default React.memo(ClassificationLevelSelector);
