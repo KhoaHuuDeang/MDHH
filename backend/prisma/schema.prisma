@@ -27,9 +27,11 @@ model accounts {
 }
 
 model classification_levels {
-  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  name        String? @db.VarChar
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name        String?   @unique @db.VarChar
   description String?
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  folders     folders[]
   tags        tags[]
 }
 
@@ -48,7 +50,7 @@ model comments {
   other_comments       comments[]             @relation("commentsTocomments")
   resources            resources?             @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                users?                 @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  notification_targets notification_targets[] @ignore
+  notification_targets notification_targets[]
 }
 
 model downloads {
@@ -79,16 +81,22 @@ model folder_tags {
 }
 
 model folders {
-  id                   String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  name                 String?                @db.VarChar
-  visibility           Visibility?
-  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
-  comments             comments[]
-  folder_files         folder_files[]
-  folder_tags          folder_tags[]
-  follows              follows[]
-  notification_targets notification_targets[] @ignore
-  rating_targets       rating_targets[]
+  id                      String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name                    String?                @db.VarChar
+  visibility              Visibility?            @default(PUBLIC)
+  created_at              DateTime?              @default(now()) @db.Timestamptz(6)
+  user_id                 String                 @db.Uuid
+  classification_level_id String                 @db.Uuid
+  description             String?
+  updated_at              DateTime?              @default(now()) @db.Timestamptz(6)
+  comments                comments[]
+  folder_files            folder_files[]
+  folder_tags             folder_tags[]
+  classification_levels   classification_levels  @relation(fields: [classification_level_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                   users                  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  follows                 follows[]
+  notification_targets    notification_targets[]
+  rating_targets          rating_targets[]
 }
 
 model follows {
@@ -101,18 +109,18 @@ model follows {
   @@id([user_id, folder_id])
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model notification_targets {
-  notification_id String?        @db.Uuid
-  resource_id     String?        @db.Uuid
-  folder_id       String?        @db.Uuid
-  comment_id      String?        @db.Uuid
-  comments        comments?      @relation(fields: [comment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  folders         folders?       @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  notifications   notifications? @relation(fields: [notification_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  resources       resources?     @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id              String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  notification_id String        @db.Uuid
+  resource_id     String?       @db.Uuid
+  folder_id       String?       @db.Uuid
+  comment_id      String?       @db.Uuid
+  comments        comments?     @relation(fields: [comment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  folders         folders?      @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  notifications   notifications @relation(fields: [notification_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  resources       resources?    @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@ignore
+  @@unique([notification_id, resource_id, folder_id, comment_id])
 }
 
 model notifications {
@@ -123,18 +131,20 @@ model notifications {
   is_read              Boolean?               @default(false)
   created_at           DateTime?              @default(now()) @db.Timestamptz(6)
   read_at              DateTime?              @db.Timestamptz(6)
-  notification_targets notification_targets[] @ignore
+  notification_targets notification_targets[]
   users                users?                 @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model rating_targets {
   id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  rating_id   String?    @db.Uuid
+  rating_id   String     @db.Uuid
   resource_id String?    @db.Uuid
   folder_id   String?    @db.Uuid
   folders     folders?   @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  ratings     ratings?   @relation(fields: [rating_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ratings     ratings    @relation(fields: [rating_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   resources   resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([rating_id, resource_id, folder_id])
 }
 
 model ratings {
@@ -166,7 +176,7 @@ model resources {
   comments             comments[]
   downloads            downloads[]
   folder_files         folder_files[]
-  notification_targets notification_targets[] @ignore
+  notification_targets notification_targets[]
   rating_targets       rating_targets[]
   resource_tags        resource_tags[]
   uploads              uploads[]
@@ -193,13 +203,16 @@ model sessions {
 }
 
 model tags {
-  id                    String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  level_id              String?                @db.Uuid
-  name                  String?                @db.VarChar
+  id                    String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  level_id              String                @db.Uuid
+  name                  String?               @db.VarChar
   description           String?
+  created_at            DateTime?             @default(now()) @db.Timestamptz(6)
   folder_tags           folder_tags[]
   resource_tags         resource_tags[]
-  classification_levels classification_levels? @relation(fields: [level_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  classification_levels classification_levels @relation(fields: [level_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([name, level_id])
 }
 
 model uploads {
@@ -231,7 +244,7 @@ model user_guild_roles {
 model users {
   id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   email            String?            @unique @db.VarChar
-  username         String             @unique @db.VarChar
+  username         String?            @db.VarChar
   displayname      String?            @db.VarChar
   password         String?            @db.VarChar
   role_name        RoleType
@@ -243,6 +256,7 @@ model users {
   accounts         accounts[]
   comments         comments[]
   downloads        downloads[]
+  folders          folders[]
   follows          follows[]
   notifications    notifications[]
   ratings          ratings[]
