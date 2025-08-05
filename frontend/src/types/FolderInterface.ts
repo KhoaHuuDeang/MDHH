@@ -1,12 +1,3 @@
-export interface Folder {
-  id: string;
-  name: string;
-  visibility: 'public' | 'private';
-  created_at: string;
-  classificationLevelId: string;
-  tags: Tag[];
-}
-
 export interface ClassificationLevel {
   id: string;
   name: string;
@@ -19,6 +10,24 @@ export interface Tag {
   name: string;
   description?: string;
   level_id: string;
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  description?: string;
+  visibility: 'public' | 'private';
+  user_id: string;
+  created_at: string;
+  classification_level_id?: string;
+  tags?: Tag[];
+}
+
+export interface ResourceMetadata {
+  title: string;
+  description: string;
+  category: string;
+  visibility: 'public' | 'private';
 }
 
 export interface CreateFolderDto {

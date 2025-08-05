@@ -3,6 +3,7 @@ import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { uploadService } from '@/services/uploadService';
 import { FileUploadInterface, UploadMetadata, PaginatedUploads } from '@/types/FileUploadInterface';
+import { ClassificationLevel, Folder, ResourceMetadata, Tag } from '@/types/FolderInterface';
 
 interface UploadState {
   // Current upload session state
@@ -21,6 +22,18 @@ interface UploadState {
 
   // Upload controllers for cancellation - using Record instead of Map for Immer compatibility
   uploadControllers: Record<string, AbortController>;
+
+
+  fileMetadata: Record<string, ResourceMetadata>;
+  folders: Folder[];
+  classificationLevels: ClassificationLevel[];
+  availableTags: Tag[];
+
+  isLoadingClassifications: boolean;
+  isLoadingTags: boolean;
+  isLoadingFolders: boolean;
+
+
 
   // Actions
   addFiles: (files: File[]) => Promise<void>;
@@ -54,6 +67,16 @@ interface UploadState {
   setError: (key: string, message: string) => void;
   clearError: (key: string) => void;
   clearAllErrors: () => void;
+
+
+
+  //  Metadata actions
+  fetchClassificationLevels: () => Promise<void>;
+  fetchTagsByLevel: (levelId: string) => Promise<void>;
+  fetchUserFolders: () => Promise<void>;
+  createFolder: (name: string, levelId: string, tagIds?: string[]) => Promise<string>;
+  updateFileMetadata: (fileId: string, field: string, value: any) => void;
+  validateMetadataCompletion: () => boolean;
 }
 
 export const useUploadStore = create<UploadState>()(
@@ -71,6 +94,13 @@ export const useUploadStore = create<UploadState>()(
           visibility: 'public' as const,
           thumbnailFile: undefined,
         },
+        fileMetadata: {},
+        folders: [],
+        classificationLevels: [],
+        availableTags: [],
+        isLoadingClassifications: false,
+        isLoadingTags: false,
+        isLoadingFolders: false,
         currentStep: 1,
         isSubmitting: false,
         dragOver: false,
@@ -384,13 +414,13 @@ export const useUploadStore = create<UploadState>()(
         },
 
         validateStep: (step: number): boolean => {
-          const { files, metadata } = get();
+          const { files } = get();
 
           switch (step) {
             case 1:
               return files.some(f => f.status === 'completed');
             case 2:
-              return !!(metadata.title && metadata.description);
+              return get().validateMetadataCompletion();
             case 3:
               return true;
             default:
@@ -577,6 +607,77 @@ export const useUploadStore = create<UploadState>()(
           set((state) => {
             state.errors = {};
           });
+        },
+
+        fetchClassificationLevels: async () => {
+          try {
+            set((state) => { state.isLoadingClassifications = true; });
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/classification-levels`);
+            const levels = await response.json();
+
+            set((state) => {
+              state.classificationLevels = levels;
+              state.isLoadingClassifications = false;
+            });
+          } catch (error) {
+            console.error('Failed to fetch classification levels:', error);
+            get().setError('classifications', 'Failed to load classification levels');
+            set((state) => { state.isLoadingClassifications = false; });
+          }
+        },
+        fetchTagsByLevel: async (levelId: string) => {
+          try {
+            set((state) => { state.isLoadingTags = true; });
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tags/by-level/${levelId}`);
+            const tags = await response.json();
+
+            set((state) => {
+              state.availableTags = tags;
+              state.isLoadingTags = false;
+            });
+          } catch (error) {
+            console.error('Failed to fetch tags:', error);
+            get().setError('tags', 'Failed to load tags');
+            set((state) => { state.isLoadingTags = false; });
+          }
+        },
+        updateFileMetadata: (fileId: string, field: string, value: any) => {
+          set((state) => {
+            if (!state.fileMetadata[fileId]) {
+              state.fileMetadata[fileId] = {
+                title: '',
+                description: '',
+                category: '',
+                visibility: 'public',
+              };
+            }
+            state.fileMetadata[fileId][field] = value;
+          });
+        },
+        validateMetadataCompletion: (): boolean => {
+          const { metadata, fileMetadata, files } = get();
+          const completedFiles = files.filter(f => f.status === 'completed');
+
+          // Folder-level validation
+          const folderLevelValid = !!(
+            metadata.classificationLevelId &&
+            metadata.title?.trim() &&
+            metadata.description?.trim()
+          );
+
+          // Individual file validation
+          const filesValid = completedFiles.length > 0 && completedFiles.every(file => {
+            const fileMeta = fileMetadata[file.id];
+            return !!(
+              fileMeta?.title?.trim() &&
+              fileMeta?.description?.trim() &&
+              fileMeta?.category
+            );
+          });
+
+          return folderLevelValid && filesValid;
         },
       }), {
         name: 'upload-store',

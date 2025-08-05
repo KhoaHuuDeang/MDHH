@@ -22,13 +22,6 @@ export interface UploadMetadata {
 }
 
 
-export interface ResourceMetadata {
-  title: string;        // Individual file title
-  description: string;  // File-specific description
-  category: string;     // Resource category
-  visibility: 'public' | 'private';
-}
-
 
 export enum VisibilityType {
   PUBLIC = 'public',
