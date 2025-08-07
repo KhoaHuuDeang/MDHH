@@ -165,7 +165,7 @@ export default function MetadataPage() {
       const folderId = await createFolder(
         folderName.trim(),
         metadata.resourceClassificationId,
-        metadata.resourceTagIds?.map(tag => tag.id) || []
+        metadata.resourceTagIds
       );
 
       updateFolderManagement({
@@ -300,7 +300,7 @@ export default function MetadataPage() {
           <section>
             <TagSelector
               tags={availableTags}
-              selectedTags={metadata.resourceTagIds?.map(tag => tag.id) || []}
+              selectedTags={metadata.resourceTagIds!}
               onTagsChange={handleTagsChange}
               disabled={!metadata.resourceClassificationId}
               isLoading={isLoadingTags}
