@@ -26,7 +26,7 @@ function ClassificationLevelSelector({
       </div>
       
       <p className="text-gray-600 text-sm">
-        Select the level that match the content of your files 
+        Select the level that match the content of your files in this folder 
       </p>
 
       {isLoading ? (
