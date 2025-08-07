@@ -9,34 +9,34 @@ export enum VisibilityType {
 
 export enum DocumentCategory {
   LECTURE = 'lecture',
-  EXERCISE = 'exercise', 
+  EXERCISE = 'exercise',
   EXAM = 'exam',
   REFERENCE = 'reference',
   OTHER = 'other'
 }
 
+
 export class FileMetadataDto {
-  @ApiProperty({ description: 'Original filename' })
-  @IsString()
-  @IsNotEmpty()
+  @IsString() @IsNotEmpty()
   originalFilename: string;
 
-  @ApiProperty({ description: 'File MIME type' })
-  @IsString()
-  @IsNotEmpty()
+  @IsString() @IsNotEmpty()
   mimetype: string;
 
-  @ApiProperty({ description: 'File size in bytes' })
-  @IsNumber()
-  @Min(1)
-  @Max(50 * 1024 * 1024) // 50MB
+  @IsNumber() @Min(1) @Max(50 * 1024 * 1024)
   fileSize: number;
 
-  @ApiProperty({ description: 'Upload folder', required: false })
-  @IsString()
-  @IsOptional()
-  folderId?: string;
+  user_id?: string;
+  resource_id?: string;
+  file_name?: string;
+  s3_key?: string;
+
+  @IsEnum(['pending', 'uploading', 'completed', 'failed'])
+  status?: 'pending' | 'uploading' | 'completed' | 'failed' = 'pending';
 }
+
+
+
 
 // Step 1: Request pre-signed URLs (no DB writes)
 export class RequestPreSignedUrlsDto {
@@ -75,39 +75,47 @@ export class PreSignedFileData {
   mimetype: string;
 }
 
-// Step 2: Create resource with upload records
+// Step 2: Create resource with folder association
 export class CreateResourceWithUploadsDto {
-  @ApiProperty({ description: 'User ID' })
-  @IsUUID()
-  @IsNotEmpty()
+  @IsUUID() @IsNotEmpty()
   userId: string;
 
-  @ApiProperty({ description: 'Document title' })
-  @IsString()
-  @IsNotEmpty()
-  @Transform(({ value }) => value.trim())
+  @IsString() @IsNotEmpty()
   title: string;
 
-  @ApiProperty({ description: 'Document description' })
-  @IsString()
-  @IsNotEmpty()
-  @Transform(({ value }) => value.trim())
+  @IsString() @IsNotEmpty()
   description: string;
 
-  @ApiProperty({ enum: DocumentCategory, required: false })
-  @IsEnum(DocumentCategory)
-  @IsOptional()
+  @IsEnum(DocumentCategory) @IsOptional()
   category?: DocumentCategory;
 
-  @ApiProperty({ enum: VisibilityType })
   @IsEnum(VisibilityType)
   visibility: VisibilityType;
 
-  @ApiProperty({ description: 'File data with S3 keys' })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => FileUploadDataDto)
-  files: FileUploadDataDto[];
+  @IsUUID() @IsNotEmpty()
+  resourceClassificationId: string;
+
+  @IsArray() @IsString({ each: true }) @IsOptional()
+  resourceTagIds?: string[];
+
+  @IsUUID() @IsOptional()
+  folderId?: string;
+
+  @IsString() @IsOptional()
+  folderName?: string;
+
+  @IsString() @IsOptional()
+  folderDescription?: string;
+
+  @IsUUID() @IsNotEmpty()
+  classificationLevelId: string;
+
+  @IsArray() @IsString({ each: true }) @IsOptional()
+  tagIds?: string[];
+
+  @IsArray() @ValidateNested({ each: true })
+  @Type(() => FileMetadataDto)
+  files: FileMetadataDto[];
 }
 
 export class FileUploadDataDto {
@@ -156,6 +164,9 @@ export class ResourceResponseDto {
     status: string;
     created_at: Date;
   }[];
+
+  @ApiProperty({ description: 'Folder ID if resource was linked to folder', required: false })
+  folderId?: string;
 }
 
 // Step 3: Complete upload (optional verification)
@@ -211,4 +222,36 @@ export class RetryUploadDto {
   @IsString()
   @IsNotEmpty()
   fileId: string;
+}
+
+export class CompleteResourceCreationResponse {
+  @ApiProperty({ description: 'Created resource with metadata' })
+  resource: {
+    id: string;
+    title: string;
+    description: string;
+    category?: string;
+    visibility: VisibilityType;
+    status: string;
+    created_at: Date;
+  };
+
+  @ApiProperty({ description: 'Upload records with S3 keys' })
+  uploads: {
+    id: string;
+    user_id: string;
+    resource_id: string;
+    file_name: string;
+    mime_type: string;
+    file_size: number;
+    s3_key: string;
+    status: string;
+    created_at: Date;
+  }[];
+
+  @ApiProperty({ description: 'Folder ID where resource was placed', required: false })
+  folderId?: string;
+
+  @ApiProperty({ description: 'Success message' })
+  message: string;
 }

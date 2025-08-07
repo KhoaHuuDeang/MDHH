@@ -194,94 +194,155 @@ export class UploadsService {
   }
 
   /**
-   * Step 2: Metadata confirmation & Database creation
-   * Purpose: User confirms metadata → create resource + upload records
-   * Database: Transaction creating resources + uploads records
-   * Optimized with timeout, batch operations, and comprehensive error handling
+   * Step 2: Create Resource with Folder Association
+   * Purpose: Create resource + folder + link them via folder_files junction table
+   * Database: Transaction creating resources + folders + folder_files + uploads
+   * Follows schema pattern: Resources M:N Folders via folder_files table
    */
-  async createResourceWithUploads(
-    createResourceDto: CreateResourceWithUploadsDto
-  ): Promise<ResourceResponseDto> {
-    this.logger.log(`Creating resource with ${createResourceDto.files.length} uploads`);
+  async createResourceWithFolder(
+  createResourceDto: CreateResourceWithUploadsDto
+): Promise<ResourceResponseDto> {
+  this.logger.log(`Creating resource with folder association and ${createResourceDto.files.length} uploads`);
 
-    try {
-      return await this.prisma.$transaction(async (tx) => {
-        // 1. Create resource record with all required fields
-        const resource = await tx.resources.create({
-          data: {
-            title: createResourceDto.title,
-            description: createResourceDto.description,
-            visibility: createResourceDto.visibility || 'PUBLIC',
-          },
-        });
-
-        this.logger.log(`Created resource with ID: ${resource.id}`);
-
-        // 2. Create upload records for each file using batch operation
-        const uploadData = createResourceDto.files.map((file) => ({
-          user_id: createResourceDto.userId,
-          resource_id: resource.id,
-          fileName: file.originalFilename, // Using camelCase field name
-          mime_type: file.mimetype,
-          fileSize: file.fileSize, // Using camelCase field name
-        }));
-
-        // Use createMany for better performance with large batches
-        const uploadsResult = await tx.uploads.createMany({
-          data: uploadData,
-          skipDuplicates: true,
-        });
-
-        // Get the created uploads for response
-        const uploads = await tx.uploads.findMany({
-          where: { resource_id: resource.id },
-          orderBy: { created_at: 'asc' },
-        });
-
-        this.logger.log(`Created ${uploads.length} upload records`);
-
-        // Return formatted response with null safety
-        return {
-          resource: {
-            id: resource.id,
-            title: resource.title || '',
-            description: resource.description || '',
-            category: '', // Not available in schema
-            visibility: resource.visibility as any,
-            status: 'PENDING', // Default status
-            created_at: resource.created_at || new Date(),
-          },
-          uploads: uploads.map(upload => ({
-            id: upload.id,
-            user_id: upload.user_id || '',
-            resource_id: upload.resource_id || '',
-            file_name: upload.file_name || '',
-            mime_type: upload.mime_type || '',
-            file_size: upload.file_size || 0,
-            s3_key: '',
-            status: 'PENDING', // Default status
-            created_at: upload.created_at || new Date(),
-          })),
-        };
-      }, {
-        timeout: this.TRANSACTION_TIMEOUT, // 30 seconds timeout
-        maxWait: 5000, // Max wait for transaction to start
+  try {
+    return await this.prisma.$transaction(async (tx) => {
+      // 1. Create resource record
+      const resource = await tx.resources.create({
+        data: {
+          title: createResourceDto.title,
+          description: createResourceDto.description,
+          category: createResourceDto.category || 'OTHER',
+          visibility: createResourceDto.visibility || 'PUBLIC',
+          status: 'PENDING',
+        },
       });
-    } catch (error) {
-      this.logger.error('Failed to create resource with uploads:', error);
 
-      // Enhanced error handling with specific error types
-      if (error.code === 'P2002') {
-        throw new BadRequestException('Resource with this title already exists');
-      } else if (error.code === 'P2003') {
-        throw new BadRequestException('Invalid foreign key reference');
-      } else if (error.code === 'P2034') {
-        throw new BadRequestException('Transaction failed due to write conflict');
+      this.logger.log(`Created resource with ID: ${resource.id}`);
+
+      let folderId = createResourceDto.folderId;
+      
+      if (!folderId && createResourceDto.folderName) {
+        // Create new folder with classification level
+        const folder = await tx.folders.create({
+          data: {
+            name: createResourceDto.folderName,
+            description: createResourceDto.folderDescription || `Folder for ${createResourceDto.title}`,
+            visibility: createResourceDto.visibility || 'PUBLIC',
+            user_id: createResourceDto.userId,
+            classification_level_id: createResourceDto.classificationLevelId,
+          },
+        });
+        
+        folderId = folder.id;
+        this.logger.log(`Created new folder with ID: ${folder.id}`);
+
+        
+        if (createResourceDto.tagIds && createResourceDto.tagIds.length > 0) {
+          await tx.folder_tags.createMany({
+            data: createResourceDto.tagIds.map(tagId => ({
+              folder_id: folder.id,
+              tag_id: tagId
+            })),
+            skipDuplicates: true,
+          });
+          this.logger.log(`Linked folder to ${createResourceDto.tagIds.length} tags`);
+        }
+      } else if (folderId) {
+        const existingFolder = await tx.folders.findFirst({
+          where: { 
+            id: folderId, 
+            user_id: createResourceDto.userId 
+          }
+        });
+        
+        if (!existingFolder) {
+          throw new BadRequestException('Folder not found or not owned by user');
+        }
+      }
+      if (folderId) {
+        await tx.folder_files.create({
+          data: {
+            folder_id: folderId,
+            resource_id: resource.id,
+          },
+        });
+        this.logger.log(`Linked resource ${resource.id} to folder ${folderId} via folder_files`);
       }
 
-      throw new BadRequestException('Failed to create resource. Please try again.');
+      if (createResourceDto.resourceTagIds && createResourceDto.resourceTagIds.length > 0) {
+        await tx.resource_tags.createMany({
+          data: createResourceDto.resourceTagIds.map(tagId => ({
+            resource_id: resource.id,
+            tag_id: tagId
+          })),
+          skipDuplicates: true,
+        });
+        this.logger.log(`Linked resource to ${createResourceDto.resourceTagIds.length} resource tags`);
+      }
+
+      const uploadData = createResourceDto.files.map((file) => ({
+        user_id: createResourceDto.userId,
+        resource_id: resource.id,
+        file_name: file.originalFilename,
+        mime_type: file.mimetype,
+        file_size: file.fileSize,
+        s3_key: file.s3_key || '', // From successful S3 upload
+        status: 'COMPLETED' as const,
+      }));
+
+      await tx.uploads.createMany({
+        data: uploadData,
+        skipDuplicates: true,
+      });
+
+      const uploads = await tx.uploads.findMany({
+        where: { resource_id: resource.id },
+        orderBy: { created_at: 'asc' },
+      });
+
+      this.logger.log(`Created ${uploads.length} upload records with S3 keys`);
+
+      return {
+        resource: {
+          id: resource.id,
+          title: resource.title || '',
+          description: resource.description || '',
+          category: resource.category || '',
+          visibility: resource.visibility as any,
+          status: 'PENDING_APPROVAL',
+          created_at: resource.created_at || new Date(),
+        },
+        uploads: uploads.map(upload => ({
+          id: upload.id,
+          user_id: upload.user_id || '',
+          resource_id: upload.resource_id || '',
+          file_name: upload.file_name || '',
+          mime_type: upload.mime_type || '',
+          file_size: upload.file_size || 0,
+          s3_key: upload.s3_key || '',
+          status: 'completed',
+          created_at: upload.created_at || new Date(),
+        })),
+        folderId: folderId, 
+      };
+    }, {
+      timeout: this.TRANSACTION_TIMEOUT,
+      maxWait: 5000,
+    });
+  } catch (error) {
+    this.logger.error('Failed to create resource with folder:', error);
+
+    if (error.code === 'P2002') {
+      throw new BadRequestException('Resource or folder name already exists');
+    } else if (error.code === 'P2003') {
+      throw new BadRequestException('Invalid classification level or tag references');
+    } else if (error.code === 'P2025') {
+      throw new BadRequestException('Referenced classification level or folder not found');
     }
+
+    throw new BadRequestException('Failed to create resource with folder association. Please try again.');
   }
+}
 
   /**
    * Step 3: S3 Upload & Completion (optional verification)
@@ -478,7 +539,6 @@ export class UploadsService {
         throw new NotFoundException('Upload not found');
       }
 
-      // Create retry request with original file metadata
       const retryRequest: RequestPreSignedUrlsDto = {
         files: [{
           originalFilename: upload.file_name || 'unknown',

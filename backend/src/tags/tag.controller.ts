@@ -16,6 +16,7 @@ export class TagsController {
   @Get('by-level/:levelId')
   @ApiOperation({ summary: 'Get tags by classification level' })
   async getByLevel(@Param('levelId') levelId: string) {
+    console.log('api lấy tag được gọi')
     return this.tagsService.findByLevel(levelId);
   }
 }

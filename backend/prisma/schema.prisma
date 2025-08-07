@@ -244,7 +244,7 @@ model user_guild_roles {
 model users {
   id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   email            String?            @unique @db.VarChar
-  username         String?            @db.VarChar
+  username         String?            @unique @db.VarChar
   displayname      String?            @db.VarChar
   password         String?            @db.VarChar
   role_name        RoleType
