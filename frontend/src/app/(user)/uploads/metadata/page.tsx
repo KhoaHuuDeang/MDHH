@@ -139,9 +139,8 @@ export default function MetadataPage() {
 
 
   const handleTagsChange = useCallback((tagIds: string[]) => {
-    const selectedTagObjects = availableTags.filter(tag => tagIds.includes(tag.id));
-    updateMetadata({ resourceTagIds: selectedTagObjects });
-  }, [availableTags, updateMetadata]);
+    updateMetadata({ resourceTagIds: tagIds });
+  },[updateMetadata]);
 
 
   const handleFolderSelect = useCallback((folderId: string) => {
@@ -187,26 +186,66 @@ export default function MetadataPage() {
       </nav>
 
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+
+        {/* Individual File Metadata Section */}
+        {completedFiles.length > 0 && (
+          <section className="border-t border-gray-200 pt-8 mt-8">
+            <FileMetadataEditor
+              files={completedFiles}
+              fileMetadata={fileMetadata}
+              onFileMetadataChange={updateFileMetadata}
+              showCompletionStatus={true}
+              maxDescriptionLength={500}
+            />
+          </section>
+        )}
+        {/* Validation State Message */}
+        {validationState.missingFields.length > 0 && (
+          <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg" role="alert">
+            <div className="flex items-start gap-3">
+              {getIcon('AlertCircle', 20, 'text-red-600 mt-0.5')}
+              <div>
+                <h3 className="font-medium text-red-800">Vui lòng hoàn thiện thông tin</h3>
+                <p className="text-sm text-red-700 mt-1">
+                  Còn thiếu: {validationState.missingFields.join(', ')}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Folder Header  */}
         <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Resource Information
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 mt-4">
+            Folder Information
           </h1>
           <p className="text-gray-600">
-            Organize your educational materials with proper classification and metadata
+            After you complete file's information,you can choose what folder to save these files in
           </p>
         </header>
-
-  
         {/* <ValidationErrors
           errors={validationErrors}
           className="mb-6"
         /> */}
-
+        {/* Folder information Form  */}
         <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
-          {/* ✅ Title Field */}
+          {/* Folder Section  */}
+          <section>
+            <FolderSection
+              existingFolders={folders.filter(folder =>
+                folder.classification_level_id === metadata.resourceClassificationId
+              )}
+              selectedFolderId={folderManagement?.selectedFolderId}
+              onFolderSelect={handleFolderSelect}
+              onCreateNewFolder={handleCreateNewFolder}
+              classificationLevelId={metadata.resourceClassificationId}
+              isLoading={isLoadingFolders}
+            />
+          </section>
+          {/* Folder metadata  */}
           <section>
             <label htmlFor="document-title" className="block text-sm font-semibold text-gray-700 mb-3">
-              Resource Title *
+              Folder Title *
             </label>
             <input
               id="document-title"
@@ -218,11 +257,11 @@ export default function MetadataPage() {
               required
             />
           </section>
-
+          {/* Folder Header  */}
           <section>
             <fieldset>
               <legend className="block text-sm font-semibold text-gray-700 mb-3">
-                Primary Category *
+                Folder Category *
               </legend>
               <div className="space-y-3">
                 {DOCUMENT_CATEGORIES.map(category => (
@@ -249,7 +288,6 @@ export default function MetadataPage() {
               </div>
             </fieldset>
           </section>
-
           {/* Classification Level Selector */}
           <section>
             <ClassificationLevelSelector
@@ -272,18 +310,7 @@ export default function MetadataPage() {
             />
           </section>
 
-          <section>
-            <FolderSection
-              existingFolders={folders.filter(folder =>
-                folder.classification_level_id === metadata.resourceClassificationId
-              )}
-              selectedFolderId={folderManagement?.selectedFolderId}
-              onFolderSelect={handleFolderSelect}
-              onCreateNewFolder={handleCreateNewFolder}
-              classificationLevelId={metadata.resourceClassificationId}
-              isLoading={isLoadingFolders}
-            />
-          </section>
+
 
           {/* ✅ Description */}
           <section>
@@ -300,8 +327,6 @@ export default function MetadataPage() {
               required
             />
           </section>
-
-          {/* ✅ Visibility */}
           <section>
             <fieldset>
               <legend className="block text-sm font-semibold text-gray-700 mb-3">
@@ -334,35 +359,10 @@ export default function MetadataPage() {
           </section>
         </form>
 
-        {/* ✅ Individual File Metadata Section */}
-        {completedFiles.length > 0 && (
-          <section className="border-t border-gray-200 pt-8 mt-8">
-            <FileMetadataEditor
-              files={completedFiles}
-              fileMetadata={fileMetadata}
-              onFileMetadataChange={updateFileMetadata}
-              showCompletionStatus={true}
-              maxDescriptionLength={500}
-            />
-          </section>
-        )}
 
-        {/* ✅ Validation Summary */}
-        {validationState.missingFields.length > 0 && (
-          <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg" role="alert">
-            <div className="flex items-start gap-3">
-              {getIcon('AlertCircle', 20, 'text-red-600 mt-0.5')}
-              <div>
-                <h3 className="font-medium text-red-800">Vui lòng hoàn thiện thông tin</h3>
-                <p className="text-sm text-red-700 mt-1">
-                  Còn thiếu: {validationState.missingFields.join(', ')}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* ✅ Navigation */}
+
+
         <footer className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
           <button
             type="button"
