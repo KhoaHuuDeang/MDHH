@@ -1,3 +1,5 @@
+import { Tag } from "./FolderInterface";
+
 export interface FileUploadInterface {
   id: string;
   name: string;
@@ -11,17 +13,25 @@ export interface FileUploadInterface {
   errorMessage?: string;
 }
 
-export interface UploadMetadata {
+
+
+export interface ResourceCreationMetadata {
   title: string;
   description: string;
   category: DocumentCategory;
-  folderId?: string;
-  classificationLevelId?: string;
-  tags: string[];
   visibility: 'public' | 'private';
+  resourceClassificationId?: string;  
+  resourceTagIds?: Tag[];
 }
 
-
+export interface FolderManagement {
+  selectedFolderId?: string;
+  newFolderData?: {
+    name: string;
+    folderClassificationId: string;  
+    folderTagIds?: string[];         
+  };
+}
 
 export enum VisibilityType {
   PUBLIC = 'public',
@@ -89,9 +99,5 @@ export interface PaginatedUploads {
     total: number;
     totalPages: number;
   };
-
-
-
-
 
 }

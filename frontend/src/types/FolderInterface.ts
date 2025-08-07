@@ -23,12 +23,6 @@ export interface Folder {
   tags?: Tag[];
 }
 
-export interface ResourceMetadata {
-  title: string;
-  description: string;
-  category: string;
-  visibility: 'public' | 'private';
-}
 
 export interface CreateFolderDto {
   name: string;

@@ -2,20 +2,25 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { uploadService } from '@/services/uploadService';
-import { FileUploadInterface, UploadMetadata, PaginatedUploads } from '@/types/FileUploadInterface';
-import { ClassificationLevel, Folder, ResourceMetadata, Tag } from '@/types/FolderInterface';
+import { DocumentCategory, FileUploadInterface, FolderManagement, PaginatedUploads, ResourceCreationMetadata } from '@/types/FileUploadInterface';
+import { ClassificationLevel, CreateFolderDto, Folder, Tag } from '@/types/FolderInterface';
+import { folderService } from '@/services/folderService';
 
 interface UploadState {
   // Current upload session state
   files: FileUploadInterface[];
-  metadata: UploadMetadata;
+  metadata: ResourceCreationMetadata;
   currentStep: 1 | 2 | 3;
   isSubmitting: boolean;
   dragOver: boolean;
   resourceId?: string; // Changed from uploadId to resourceId to match backend
   sessionId?: string; // Temporary session ID from pre-signed URL request
   errors: Record<string, string>;
-
+  lastUploadResult?: {
+    resourceId: string;
+    resourceTitle: string;
+    uploadedAt: string;
+  };
   // Upload history state
   uploadHistory: PaginatedUploads | null;
   isLoadingHistory: boolean;
@@ -24,15 +29,16 @@ interface UploadState {
   uploadControllers: Record<string, AbortController>;
 
 
-  fileMetadata: Record<string, ResourceMetadata>;
+  fileMetadata: Record<string, ResourceCreationMetadata>;
   folders: Folder[];
+  folderManagement: FolderManagement;
   classificationLevels: ClassificationLevel[];
   availableTags: Tag[];
 
   isLoadingClassifications: boolean;
   isLoadingTags: boolean;
   isLoadingFolders: boolean;
-
+  validationErrors: Record<string, string[]>;
 
 
   // Actions
@@ -45,7 +51,7 @@ interface UploadState {
   retryFileUpload: (fileId: string) => Promise<void>;
 
   // Metadata actions
-  updateMetadata: (data: Partial<UploadMetadata>) => void;
+  updateMetadata: (data: Partial<ResourceCreationMetadata>) => void;
   validateMetadata: () => boolean;
 
   // Step management
@@ -75,8 +81,19 @@ interface UploadState {
   fetchTagsByLevel: (levelId: string) => Promise<void>;
   fetchUserFolders: () => Promise<void>;
   createFolder: (name: string, levelId: string, tagIds?: string[]) => Promise<string>;
-  updateFileMetadata: (fileId: string, field: string, value: any) => void;
+  updateFolderManagement: (data: Partial<FolderManagement>) => void;
+  // Sử dụng generic vì typescript sẽ tìm tới gia đình tôi  
+  // K đại diện cho một field trong ResourceCreationMetadata ->  đó là lý do tại sao filed : K 
+  // val (val)sẽ đại diện cho giá trị của field (K) trong ResourceCreationMetadata
+  // tôi yêu geneirc 
+  updateFileMetadata: <K extends keyof ResourceCreationMetadata>(fileId: string, field: K, value: ResourceCreationMetadata[K]) => void;
   validateMetadataCompletion: () => boolean;
+
+
+  // error handling
+
+  setValidationErrors: (field: string, errors: string[]) => void;
+  clearValidationErrors: (field?: string) => void;
 }
 
 export const useUploadStore = create<UploadState>()(
@@ -377,7 +394,7 @@ export const useUploadStore = create<UploadState>()(
         },
 
         // Metadata actions
-        updateMetadata: (data: Partial<UploadMetadata>) => {
+        updateMetadata: (data: Partial<ResourceCreationMetadata>) => {
           set((state) => {
             Object.assign(state.metadata, data);
           });
@@ -504,7 +521,7 @@ export const useUploadStore = create<UploadState>()(
                 title: '',
                 description: '',
                 category: state.metadata.category,
-                tags: [],
+                resourceTagIds: [],
                 visibility: state.metadata.visibility,
               };
               state.currentStep = 1;
@@ -630,8 +647,8 @@ export const useUploadStore = create<UploadState>()(
           try {
             set((state) => { state.isLoadingTags = true; });
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tags/by-level/${levelId}`);
-            const tags = await response.json();
+            const tags = await folderService.getTagsByLevel(levelId);
+
 
             set((state) => {
               state.availableTags = tags;
@@ -643,13 +660,13 @@ export const useUploadStore = create<UploadState>()(
             set((state) => { state.isLoadingTags = false; });
           }
         },
-        updateFileMetadata: (fileId: string, field: string, value: any) => {
+        updateFileMetadata: (fileId, field, value) => {
           set((state) => {
             if (!state.fileMetadata[fileId]) {
               state.fileMetadata[fileId] = {
                 title: '',
                 description: '',
-                category: '',
+                category: DocumentCategory.OTHER,
                 visibility: 'public',
               };
             }
@@ -660,24 +677,161 @@ export const useUploadStore = create<UploadState>()(
           const { metadata, fileMetadata, files } = get();
           const completedFiles = files.filter(f => f.status === 'completed');
 
-          // Folder-level validation
-          const folderLevelValid = !!(
-            metadata.classificationLevelId &&
-            metadata.title?.trim() &&
-            metadata.description?.trim()
-          );
+          // Clear previous validation errors
+          // get().clearValidationErrors();
 
-          // Individual file validation
-          const filesValid = completedFiles.length > 0 && completedFiles.every(file => {
+          const errors: Record<string, string[]> = {};
+
+          if (!metadata.resourceTagIds) {
+            errors.classification = ['Please select a classification level'];
+          }
+
+          if (!metadata.title?.trim()) {
+            errors.title = ['Folder title is required'];
+          }
+
+          if (!metadata.description?.trim()) {
+            errors.description = ['Folder description is required'];
+          }
+
+          const invalidFiles: string[] = [];
+          completedFiles.forEach(file => {
             const fileMeta = fileMetadata[file.id];
-            return !!(
-              fileMeta?.title?.trim() &&
-              fileMeta?.description?.trim() &&
-              fileMeta?.category
-            );
+            const fileErrors: string[] = [];
+
+            if (!fileMeta?.title?.trim()) {
+              fileErrors.push('Title is required');
+            }
+            if (!fileMeta?.description?.trim()) {
+              fileErrors.push('Description is required');
+            }
+            if (!fileMeta?.category) {
+              fileErrors.push('Category is required');
+            }
+
+            if (fileErrors.length > 0) {
+              invalidFiles.push(`${file.name}: ${fileErrors.join(', ')}`);
+            }
           });
 
-          return folderLevelValid && filesValid;
+          if (invalidFiles.length > 0) {
+            errors.files = invalidFiles;
+          }
+
+          // if (Object.keys(errors).length > 0) {
+          //   Object.entries(errors).forEach(([field, fieldErrors]) => {
+          //     get().setValidationErrors(field, fieldErrors);
+          //   });
+          //   return false;
+          // }
+
+          return Object.keys(errors).length === 0;
+        },
+        
+        getValidationErrors: (): Record<string, string[]> => {
+          const { metadata, fileMetadata, files } = get();
+          const completedFiles = files.filter(f => f.status === 'completed');
+
+          const errors: Record<string, string[]> = {};
+
+          // Resource-level validation
+          if (!metadata.resourceClassificationId) {
+            errors.classification = ['Please select a classification level'];
+          }
+
+          if (!metadata.title?.trim()) {
+            errors.title = ['Resource title is required'];
+          }
+
+          if (!metadata.description?.trim()) {
+            errors.description = ['Resource description is required'];
+          }
+
+          // Individual file validation
+          const invalidFiles: string[] = [];
+          completedFiles.forEach(file => {
+            const fileMeta = fileMetadata[file.id];
+            const fileErrors: string[] = [];
+
+            if (!fileMeta?.title?.trim()) {
+              fileErrors.push('Title is required');
+            }
+            if (!fileMeta?.description?.trim()) {
+              fileErrors.push('Description is required');
+            }
+            if (!fileMeta?.category) {
+              fileErrors.push('Category is required');
+            }
+
+            if (fileErrors.length > 0) {
+              invalidFiles.push(`${file.name}: ${fileErrors.join(', ')}`);
+            }
+          });
+
+          if (invalidFiles.length > 0) {
+            errors.files = invalidFiles;
+          }
+
+          return errors;
+        },
+
+        fetchUserFolders: async () => {
+          set((state) => { state.isLoadingFolders = true; });
+          try {
+            const folders = await folderService.getUserFolders();
+            set((state) => {
+              state.folders = folders;
+              state.isLoadingFolders = false;
+            });
+          } catch (err) {
+            get().setError('folders', 'Failed to load your folders');
+            set((state) => { state.isLoadingFolders = false; });
+          }
+
+        },
+
+
+        createFolder: async (name: string, levelId: string, tagIds?: string[]): Promise<string> => {
+          const folderData: CreateFolderDto = {
+            name: name.trim(),
+            classificationLevelId: levelId,
+            description: `Folder for ${name}`,
+            visibility: get().metadata.visibility || 'public',
+            tagIds: tagIds || [],
+          };
+          try {
+            const validateFolder = folderService.validateFolderData(folderData);
+            if (validateFolder.length > 0) {
+              get().setValidationErrors('folder', validateFolder);
+              throw new Error('Validation errors occurred');
+            }
+            const newFolder = await folderService.createFolder(folderData);
+
+            set((state) => {
+              state.folders.push(newFolder);
+            });
+            get().clearValidationErrors('folder');
+            return newFolder.id;
+          } catch (err) {
+            get().setError('folder', 'Failed to create folder');
+            throw new Error('Failed to create folder');
+          }
+        },
+        setValidationErrors: (field: string, errors: string[]) => {
+          set((state) => {
+            state.validationErrors[field] = errors;
+          });
+
+        },
+
+        clearValidationErrors: (field?: string) => {
+          set((state) => {
+            if (field) {
+              delete state.validationErrors[field];
+            } else {
+              state.validationErrors = {};
+            }
+          });
         },
       }), {
         name: 'upload-store',

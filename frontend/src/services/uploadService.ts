@@ -51,14 +51,18 @@ class UploadService {
   private retryDelay = 1000; // 1 second
 
   private async makeRequest<T>(
-    url: string,
-    options: RequestInit
+    endpoint: string,
+    options: RequestInit = {}
   ): Promise<T> {
     let lastError: Error;
+    const token = await this.getToken();
+    if(!token){
+      throw new Error('Authentication token is missing');
+    }
     console.log()
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       try {
-        const response = await fetch(url, {
+        const response = await fetch(endpoint, {
           ...options,
           headers: {
             'Content-Type': 'application/json',
