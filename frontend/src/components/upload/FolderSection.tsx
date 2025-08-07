@@ -90,7 +90,7 @@ function FolderSection({
 
   return (
     <section className={`space-y-6 ${className}`} aria-labelledby="folder-section-title">
-      {/* ✅ Enhanced header with folder count */}
+      {/* Folder selection*/}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {getIcon('Folder', 24, 'text-[#6A994E]')}

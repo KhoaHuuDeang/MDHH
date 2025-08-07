@@ -21,7 +21,7 @@ export interface ResourceCreationMetadata {
   category: DocumentCategory;
   visibility: 'public' | 'private';
   resourceClassificationId?: string;  
-  resourceTagIds?: Tag[];
+  resourceTagIds?: string[];
 }
 
 export interface FolderManagement {

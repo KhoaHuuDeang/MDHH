@@ -90,7 +90,6 @@ function FileMetadataEditor({
 
   return (
     <section className={`space-y-6 ${className}`} aria-labelledby="file-metadata-title">
-      {/* ✅ Enhanced header with completion status */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {getIcon('Files', 24, 'text-[#6A994E]')}
