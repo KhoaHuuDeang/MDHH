@@ -35,7 +35,7 @@ export class FoldersService {
         data: {
           name: createFolderDto.name,
           description: createFolderDto.description,
-          visibility: createFolderDto.visibility,
+          visibility: createFolderDto.visibility || 'PUBLIC',
           user_id: userId,
           classification_level_id: createFolderDto.classificationLevelId,
         }
