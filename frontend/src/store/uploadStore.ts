@@ -2,9 +2,11 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { uploadService } from '@/services/uploadService';
-import { DocumentCategory, FileUploadInterface, FolderManagement, PaginatedUploads, ResourceCreationMetadata } from '@/types/FileUploadInterface';
+import { DocumentCategory, FileMetadata, FileUploadInterface, FolderManagement, PaginatedUploads, ResourceCreationMetadata } from '@/types/FileUploadInterface';
 import { ClassificationLevel, CreateFolderDto, Folder, Tag } from '@/types/FolderInterface';
 import { folderService } from '@/services/folderService';
+import { Field } from 'react-hook-form';
+import { buildResourceCreationWithUploadDto } from '@/services/mappers/uploadMappers';
 
 interface UploadState {
   // Current upload session state
@@ -29,7 +31,7 @@ interface UploadState {
   uploadControllers: Record<string, AbortController>;
 
 
-  fileMetadata: Record<string, ResourceCreationMetadata>;
+  fileMetadata: Record<string, FileMetadata>;
   folders: Folder[];
   folderManagement: FolderManagement;
   classificationLevels: ClassificationLevel[];
@@ -86,8 +88,8 @@ interface UploadState {
   // K đại diện cho một field trong ResourceCreationMetadata ->  đó là lý do tại sao filed : K 
   // val (val)sẽ đại diện cho giá trị của field (K) trong ResourceCreationMetadata
   // tôi yêu geneirc 
-  updateFileMetadata: <K extends keyof ResourceCreationMetadata>(fileId: string, field: K, value: ResourceCreationMetadata[K]) => void;
-  validateMetadataCompletion: () => boolean;
+  updateFileMetadata: <K extends keyof FileMetadata>(fileId: string, field: K, value: FileMetadata[K]) => void;
+  validateMetadataCompletion: () => Record<string, string[]>;
 
 
   // error handling
@@ -105,11 +107,11 @@ export const useUploadStore = create<UploadState>()(
         metadata: {
           title: '',
           description: '',
-          subject: '',
-          category: 'other' as const,
-          tags: [],
-          visibility: 'public' as const,
-          thumbnailFile: undefined,
+          visibility: 'public',
+        },
+        folderManagement: {
+          selectedFolderId: undefined,
+          newFolderData: undefined,
         },
         fileMetadata: {},
         folders: [],
@@ -393,6 +395,13 @@ export const useUploadStore = create<UploadState>()(
           }
         },
 
+        updateFolderManagement: (data: Partial<FolderManagement>) => {
+          set((state) => {
+            Object.assign(state.folderManagement, data);
+          });
+        },
+
+
         // Metadata actions
         updateMetadata: (data: Partial<ResourceCreationMetadata>) => {
           set((state) => {
@@ -437,7 +446,8 @@ export const useUploadStore = create<UploadState>()(
             case 1:
               return files.some(f => f.status === 'completed');
             case 2:
-              return get().validateMetadataCompletion();
+              const errors = get().validateMetadataCompletion();
+              return Object.keys(errors).length === 0;
             case 3:
               return true;
             default:
@@ -448,7 +458,7 @@ export const useUploadStore = create<UploadState>()(
         // Upload flow (2-step pattern: uploads already done, now create resource)
         submitUpload: async () => {
           try {
-            const { files, metadata } = get();
+            const { files, metadata, folderManagement, fileMetadata } = get();
             const successFiles = files.filter((f: FileUploadInterface) => f.status === 'completed');
 
             if (successFiles.length === 0) {
@@ -459,31 +469,15 @@ export const useUploadStore = create<UploadState>()(
               state.isSubmitting = true;
             });
 
-            // Step 2: Create resource with upload records in database
-            const fileData = successFiles.map((file: FileUploadInterface) => ({
-              originalFilename: file.name,
-              mimetype: file.file!.type,
-              fileSize: file.size,
-              s3Key: file.s3Key || '', // S3 key from successful upload
-            }));
+            //  payload with folder management and per-file metadata
+            const payload = buildResourceCreationWithUploadDto(
+              metadata,
+              folderManagement,
+              files,
+              fileMetadata
+            );
 
-            const response = await uploadService.createResourceWithUploads(metadata, fileData);
-
-            set((state) => {
-              state.resourceId = response.resource.id;
-            });
-
-            // Step 3: Optional completion verification
-            if (response.resource.id) {
-              await uploadService.completeUpload(response.resource.id);
-            }
-
-            // Refresh upload history
-            await get().loadUploadHistory();
-
-            // Reset current session
-            get().resetUpload();
-
+            const response = await uploadService.createResourceWithUploads(payload);
           } catch (error) {
             console.error('Submit upload failed:', error);
             get().setError('submit', 'Failed to submit upload');
@@ -495,48 +489,27 @@ export const useUploadStore = create<UploadState>()(
         },
 
         resetUpload: async () => {
-          try {
-            // Get current files before clearing state
-            const { files, uploadControllers } = get();
-
-            // Cancel all ongoing uploads
-            Object.values(uploadControllers).forEach((controller: AbortController) => controller.abort());
-
-            // Delete completed S3 files
-            const completedFiles = files.filter(f => f.status === 'completed' && f.s3Key);
-            if (completedFiles.length > 0) {
-              try {
-                const s3Keys = completedFiles.map(f => f.s3Key!);
-                await uploadService.deleteMultipleS3Files(s3Keys);
-                console.log(`🗑️ Cleaned up ${s3Keys.length} S3 files during reset`);
-              } catch (error) {
-                console.warn('⚠️ Failed to cleanup S3 files during reset:', error);
-              }
-            }
-
-            // Reset state
-            set((state) => {
-              state.files = [];
-              state.metadata = {
-                title: '',
-                description: '',
-                category: state.metadata.category,
-                resourceTagIds: [],
-                visibility: state.metadata.visibility,
-              };
-              state.currentStep = 1;
-              state.isSubmitting = false;
-              state.dragOver = false;
-              state.resourceId = undefined;
-              state.sessionId = undefined;
-              state.errors = {};
-              state.uploadControllers = {};
-            });
-
-          } catch (error) {
-            console.error('Error during upload reset:', error);
-            get().setError('reset', 'Failed to reset upload completely');
-          }
+          set((state) => {
+            state.files = [];
+            state.metadata = {
+              title: '',
+              description: '',
+              visibility: 'public',
+            };
+            state.folderManagement = {
+              selectedFolderId: undefined,
+              newFolderData: undefined,
+            };
+            state.fileMetadata = {};
+            // Reset additional state per coding instructions
+            state.currentStep = 1;
+            state.resourceId = undefined;
+            state.sessionId = undefined;
+            state.errors = {};
+            state.validationErrors = {};
+            state.isSubmitting = false;
+            state.uploadControllers = {}; // Clear any pending uploads
+          });
         },
         removeAllFiles: async () => {
           try {
@@ -673,27 +646,25 @@ export const useUploadStore = create<UploadState>()(
             state.fileMetadata[fileId][field] = value;
           });
         },
-        validateMetadataCompletion: (): boolean => {
-          const { metadata, fileMetadata, files } = get();
+        validateMetadataCompletion: (): Record<string, string[]> => {
+          const { fileMetadata, files, folderManagement } = get();
           const completedFiles = files.filter(f => f.status === 'completed');
-
-          // Clear previous validation errors
-          // get().clearValidationErrors();
-
           const errors: Record<string, string[]> = {};
 
-          if (!metadata.resourceTagIds) {
-            errors.classification = ['Please select a classification level'];
+          // Folder validation (classification at folder level)
+          if (!folderManagement.selectedFolderId && !folderManagement.newFolderData) {
+            errors.folder = ['Please select or create a folder'];
           }
 
-          if (!metadata.title?.trim()) {
-            errors.title = ['Folder title is required'];
+          // Folder validation (classification at folder level)
+          if (!folderManagement.newFolderData?.name) {
+            errors.folder = ['Name is required'];
+          }
+          if (!folderManagement.newFolderData?.folderTagIds) {
+            errors.folder = ['Tag is empty'];
           }
 
-          if (!metadata.description?.trim()) {
-            errors.description = ['Folder description is required'];
-          }
-
+          // File-level validation
           const invalidFiles: string[] = [];
           completedFiles.forEach(file => {
             const fileMeta = fileMetadata[file.id];
@@ -708,7 +679,6 @@ export const useUploadStore = create<UploadState>()(
             if (!fileMeta?.category) {
               fileErrors.push('Category is required');
             }
-
             if (fileErrors.length > 0) {
               invalidFiles.push(`${file.name}: ${fileErrors.join(', ')}`);
             }
@@ -717,32 +687,29 @@ export const useUploadStore = create<UploadState>()(
           if (invalidFiles.length > 0) {
             errors.files = invalidFiles;
           }
-
-          // if (Object.keys(errors).length > 0) {
-          //   Object.entries(errors).forEach(([field, fieldErrors]) => {
-          //     get().setValidationErrors(field, fieldErrors);
-          //   });
-          //   return false;
-          // }
-
-          return Object.keys(errors).length === 0;
+          return errors;
         },
-        
+
         getValidationErrors: (): Record<string, string[]> => {
-          const { metadata, fileMetadata, files } = get();
+          const { metadata, fileMetadata, files, folderManagement } = get();
           const completedFiles = files.filter(f => f.status === 'completed');
 
           const errors: Record<string, string[]> = {};
 
-          // Resource-level validation
-          if (!metadata.resourceClassificationId) {
-            errors.classification = ['Please select a classification level'];
+          // Folder validation
+          if (!folderManagement.selectedFolderId && !folderManagement.newFolderData) {
+            errors.folder = ['Please select or create a folder'];
           }
 
+          // Folder validation[classificaiton]
+          if (!folderManagement.newFolderData?.folderClassificationId) {
+            errors.classification = ['Please select a classification level'];
+          }
+          // Resource validation [title]
           if (!metadata.title?.trim()) {
             errors.title = ['Resource title is required'];
           }
-
+          // Resource validation [description]
           if (!metadata.description?.trim()) {
             errors.description = ['Resource description is required'];
           }
