@@ -54,7 +54,7 @@ export class UploadsController {
   /**
    * Step 2: Create resource with folder association
    */
-  @Post('create-resource')
+@Post('create-resource-with-uploads')
   @ApiOperation({
     summary: 'Create resource with folder association',
     description: 'Creates resource + folder + links them via folder_files junction table.'
@@ -65,13 +65,11 @@ export class UploadsController {
     type: ResourceResponseDto
   })
   @ApiResponse({ status: 400, description: 'Invalid resource data' })
-  async createResourceWithFolder(
+  async createResourceWithUploads(
     @Body() createResourceDto: CreateResourceWithUploadsDto,
     @Request() req: any
   ): Promise<ResourceResponseDto> {
-    // Ensure userId matches authenticated user
-    createResourceDto.userId = req.user.userId;
-    return await this.uploadsService.createResourceWithFolder(createResourceDto);
+    return await this.uploadsService.createResourceWithUploads(createResourceDto,req.user.userId);
   }
 
   /**
