@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsArray, IsOptional, IsEnum, IsNumber, Min, Max, ValidateNested, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, IsArray, IsOptional, IsEnum, IsNumber, Min, Max, ValidateNested, IsUUID, IsObject } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -75,71 +75,89 @@ export class PreSignedFileData {
   mimetype: string;
 }
 
-// Step 2: Create resource with folder association
-export class CreateResourceWithUploadsDto {
-  @IsUUID() @IsNotEmpty()
-  userId: string;
 
+
+
+
+
+export class NewFolderDataDto {
+  @IsString() @IsNotEmpty()
+  name: string;
+
+  @IsString() @IsOptional()
+  description?: string;
+
+  @IsUUID() @IsNotEmpty()
+  folderClassificationId: string;
+
+  @IsArray() @IsString({ each: true }) @IsOptional()
+  folderTagIds?: string[];
+}
+export class FolderManagementDto {
+  @IsUUID()
+  @IsOptional()
+  @ApiProperty({ description: 'Selected existing folder ID', required: false })
+  selectedFolderId?: string;
+
+  @IsObject()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NewFolderDataDto)
+  @ApiProperty({ description: 'New folder creation data', required: false })
+  newFolderData?: NewFolderDataDto;
+}
+export class FileUploadDataDto {
+  @IsString() @IsNotEmpty()
+  originalFilename: string;
+
+  @IsString() @IsNotEmpty()
+  mimetype: string;
+
+  @IsNumber() @Min(1)
+  fileSize: number;
+
+  @IsString() @IsNotEmpty()
+  s3Key: string;
+
+  // Per-file metadata
   @IsString() @IsNotEmpty()
   title: string;
 
   @IsString() @IsNotEmpty()
   description: string;
 
-  @IsEnum(DocumentCategory) @IsOptional()
-  category?: DocumentCategory;
+  @IsEnum(DocumentCategory)
+  category: DocumentCategory;
 
   @IsEnum(VisibilityType)
+  fileVisibility: VisibilityType;
+}
+export class CreateResourceWithUploadsDto {
+  @IsString() @IsNotEmpty()
+  @ApiProperty({ description: 'Resource title', example: 'Advanced Mathematics Chapter 5' })
+  title: string;
+
+  @IsString() @IsNotEmpty()
+  @ApiProperty({ description: 'Resource description', maxLength: 1000 })
+  description: string;
+
+  @IsEnum(VisibilityType)
+  @ApiProperty({ enum: VisibilityType, description: 'Resource visibility' })
   visibility: VisibilityType;
 
-  @IsUUID() @IsNotEmpty()
-  resourceClassificationId: string;
+  // ✅ CRITICAL: Nested folderManagement structure
+  @IsObject()
+  @ValidateNested()
+  @Type(() => FolderManagementDto)
+  @ApiProperty({ description: 'Folder selection or creation data' })
+  folderManagement: FolderManagementDto;
 
-  @IsArray() @IsString({ each: true }) @IsOptional()
-  resourceTagIds?: string[];
-
-  @IsUUID() @IsOptional()
-  folderId?: string;
-
-  @IsString() @IsOptional()
-  folderName?: string;
-
-  @IsString() @IsOptional()
-  folderDescription?: string;
-
-  @IsUUID() @IsNotEmpty()
-  classificationLevelId: string;
-
-  @IsArray() @IsString({ each: true }) @IsOptional()
-  tagIds?: string[];
-
-  @IsArray() @ValidateNested({ each: true })
-  @Type(() => FileMetadataDto)
-  files: FileMetadataDto[];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => FileUploadDataDto)
+  @ApiProperty({ type: [FileUploadDataDto], description: 'File upload data array' })
+  files: FileUploadDataDto[];
 }
-
-export class FileUploadDataDto {
-  @ApiProperty({ description: 'Original filename' })
-  @IsString()
-  @IsNotEmpty()
-  originalFilename: string;
-
-  @ApiProperty({ description: 'File MIME type' })
-  @IsString()
-  @IsNotEmpty()
-  mimetype: string;
-
-  @ApiProperty({ description: 'File size in bytes' })
-  @IsNumber()
-  @Min(1)
-  fileSize: number;
-
-  @ApiProperty({ description: 'S3 key from pre-signed URL' })
-  @IsString()
-  @IsNotEmpty()
-  s3Key: string;
-}
-
 export class ResourceResponseDto {
   @ApiProperty({ description: 'Created resource' })
   resource: {
@@ -148,7 +166,6 @@ export class ResourceResponseDto {
     description: string;
     category?: string;
     visibility: VisibilityType;
-    status: string;
     created_at: Date;
   };
 
