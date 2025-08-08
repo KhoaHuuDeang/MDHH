@@ -1,5 +1,3 @@
-import { Tag } from "./FolderInterface";
-
 export interface FileUploadInterface {
   id: string;
   name: string;
@@ -14,23 +12,28 @@ export interface FileUploadInterface {
 }
 
 
-
-export interface ResourceCreationMetadata {
+export interface FileMetadata {
   title: string;
   description: string;
   category: DocumentCategory;
   visibility: 'public' | 'private';
-  resourceClassificationId?: string;  
-  resourceTagIds?: string[];
+}
+
+export interface ResourceCreationMetadata {
+  title: string;
+  description: string;
+  visibility: 'public' | 'private';
 }
 
 export interface FolderManagement {
   selectedFolderId?: string;
   newFolderData?: {
     name: string;
-    folderClassificationId: string;  
-    folderTagIds?: string[];         
+    description: string;
+    folderClassificationId: string;
+    folderTagIds?: string[];
   };
+  mode?: 'select' | 'create';
 }
 
 export enum VisibilityType {

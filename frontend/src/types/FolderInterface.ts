@@ -19,6 +19,7 @@ export interface Folder {
   visibility: 'public' | 'private';
   user_id: string;
   created_at: string;
+  updated_at: string; 
   classification_level_id?: string;
   tags?: Tag[];
 }
