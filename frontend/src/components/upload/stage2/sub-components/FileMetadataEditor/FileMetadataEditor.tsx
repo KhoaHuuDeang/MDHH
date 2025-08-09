@@ -14,7 +14,7 @@ interface FileMetadata {
   title: string;
   description: string;
   category: DocumentCategory;
-  visibility: 'public' | 'private';
+  visibility: 'PUBLIC' | 'PRIVATE';
 }
 
 interface FileMetadataEditorProps {
@@ -30,7 +30,7 @@ const DEFAULT_METADATA: FileMetadata = {
   title: '',
   description: '',
   category: DocumentCategory.OTHER,
-  visibility: 'public'
+  visibility: 'PUBLIC'
 };
 
 function FileMetadataEditor({

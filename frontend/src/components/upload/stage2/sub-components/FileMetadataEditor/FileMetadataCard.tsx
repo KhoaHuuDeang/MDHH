@@ -8,7 +8,7 @@ interface FileMetadata {
   title: string;
   description: string;
   category: DocumentCategory;
-  visibility: 'public' | 'private';
+  visibility: 'PUBLIC' | 'PRIVATE';
 }
 
 interface FileMetadataCardProps {
@@ -29,13 +29,13 @@ const DOCUMENT_CATEGORIES = [
 
 const VISIBILITY_OPTIONS = [
   {
-    value: 'public',
+    value: 'PUBLIC',
     label: '🌐 Public',
     description: 'Anyone can view and download',
     icon: 'Globe'
   },
   {
-    value: 'private',
+    value: 'PRIVATE',
     label: '🔒 Private',
     description: 'Only you can access',
     icon: 'Lock'

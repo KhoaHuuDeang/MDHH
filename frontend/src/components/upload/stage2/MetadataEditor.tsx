@@ -18,7 +18,7 @@ interface FileMetadata {
   title: string;
   description: string;
   category: DocumentCategory;
-  visibility: 'public' | 'private';
+  visibility: 'PUBLIC' | 'PRIVATE';
 }
 
 // Constants for Stage 2 per-file categorization
@@ -34,7 +34,7 @@ const DEFAULT_METADATA: FileMetadata = {
   title: '',
   description: '',
   category: DocumentCategory.OTHER,
-  visibility: 'public'
+  visibility: 'PUBLIC'
 };
 
 interface FileMetadataEditorProps {

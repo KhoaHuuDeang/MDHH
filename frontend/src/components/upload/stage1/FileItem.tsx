@@ -158,11 +158,5 @@ function FileItem({ file, onRemove }: FileItemProps) {
       prevFile.errorMessage === nextFile.errorMessage &&
       prevProps.onRemove === nextProps.onRemove
     );
-    
-    // Debug log for memo decisions
-    if (!arePropsEqual) {
-      console.log(`🔄 FileItem memo: RE-RENDERING ${nextFile.name} due to prop changes`);
-    }
-    
     return arePropsEqual; // true = skip re-render, false = do re-render
   });
