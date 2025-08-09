@@ -54,7 +54,7 @@ export class UploadsController {
   /**
    * Step 2: Create resource with folder association
    */
-@Post('create-resource-with-uploads')
+@Post('create-resource')
   @ApiOperation({
     summary: 'Create resource with folder association',
     description: 'Creates resource + folder + links them via folder_files junction table.'

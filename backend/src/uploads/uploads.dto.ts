@@ -8,11 +8,11 @@ export enum VisibilityType {
 }
 
 export enum DocumentCategory {
-  LECTURE = 'lecture',
-  EXERCISE = 'exercise',
-  EXAM = 'exam',
-  REFERENCE = 'reference',
-  OTHER = 'other'
+  LECTURE = 'LECTURE',
+  EXERCISE = 'EXERCISE',
+  EXAM = 'EXAM',
+  REFERENCE = 'REFERENCE',
+  OTHER = 'OTHER'
 }
 
 
@@ -75,17 +75,12 @@ export class PreSignedFileData {
   mimetype: string;
 }
 
-
-
-
-
-
 export class NewFolderDataDto {
   @IsString() @IsNotEmpty()
   name: string;
 
-  @IsString() @IsOptional()
-  description?: string;
+  @IsString() @IsNotEmpty()
+  description: string;
 
   @IsUUID() @IsNotEmpty()
   folderClassificationId: string;
@@ -145,7 +140,6 @@ export class CreateResourceWithUploadsDto {
   @ApiProperty({ enum: VisibilityType, description: 'Resource visibility' })
   visibility: VisibilityType;
 
-  // ✅ CRITICAL: Nested folderManagement structure
   @IsObject()
   @ValidateNested()
   @Type(() => FolderManagementDto)
