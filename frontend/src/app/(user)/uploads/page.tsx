@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo } from 'react';
-import UploadHeader from '@/components/upload/UploadHeader';
-import UploadStepper from '@/components/upload/UploadStepper';
-import FileUploadArea from '@/components/upload/FileUploadArea';
-import UploadedFilesList from '@/components/upload/UploadedFilesList';
+import UploadHeader from '@/components/layout/user/uploads/UploadHeader';
+import UploadStepper from '@/components/layout/user/uploads/UploadStepper';
+import FileUploadArea from '@/components/upload/stage1/FileUploadArea';
+import UploadedFilesList from '@/components/upload/stage1/UploadedFilesList';
 import { useUploadStore } from '@/store/uploadStore';
 import { useRouter } from 'next/navigation';
 const UploadPage = () => {

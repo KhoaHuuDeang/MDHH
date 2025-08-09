@@ -145,9 +145,6 @@ function FileItem({ file, onRemove }: FileItemProps) {
 
   FileItem.displayName = 'FileItem';
 
-  // Fixed: Custom comparison function for React.memo 
-  // Return TRUE = skip re-render (props are same)
-  // Return FALSE = do re-render (props changed)
   export default memo(FileItem, (prevProps, nextProps) => {
     const prevFile = prevProps.file;
     const nextFile = nextProps.file;

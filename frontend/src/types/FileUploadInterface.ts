@@ -11,24 +11,30 @@ export interface FileUploadInterface {
   errorMessage?: string;
 }
 
-export interface UploadMetadata {
+
+export interface FileMetadata {
   title: string;
   description: string;
   category: DocumentCategory;
-  folderId?: string;
-  classificationLevelId?: string;
-  tags: string[];
   visibility: 'public' | 'private';
 }
 
-
-export interface ResourceMetadata {
-  title: string;        // Individual file title
-  description: string;  // File-specific description
-  category: string;     // Resource category
+export interface ResourceCreationMetadata {
+  title: string;
+  description: string;
   visibility: 'public' | 'private';
 }
 
+export interface FolderManagement {
+  selectedFolderId?: string;
+  newFolderData?: {
+    name: string;
+    description: string;
+    folderClassificationId: string;
+    folderTagIds?: string[];
+  };
+  mode?: 'select' | 'create';
+}
 
 export enum VisibilityType {
   PUBLIC = 'public',
@@ -96,9 +102,5 @@ export interface PaginatedUploads {
     total: number;
     totalPages: number;
   };
-
-
-
-
 
 }

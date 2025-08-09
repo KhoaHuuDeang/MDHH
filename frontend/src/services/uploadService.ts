@@ -1,7 +1,7 @@
 
 import {
+  FileUploadInterface,
   FileUploadMetadata,
-  UploadMetadata,
   PaginatedUploads,
 } from '@/types/FileUploadInterface';
 import { getSession } from 'next-auth/react';
@@ -45,20 +45,74 @@ interface ResourceResponseDto {
   }[];
 }
 
+
+interface CreateResourceWithUploadsPayload {
+  title: string;
+  description: string;
+  visibility: string;
+  selectedFolderId?: string;
+  newFolderData?: {
+    name: string;
+    description?: string;
+    folderClassificationId: string;
+    folderTagIds?: string[];
+  };
+  files: FileWithMetadataDto[];
+}
+interface FileWithMetadataDto {
+  originalFilename: string;
+  mimetype: string;
+  fileSize: number;
+  s3Key: string;
+  title: string;
+  description: string;
+  category: string;
+  fileVisibility: string;
+}
+export interface FolderManagementDto {
+  selectedFolderId?: string;
+  newFolderData?: {
+    name: string;
+    description?: string;
+    folderClassificationId: string;
+    folderTagIds?: string[];
+  };
+}
+export interface UploadCreationData {
+  originalFilename: string;
+  mimetype: string;
+  fileSize: number;
+  s3Key: string;
+  title: string;
+  description: string;
+  category: string;
+  fileVisibility: string;
+}
+export interface ResourceCreationWithUploadDto {
+  title: string;
+  description: string;
+  visibility: string;
+  folderManagement: FolderManagementDto;
+  files: UploadCreationData[];
+}
 class UploadService {
   private baseUrl = process.env.NEXT_PUBLIC_API_URL;
   private maxRetries = 3;
   private retryDelay = 1000; // 1 second
 
   private async makeRequest<T>(
-    url: string,
-    options: RequestInit
+    endpoint: string,
+    options: RequestInit = {}
   ): Promise<T> {
     let lastError: Error;
+    const token = await this.getToken();
+    if (!token) {
+      throw new Error('Authentication token is missing');
+    }
     console.log()
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       try {
-        const response = await fetch(url, {
+        const response = await fetch(endpoint, {
           ...options,
           headers: {
             'Content-Type': 'application/json',
@@ -69,8 +123,23 @@ class UploadService {
 
         if (!response.ok) {
           const errorText = await response.text();
+
+          if (response.status === 409 && errorText.includes('folder')) {
+            throw new Error('Folder name already exists. Please choose a different name.');
+          }
+
+          if (response.status === 422 && errorText.includes('classification')) {
+            throw new Error('Invalid classification level. Please select a valid classification.');
+          }
+
+          if (response.status === 400 && errorText.includes('metadata')) {
+            throw new Error('File metadata validation failed. Please check all required fields.');
+          }
+
+
           throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
+
 
         return await response.json();
       } catch (error) {
@@ -115,17 +184,17 @@ class UploadService {
    * Creates both resource and upload records atomically
    */
   async createResourceWithUploads(
-    metadata: UploadMetadata,
-    fileData: { originalFilename: string; mimetype: string; fileSize: number; s3Key: string }[]
+    payload: CreateResourceWithUploadsPayload
   ): Promise<ResourceResponseDto> {
     return this.makeRequest<ResourceResponseDto>(`${this.baseUrl}/uploads/create-resource`, {
       method: 'POST',
       body: JSON.stringify({
-        title: metadata.title,
-        description: metadata.description,
-        category: metadata.category,
-        visibility: metadata.visibility?.toUpperCase() || 'PUBLIC',
-        files: fileData
+        title: payload.title,
+        description: payload.description,
+        visibility: payload.visibility?.toUpperCase() || 'PUBLIC',
+        selectedFolderId: payload.selectedFolderId,
+        newFolderData: payload.newFolderData,
+        files: payload.files
       }),
     });
   }

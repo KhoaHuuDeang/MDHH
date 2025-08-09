@@ -52,16 +52,16 @@ export class UploadsController {
   }
 
   /**
-   * Step 2: Create resource with upload records
+   * Step 2: Create resource with folder association
    */
-  @Post('create-resource')
+@Post('create-resource-with-uploads')
   @ApiOperation({
-    summary: 'Create resource with upload records',
-    description: 'Creates resource and upload records in database after metadata confirmation.'
+    summary: 'Create resource with folder association',
+    description: 'Creates resource + folder + links them via folder_files junction table.'
   })
   @ApiResponse({
     status: 201,
-    description: 'Resource and uploads created successfully',
+    description: 'Resource and folder created/linked successfully',
     type: ResourceResponseDto
   })
   @ApiResponse({ status: 400, description: 'Invalid resource data' })
@@ -69,9 +69,7 @@ export class UploadsController {
     @Body() createResourceDto: CreateResourceWithUploadsDto,
     @Request() req: any
   ): Promise<ResourceResponseDto> {
-    // Ensure userId matches authenticated user
-    createResourceDto.userId = req.user.userId;
-    return await this.uploadsService.createResourceWithUploads(createResourceDto);
+    return await this.uploadsService.createResourceWithUploads(createResourceDto,req.user.userId);
   }
 
   /**
