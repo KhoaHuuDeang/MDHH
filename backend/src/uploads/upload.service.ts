@@ -200,7 +200,7 @@ export class UploadsService {
    * Database: Transaction creating resources + folders + folder_files + uploads
    * Follows schema pattern: Resources M:N Folders via folder_files table
    */
-  // ✅ Update method to handle nested folderManagement
+  // Update method to handle nested folderManagement
   async createResourceWithUploads(
     createResourceDto: CreateResourceWithUploadsDto,
     userId: string 
@@ -277,8 +277,10 @@ export class UploadsService {
           this.logger.log(`Linked resource ${resource.id} to folder ${folderId} via folder_files`);
         }
 
-        // Create uploads with per-file metadata
+
         const uploadData = createResourceDto.files.map((file) => ({
+          //bao nhiêu file bấy nhiêu uploads diễn ra tương ứng 
+          // Uploads fields
           user_id: userId,
           resource_id: resource.id,
           file_name: file.originalFilename,
@@ -286,11 +288,6 @@ export class UploadsService {
           file_size: file.fileSize,
           s3_key: file.s3Key,
           status: 'COMPLETED' as const,
-          // Store per-file metadata
-          title: file.title,
-          description: file.description,
-          category: file.category,
-          visibility: file.fileVisibility,
         }));
 
         await tx.uploads.createMany({
