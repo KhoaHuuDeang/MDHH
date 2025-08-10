@@ -15,8 +15,8 @@ export interface Tag {
 export interface Folder {
   id: string;
   name: string;
-  description?: string;
-  visibility: 'public' | 'private';
+  description: string;
+  visibility: 'PUBLIC' | 'PRIVATE';
   user_id: string;
   created_at: string;
   updated_at: string; 
@@ -27,8 +27,8 @@ export interface Folder {
 
 export interface CreateFolderDto {
   name: string;
-  description?: string;
-  visibility: 'public' | 'private';
+  description: string;
+  visibility: 'PUBLIC' | 'PRIVATE';
   classificationLevelId: string;
   tagIds?: string[];
 }

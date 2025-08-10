@@ -2,16 +2,14 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { uploadService } from '@/services/uploadService';
-import { DocumentCategory, FileMetadata, FileUploadInterface, FolderManagement, PaginatedUploads, ResourceCreationMetadata } from '@/types/FileUploadInterface';
+import { DocumentCategory, FileMetadata, FileUploadInterface, FolderManagement, PaginatedUploads, VisibilityType } from '@/types/FileUploadInterface';
 import { ClassificationLevel, CreateFolderDto, Folder, Tag } from '@/types/FolderInterface';
 import { folderService } from '@/services/folderService';
-import { Field } from 'react-hook-form';
 import { buildResourceCreationWithUploadDto } from '@/services/mappers/uploadMappers';
 
 interface UploadState {
   // Current upload session state
   files: FileUploadInterface[];
-  metadata: ResourceCreationMetadata;
   currentStep: 1 | 2 | 3;
   isSubmitting: boolean;
   dragOver: boolean;
@@ -52,9 +50,6 @@ interface UploadState {
   updateFileStatus: (fileId: string, status: FileUploadInterface['status'], errorMessage?: string) => void;
   retryFileUpload: (fileId: string) => Promise<void>;
 
-  // Metadata actions
-  updateMetadata: (data: Partial<ResourceCreationMetadata>) => void;
-  validateMetadata: () => boolean;
 
   // Step management
   nextStep: () => void;
@@ -104,11 +99,6 @@ export const useUploadStore = create<UploadState>()(
       devtools((set, get) => ({
         // Initial states
         files: [],
-        metadata: {
-          title: '',
-          description: '',
-          visibility: 'public',
-        },
         folderManagement: {
           selectedFolderId: undefined,
           newFolderData: undefined,
@@ -128,14 +118,14 @@ export const useUploadStore = create<UploadState>()(
         errors: {},
         uploadHistory: null,
         isLoadingHistory: false,
-        uploadControllers: {}, // Initialize as empty object instead of Map
+        uploadControllers: {},
+        validationErrors: {},// Initialize as empty object instead of Map
         // File management actions (updated for 2-step pattern)
         addFiles: async (newFiles: File[]) => {
           try {
             set((state) => {
               state.errors = {}
             })
-
             // Validate files
             const validTypes = [
               'application/pdf',
@@ -402,17 +392,6 @@ export const useUploadStore = create<UploadState>()(
         },
 
 
-        // Metadata actions
-        updateMetadata: (data: Partial<ResourceCreationMetadata>) => {
-          set((state) => {
-            Object.assign(state.metadata, data);
-          });
-        },
-
-        validateMetadata: (): boolean => {
-          const { metadata } = get();
-          return !!(metadata.title && metadata.description);
-        },
 
         // Step management
         nextStep: () => {
@@ -458,7 +437,7 @@ export const useUploadStore = create<UploadState>()(
         // Upload flow (2-step pattern: uploads already done, now create resource)
         submitUpload: async () => {
           try {
-            const { files, metadata, folderManagement, fileMetadata } = get();
+            const { files, folderManagement, fileMetadata } = get();
             const successFiles = files.filter((f: FileUploadInterface) => f.status === 'completed');
 
             if (successFiles.length === 0) {
@@ -471,12 +450,11 @@ export const useUploadStore = create<UploadState>()(
 
             //  payload with folder management and per-file metadata
             const payload = buildResourceCreationWithUploadDto(
-              metadata,
               folderManagement,
               files,
               fileMetadata
             );
-
+            console.log('Resource creation payload SKIBIDI:', payload);
             const response = await uploadService.createResourceWithUploads(payload);
           } catch (error) {
             console.error('Submit upload failed:', error);
@@ -491,11 +469,6 @@ export const useUploadStore = create<UploadState>()(
         resetUpload: async () => {
           set((state) => {
             state.files = [];
-            state.metadata = {
-              title: '',
-              description: '',
-              visibility: 'public',
-            };
             state.folderManagement = {
               selectedFolderId: undefined,
               newFolderData: undefined,
@@ -640,7 +613,7 @@ export const useUploadStore = create<UploadState>()(
                 title: '',
                 description: '',
                 category: DocumentCategory.OTHER,
-                visibility: 'public',
+                visibility: VisibilityType.PUBLIC,
               };
             }
             state.fileMetadata[fileId][field] = value;
@@ -651,17 +624,15 @@ export const useUploadStore = create<UploadState>()(
           const completedFiles = files.filter(f => f.status === 'completed');
           const errors: Record<string, string[]> = {};
 
-          // Folder validation (classification at folder level)
           if (!folderManagement.selectedFolderId && !folderManagement.newFolderData) {
             errors.folder = ['Please select or create a folder'];
           }
-
-          // Folder validation (classification at folder level)
-          if (!folderManagement.newFolderData?.name) {
-            errors.folder = ['Name is required'];
-          }
-          if (!folderManagement.newFolderData?.folderTagIds) {
-            errors.folder = ['Tag is empty'];
+          if (folderManagement.newFolderData) {
+            const fd = folderManagement.newFolderData;
+            const folderErrs: string[] = [];
+            if (!fd.name?.trim()) folderErrs.push('Folder name is required');
+            if (!fd.folderClassificationId) folderErrs.push('Classification level is required');
+            if (folderErrs.length) errors.folder = folderErrs;
           }
 
           // File-level validation
@@ -691,7 +662,7 @@ export const useUploadStore = create<UploadState>()(
         },
 
         getValidationErrors: (): Record<string, string[]> => {
-          const { metadata, fileMetadata, files, folderManagement } = get();
+          const {  fileMetadata, files, folderManagement } = get();
           const completedFiles = files.filter(f => f.status === 'completed');
 
           const errors: Record<string, string[]> = {};
@@ -700,18 +671,8 @@ export const useUploadStore = create<UploadState>()(
           if (!folderManagement.selectedFolderId && !folderManagement.newFolderData) {
             errors.folder = ['Please select or create a folder'];
           }
-
-          // Folder validation[classificaiton]
-          if (!folderManagement.newFolderData?.folderClassificationId) {
+           if (folderManagement.newFolderData && !folderManagement.newFolderData.folderClassificationId) {
             errors.classification = ['Please select a classification level'];
-          }
-          // Resource validation [title]
-          if (!metadata.title?.trim()) {
-            errors.title = ['Resource title is required'];
-          }
-          // Resource validation [description]
-          if (!metadata.description?.trim()) {
-            errors.description = ['Resource description is required'];
           }
 
           // Individual file validation
@@ -723,7 +684,7 @@ export const useUploadStore = create<UploadState>()(
             if (!fileMeta?.title?.trim()) {
               fileErrors.push('Title is required');
             }
-            if (!fileMeta?.description?.trim()) {
+            if (!fileMeta?.description.trim()) {
               fileErrors.push('Description is required');
             }
             if (!fileMeta?.category) {
@@ -763,7 +724,7 @@ export const useUploadStore = create<UploadState>()(
             name: name.trim(),
             classificationLevelId: levelId,
             description: `Folder for ${name}`,
-            visibility: get().metadata.visibility || 'public',
+            visibility: 'PUBLIC',
             tagIds: tagIds || [],
           };
           try {
@@ -807,7 +768,6 @@ export const useUploadStore = create<UploadState>()(
     {
       name: 'upload-store',
       partialize: (state) => ({
-        metadata: state.metadata,
         resourceId: state.resourceId,
         sessionId: state.sessionId,
       }),

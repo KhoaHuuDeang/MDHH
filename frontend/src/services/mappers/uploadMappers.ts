@@ -1,13 +1,12 @@
-// ❌ BLOCKER: Completely missing as required by Stage 2 section 5.3
-// Target: frontend/src/services/mappers/uploadMappers.ts
 
-import { FileMetadata, FileUploadInterface, FolderManagement, ResourceCreationMetadata } from "@/types/FileUploadInterface";
+
+import { DocumentCategory, FileMetadata, FileUploadInterface, FolderManagement, VisibilityType } from "@/types/FileUploadInterface";
 
 export interface FolderManagementDto {
   selectedFolderId?: string;
   newFolderData?: {
     name: string;
-    description?: string;
+    description: string;
     folderClassificationId: string;
     folderTagIds?: string[];
   };
@@ -20,14 +19,14 @@ export interface UploadCreationData {
   s3Key: string;
   title: string;
   description: string;
-  category: string;
-  fileVisibility: string;
+  category: DocumentCategory;
+  fileVisibility: VisibilityType;
 }
 
 export interface ResourceCreationWithUploadDto {
   title: string;
   description: string;
-  visibility: string;
+  visibility: VisibilityType;
   folderManagement: FolderManagementDto;
   files: UploadCreationData[];
 }
@@ -39,6 +38,7 @@ export function buildFolderManagementDto(
   folderManagement: FolderManagement
 ): FolderManagementDto {
   return {
+
     selectedFolderId: folderManagement.selectedFolderId,
     newFolderData: folderManagement.newFolderData ? {
       name: folderManagement.newFolderData.name,
@@ -63,7 +63,7 @@ export function buildUploadCreationData(
       if (!meta) {
         throw new Error(`Missing metadata for file ${file.id}`);
       }
-      
+
       return {
         originalFilename: file.name,
         mimetype: file.file!.type,
@@ -78,18 +78,81 @@ export function buildUploadCreationData(
 }
 
 /**
+ * Derives resource metadata from file metadata collection
+ * Uses first file's metadata as resource metadata (file-first strategy)
+ */
+export function deriveResourceMetadata(
+  fileMetadata: Record<string, FileMetadata>,
+  files?: FileUploadInterface[]
+): { title: string; description: string; visibility: VisibilityType } {
+  const metadataEntries = Object.entries(fileMetadata);
+
+  if (metadataEntries.length === 0) {
+    throw new Error('Cannot derive resource metadata: no file metadata available');
+  }
+
+  // Strategy 1: Single file - use its metadata directly
+  if (metadataEntries.length === 1) {
+    const [, firstFile] = metadataEntries[0];
+    return {
+      title: firstFile.title.trim() || "Untitled Resource",
+      description: firstFile.description.trim() || "No description provided",
+      visibility: firstFile.visibility
+    };
+  }
+
+  // Strategy 2: Multiple files - intelligent aggregation
+  const validMetadata = metadataEntries
+    .map(([, meta]) => meta)
+    .filter(meta => meta.title?.trim() && meta.description?.trim());
+
+  if (validMetadata.length === 0) {
+    // Fallback: Use first available metadata even if incomplete
+    const [, firstFile] = metadataEntries[0];
+    return {
+      title: firstFile.title.trim() || "Multi-file Resource",
+      description: firstFile.description.trim() || `Collection of ${metadataEntries.length} files`,
+      visibility: firstFile.visibility || 'PUBLIC'
+    };
+  }
+
+  // Use first complete metadata as primary
+  const primaryFile = validMetadata[0];
+  const fileCount = metadataEntries.length;
+
+  // Generate collection-aware title and description
+  const collectionTitle = primaryFile.title.includes('Collection') || primaryFile.title.includes('Set')
+    ? primaryFile.title
+    : `${primaryFile.title} - Collection`;
+
+  const collectionDescription = fileCount > 1
+    ? `${primaryFile.description} (Collection of ${fileCount} files)`
+    : primaryFile.description;
+
+  // Most permissive visibility (if any file is public, resource is public)
+  const isAnyPublic = validMetadata.some(meta => meta.visibility === 'PUBLIC');
+
+  return {
+    title: collectionTitle,
+    description: collectionDescription,
+    visibility: isAnyPublic ? VisibilityType.PUBLIC : VisibilityType.PRIVATE
+  };
+}
+
+
+/**
  * Composite mapper: Complete payload for createResourceWithUploads
  */
 export function buildResourceCreationWithUploadDto(
-  metadata: ResourceCreationMetadata,
-  folderManagement: FolderManagement,
-  files: FileUploadInterface[],
-  fileMetadata: Record<string, FileMetadata>
+  folderManagement: FolderManagement, //folder -> folderManagement
+  files: FileUploadInterface[],       //uploads -> files
+  fileMetadata: Record<string, FileMetadata> //file ->fileMetadata
 ): ResourceCreationWithUploadDto {
+  const resourceMeta = deriveResourceMetadata(fileMetadata);
   return {
-    title: metadata.title,
-    description: metadata.description,
-    visibility: metadata.visibility,
+    title: resourceMeta.title,
+    description: resourceMeta.description,
+    visibility: resourceMeta.visibility,
     folderManagement: buildFolderManagementDto(folderManagement),
     files: buildUploadCreationData(files, fileMetadata),
   };

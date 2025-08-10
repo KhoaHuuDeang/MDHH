@@ -2,14 +2,14 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { getIcon } from '@/utils/getIcon';
-import { DocumentCategory, FileUploadInterface } from '@/types/FileUploadInterface';
+import { DocumentCategory, FileUploadInterface, VisibilityType } from '@/types/FileUploadInterface';
 
-// ✅ Updated interface for Stage 2 per-file metadata
+// Updated interface for Stage 2 per-file metadata
 interface FileMetadata {
   title: string;
   description: string;
   category: DocumentCategory;
-  visibility: 'public' | 'private';
+  visibility: 'PUBLIC' | 'PRIVATE';
 }
 
 interface FileMetadataEditorProps {
@@ -21,7 +21,7 @@ interface FileMetadataEditorProps {
   maxDescriptionLength?: number;
 }
 
-// ✅ Constants for Stage 2 per-file categorization
+// Constants for Stage 2 per-file categorization
 const DOCUMENT_CATEGORIES = [
   { value: DocumentCategory.LECTURE, label: '📚 Lecture', icon: 'BookOpen' },
   { value: DocumentCategory.EXAM, label: '📋 Exam', icon: 'FileText' },
@@ -32,13 +32,13 @@ const DOCUMENT_CATEGORIES = [
 
 const VISIBILITY_OPTIONS = [
   {
-    value: 'public',
+    value: VisibilityType.PUBLIC,
     label: '🌐 Public',
     description: 'Anyone can view and download',
     icon: 'Globe'
   },
   {
-    value: 'private',
+    value: VisibilityType.PRIVATE,
     label: '🔒 Private', 
     description: 'Only you can access',
     icon: 'Lock'
@@ -49,7 +49,7 @@ const DEFAULT_METADATA: FileMetadata = {
   title: '',
   description: '',
   category: DocumentCategory.OTHER,
-  visibility: 'public'
+  visibility: VisibilityType.PUBLIC
 };
 
 function FileMetadataEditor({

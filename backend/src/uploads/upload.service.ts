@@ -19,7 +19,6 @@ export class UploadsService {
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY_BASE = 1000; // 1 second
   private readonly TRANSACTION_TIMEOUT = 30000; // 30 seconds
-  private readonly BATCH_SIZE = 100; // For batch operations
   private readonly RATE_LIMIT_REQUESTS = 50; // Max requests per minute per user
   private readonly RATE_LIMIT_WINDOW = 60000; // 1 minute in milliseconds
 
@@ -206,6 +205,7 @@ export class UploadsService {
     createResourceDto: CreateResourceWithUploadsDto,
     userId: string 
   ): Promise<ResourceResponseDto> {
+    console.log('BACKENDDDD', createResourceDto)
     this.logger.log(`Creating resource with folder association and ${createResourceDto.files.length} uploads`);
 
     try {

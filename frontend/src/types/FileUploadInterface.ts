@@ -16,14 +16,9 @@ export interface FileMetadata {
   title: string;
   description: string;
   category: DocumentCategory;
-  visibility: 'public' | 'private';
+  visibility: VisibilityType;
 }
 
-export interface ResourceCreationMetadata {
-  title: string;
-  description: string;
-  visibility: 'public' | 'private';
-}
 
 export interface FolderManagement {
   selectedFolderId?: string;
@@ -37,17 +32,16 @@ export interface FolderManagement {
 }
 
 export enum VisibilityType {
-  PUBLIC = 'public',
-  PRIVATE = 'private',
-  RESTRICTED = 'restricted'
+  PUBLIC = 'PUBLIC',
+  PRIVATE = 'PRIVATE'
 }
 
 export enum DocumentCategory {
-  LECTURE = 'lecture',
-  EXERCISE = 'exercise',
-  EXAM = 'exam',
-  REFERENCE = 'reference',
-  OTHER = 'other'
+  LECTURE = 'LECTURE',
+  EXERCISE = 'EXERCISE',
+  EXAM = 'EXAM',
+  REFERENCE = 'REFERENCE',
+  OTHER = 'OTHER'
 }
 
 export interface FileUploadMetadata {

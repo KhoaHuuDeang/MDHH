@@ -1,8 +1,11 @@
 
 import {
+  DocumentCategory,
   FileUploadInterface,
   FileUploadMetadata,
+  FolderManagement,
   PaginatedUploads,
+  VisibilityType,
 } from '@/types/FileUploadInterface';
 import { getSession } from 'next-auth/react';
 
@@ -50,13 +53,7 @@ interface CreateResourceWithUploadsPayload {
   title: string;
   description: string;
   visibility: string;
-  selectedFolderId?: string;
-  newFolderData?: {
-    name: string;
-    description?: string;
-    folderClassificationId: string;
-    folderTagIds?: string[];
-  };
+  folderManagement: FolderManagement;
   files: FileWithMetadataDto[];
 }
 interface FileWithMetadataDto {
@@ -66,14 +63,14 @@ interface FileWithMetadataDto {
   s3Key: string;
   title: string;
   description: string;
-  category: string;
-  fileVisibility: string;
+  category: DocumentCategory;
+  fileVisibility: VisibilityType;
 }
 export interface FolderManagementDto {
   selectedFolderId?: string;
   newFolderData?: {
     name: string;
-    description?: string;
+    description: string;
     folderClassificationId: string;
     folderTagIds?: string[];
   };
@@ -86,7 +83,7 @@ export interface UploadCreationData {
   title: string;
   description: string;
   category: string;
-  fileVisibility: string;
+  fileVisibility: VisibilityType;
 }
 export interface ResourceCreationWithUploadDto {
   title: string;
@@ -186,18 +183,34 @@ class UploadService {
   async createResourceWithUploads(
     payload: CreateResourceWithUploadsPayload
   ): Promise<ResourceResponseDto> {
-    return this.makeRequest<ResourceResponseDto>(`${this.baseUrl}/uploads/create-resource`, {
-      method: 'POST',
-      body: JSON.stringify({
-        title: payload.title,
-        description: payload.description,
-        visibility: payload.visibility?.toUpperCase() || 'PUBLIC',
-        selectedFolderId: payload.selectedFolderId,
-        newFolderData: payload.newFolderData,
-        files: payload.files
-      }),
-    });
+    const body: any = {
+      title: payload.title,
+      description: payload.description,
+      visibility: payload.visibility?.toUpperCase() ,
+      folderManagement: {}
+    };
+    console.log('PAYLOAD : ', payload);
+    console.log('PAYLOAD NEW FOLDER : ', payload.folderManagement.newFolderData);
+    console.log('PAYLOAD SELECTED FOLDER : ', payload.folderManagement.selectedFolderId);
+
+    if (payload.folderManagement.selectedFolderId === undefined || !payload.folderManagement.newFolderData) {
+      body.folderManagement.newFolderData = payload.folderManagement.newFolderData;
+    }else{
+      body.folderManagement.selectedFolderId = payload.folderManagement.selectedFolderId;
+    }
+    console.log('SERVICE KKKK : ', body);
+    body.files = payload.files;
+
+    return this.makeRequest<ResourceResponseDto>(
+      `${this.baseUrl}/uploads/create-resource`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }
+    );
   }
+
 
   /**
    * Upload file to S3 using pre-signed URL
