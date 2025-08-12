@@ -49,24 +49,24 @@ class FolderService {
         throw new Error('Unexpected error in makeRequest');
     }
 
-    // ✅ Classification Levels API
+    // Classification Levels API
     async getClassificationLevels(): Promise<ClassificationLevel[]> {
         return this.makeRequest<ClassificationLevel[]>('/classification-levels');
     }
 
     // Tags API with level filtering
-    async getTagsByLevel(levelId: string): Promise<Tag[]> {
+    async getTagsByLevel(levelId: string,options? : {signal : AbortSignal}): Promise<Tag[]> {
         if (!levelId) {
             throw new Error('Level ID is required');
         }
-        return this.makeRequest<Tag[]>(`/tags/by-level/${levelId}`);
+        return this.makeRequest<Tag[]>(`/tags/by-level/${levelId}`,{signal: options?.signal, });
     }
 
     async getAllTags(): Promise<Tag[]> {
         return this.makeRequest<Tag[]>('/tags');
     }
 
-    // ✅ Folders CRUD API matching backend controller
+    // Folders CRUD API matching backend controller
     async getUserFolders(): Promise<Folder[]> {
         return this.makeRequest<Folder[]>('/folders');
     }
@@ -122,5 +122,4 @@ class FolderService {
     }
 }
 
-// ✅ Export singleton instance following MDHH pattern
 export const folderService = new FolderService();

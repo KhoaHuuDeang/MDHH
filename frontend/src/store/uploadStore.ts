@@ -13,8 +13,8 @@ interface UploadState {
   currentStep: 1 | 2 | 3;
   isSubmitting: boolean;
   dragOver: boolean;
-  resourceId?: string; // Changed from uploadId to resourceId to match backend
-  sessionId?: string; // Temporary session ID from pre-signed URL request
+  resourceId?: string;
+  sessionId?: string;
   errors: Record<string, string>;
   lastUploadResult?: {
     resourceId: string;
@@ -24,6 +24,24 @@ interface UploadState {
   // Upload history state
   uploadHistory: PaginatedUploads | null;
   isLoadingHistory: boolean;
+
+  // reduce lagging, render component 
+  debouncedControllers: Record<string, { // fieldId 
+    timeoutId: NodeJS.Timeout; //debounce timeout
+    abortController: AbortController; // cancel upload process
+  }>;
+  // ví dụ : 
+  //   debouncedControllers = {
+  //   'fileId_123': {
+  //     timeoutId: 50,
+  //     abortController: new AbortController(),
+  //   },
+  //   'fileId_456': {
+  //     timeoutId: 51,
+  //     abortController: new AbortController(),
+  //   }
+  // };
+
 
   // Upload controllers for cancellation - using Record instead of Map for Immer compatibility
   uploadControllers: Record<string, AbortController>;
@@ -86,7 +104,7 @@ interface UploadState {
   updateFileMetadata: <K extends keyof FileMetadata>(fileId: string, field: K, value: FileMetadata[K]) => void;
   validateMetadataCompletion: () => Record<string, string[]>;
 
-
+  clearAllDebouncedOperations: () => Promise<void>;
   // error handling
 
   setValidationErrors: (field: string, errors: string[]) => void;
@@ -103,6 +121,7 @@ export const useUploadStore = create<UploadState>()(
           selectedFolderId: undefined,
           newFolderData: undefined,
         },
+        debouncedControllers: {},
         fileMetadata: {},
         folders: [],
         classificationLevels: [],
@@ -384,15 +403,6 @@ export const useUploadStore = create<UploadState>()(
             });
           }
         },
-
-        updateFolderManagement: (data: Partial<FolderManagement>) => {
-          set((state) => {
-            Object.assign(state.folderManagement, data);
-          });
-        },
-
-
-
         // Step management
         nextStep: () => {
           const { currentStep, validateStep } = get();
@@ -467,6 +477,9 @@ export const useUploadStore = create<UploadState>()(
         },
 
         resetUpload: async () => {
+          // Clear all debounced operations trước khi reset
+          get().clearAllDebouncedOperations();
+
           set((state) => {
             state.files = [];
             state.folderManagement = {
@@ -474,14 +487,14 @@ export const useUploadStore = create<UploadState>()(
               newFolderData: undefined,
             };
             state.fileMetadata = {};
-            // Reset additional state per coding instructions
             state.currentStep = 1;
             state.resourceId = undefined;
             state.sessionId = undefined;
             state.errors = {};
             state.validationErrors = {};
             state.isSubmitting = false;
-            state.uploadControllers = {}; // Clear any pending uploads
+            state.uploadControllers = {};
+            state.debouncedControllers = {}; // ✅ Clear debounced controllers
           });
         },
         removeAllFiles: async () => {
@@ -590,35 +603,105 @@ export const useUploadStore = create<UploadState>()(
           }
         },
         fetchTagsByLevel: async (levelId: string) => {
+          // unique key for the fetchTags request
+          const controllerKey = `fetchTags_${levelId}`;
+          // fetch debouncedControllers by construction with get()
+          const { debouncedControllers } = get();
+          //check if the controller exists
+          if (debouncedControllers[controllerKey]) {
+            debouncedControllers[controllerKey].abortController.abort(); //cancel previous request
+          }
+          //then create new 
+          const abortController = new AbortController();
+          set((state) => {
+            state.debouncedControllers[controllerKey] = {
+              timeoutId: setTimeout(() => { }, 0), // Dummy timeout
+              abortController
+            };
+            state.isLoadingTags = true;
+          });
           try {
             set((state) => { state.isLoadingTags = true; });
-
-            const tags = await folderService.getTagsByLevel(levelId);
-
-
-            set((state) => {
-              state.availableTags = tags;
-              state.isLoadingTags = false;
-            });
+            const tags = await folderService.getTagsByLevel(levelId, { signal: abortController.signal });
+            // request do not cancel -> fetch completed -> set loading -> false
+            if (!abortController.signal.aborted) {
+              set((state) => {
+                state.availableTags = tags;
+                state.isLoadingTags = false;
+                delete state.debouncedControllers[controllerKey];
+              });
+            }
           } catch (error) {
             console.error('Failed to fetch tags:', error);
             get().setError('tags', 'Failed to load tags');
-            set((state) => { state.isLoadingTags = false; });
+            set((state) => {
+              state.isLoadingTags = false;
+              delete state.debouncedControllers[controllerKey]
+            });
           }
         },
-        updateFileMetadata: (fileId, field, value) => {
-          set((state) => {
-            if (!state.fileMetadata[fileId]) {
-              state.fileMetadata[fileId] = {
-                title: '',
-                description: '',
-                category: DocumentCategory.OTHER,
-                visibility: VisibilityType.PUBLIC,
-              };
+        // update + debounce + abort
+        updateFileMetadata: <K extends keyof FileMetadata>(fileId: string, field: K, value: FileMetadata[K], options?: { debounce?: boolean }) => {
+          //  debounce field default is true,
+          //  if updateFileMetadata(fileId,field) options = undefined ||
+          //  if updateFileMetadata(fileId,field,{}), options.debounce = true -> debounce update
+          //  if updateFileMetadata(fileId,field,{debounce : false}), options.debounce = false -> update without debounce
+          const { debounce = true } = options || {};
+
+          if (!debounce || (field !== 'title' && field !== 'description')) {
+            set((state) => {
+              if (!state.fileMetadata[fileId]) {
+                state.fileMetadata[fileId] = {
+                  title: '',
+                  description: '',
+                  category: 'OTHER' as DocumentCategory,
+                  visibility: 'PUBLIC' as VisibilityType,
+                };
+              }
+              state.fileMetadata[fileId][field] = value;
+            });
+            return;
+          }
+
+          // unique key defined 
+          // fileMetadata_fieldId_title/description etc . . . 
+          const controllerKey = `fileMetadata_${fileId}_${field}`;
+          const { debouncedControllers } = get();
+
+
+          if (debouncedControllers[controllerKey]) {
+            clearTimeout(debouncedControllers[controllerKey].timeoutId);
+            debouncedControllers[controllerKey].abortController.abort();
+          }
+
+          const abortController = new AbortController();
+          const timeoutId = setTimeout(() => {
+            if (!abortController.signal.aborted) {
+              set((state) => {
+                if (!state.fileMetadata[fileId]) {
+                  state.fileMetadata[fileId] = {
+                    title: '',
+                    description: '',
+                    category: 'OTHER' as DocumentCategory,
+                    visibility: 'PUBLIC' as VisibilityType,
+                  };
+                }
+                state.fileMetadata[fileId][field] = value;
+                // Clean up completed controller
+                delete state.debouncedControllers[controllerKey];
+              });
             }
-            state.fileMetadata[fileId][field] = value;
+          }, 500);
+
+          set((state) => {
+            state.debouncedControllers[controllerKey] = {
+              timeoutId,
+              abortController
+            };
           });
+
         },
+
         validateMetadataCompletion: (): Record<string, string[]> => {
           const { fileMetadata, files, folderManagement } = get();
           const completedFiles = files.filter(f => f.status === 'completed');
@@ -661,8 +744,24 @@ export const useUploadStore = create<UploadState>()(
           return errors;
         },
 
+        clearAllDebouncedOperations: () => {
+          // debounceControllers is object
+          const { debouncedControllers } = get();
+          // Object.values will transfer all values in object into array, 
+          Object.values(debouncedControllers)
+            // so can you foreach
+            // attention we clear timeout and abort, not fileId
+            .forEach(({ timeoutId, abortController }) => {
+              clearTimeout(timeoutId);
+              abortController.abort();
+            });
+
+          set((state) => {
+            state.debouncedControllers = {};
+          });
+        },
         getValidationErrors: (): Record<string, string[]> => {
-          const {  fileMetadata, files, folderManagement } = get();
+          const { fileMetadata, files, folderManagement } = get();
           const completedFiles = files.filter(f => f.status === 'completed');
 
           const errors: Record<string, string[]> = {};
@@ -671,7 +770,7 @@ export const useUploadStore = create<UploadState>()(
           if (!folderManagement.selectedFolderId && !folderManagement.newFolderData) {
             errors.folder = ['Please select or create a folder'];
           }
-           if (folderManagement.newFolderData && !folderManagement.newFolderData.folderClassificationId) {
+          if (folderManagement.newFolderData && !folderManagement.newFolderData.folderClassificationId) {
             errors.classification = ['Please select a classification level'];
           }
 
@@ -759,6 +858,54 @@ export const useUploadStore = create<UploadState>()(
             } else {
               state.validationErrors = {};
             }
+          });
+        },
+
+
+        updateFolderManagement: (data: Partial<FolderManagement>, options?: { immediate?: boolean }) => {
+          const { immediate = false } = options || {};
+          // Immediate update for non-text fields like dropdown/select/etc . . . 
+          if (immediate) {
+            set((state) => {
+              // Object.assign will merge new data into current state 
+              Object.assign(state.folderManagement, data);
+            });
+            return;
+          }
+          // Debounced update for text fields
+          const controllerKey = 'folderManagement'; // Mark key identify 
+          const { debouncedControllers } = get();
+
+          // Check debounce is on progress ? 
+          if (debouncedControllers[controllerKey]) {
+            // clear timeout to avoid duplicate 
+            clearTimeout(debouncedControllers[controllerKey].timeoutId);
+            // clear prior request if pending  
+            debouncedControllers[controllerKey].abortController.abort();
+          }
+
+          // Create new controller
+          // Create new abort for this 
+          const abortController = new AbortController();
+          // create new timeout 
+          const timeoutId = setTimeout(() => {
+            // is request is cancelled ?
+            if (!abortController.signal.aborted) {
+              // debounce is working good  
+              set((state) => {
+                Object.assign(state.folderManagement, data);
+                // Clean up completed controller
+                delete state.debouncedControllers[controllerKey];
+              });
+            }
+          }, 300); // delay 
+
+          // Store controller
+          set((state) => {
+            state.debouncedControllers[controllerKey] = {
+              timeoutId,
+              abortController
+            };
           });
         },
       }), {
