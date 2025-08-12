@@ -2,7 +2,7 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { getIcon } from '@/utils/getIcon';
-import { DocumentCategory, FileUploadInterface } from '@/types/FileUploadInterface';
+import { DocumentCategory, FileUploadInterface, VisibilityType } from '@/types/FileUploadInterface';
 import EmptyState from '@/components/layout/EmptyState';
 import CompletionBadge from '@/components/layout/user/CompletionBadge';
 import FileMetadataCard from './FileMetadataCard';
@@ -20,7 +20,7 @@ interface FileMetadata {
 interface FileMetadataEditorProps {
   files: FileUploadInterface[];
   fileMetadata: Record<string, FileMetadata>;
-  onFileMetadataChange: (fileId: string, field: keyof FileMetadata, value: string) => void;
+  onFileMetadataChange: (fileId: string, field: keyof FileMetadata, value: string, options?: { debounce?: boolean }) => void;
   className?: string;
   showCompletionStatus?: boolean;
   maxDescriptionLength?: number;
@@ -41,12 +41,36 @@ function FileMetadataEditor({
   showCompletionStatus = true,
   maxDescriptionLength = 500
 }: FileMetadataEditorProps) {
-  // Optimized handler with proper typing
+
+
+  const handleTextChange = useCallback(
+    (fileId: string, field: 'title' | 'description', value: string) => {
+      onFileMetadataChange(fileId, field, value); // Auto-debounced in store
+    }, [onFileMetadataChange]);
+
+  const handleCategoryChange = useCallback(
+    (fileId: string, category: DocumentCategory) => {
+      onFileMetadataChange(fileId, 'category', category, { debounce: false });
+    }, [onFileMetadataChange]);
+
+  const handleVisibilityChange = useCallback(
+    (fileId: string, visibility: VisibilityType) => {
+      onFileMetadataChange(fileId, 'visibility', visibility, { debounce: false });
+    }, [onFileMetadataChange]);
+
   const handleFieldChange = useCallback((fileId: string, field: keyof FileMetadata) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    onFileMetadataChange(fileId, field, e.target.value);
-  }, [onFileMetadataChange]);
+    const isTextField = field === 'title' || field === 'description';
+    if (isTextField) {
+      handleTextChange(fileId, field as 'title' | 'description', e.target.value);
+    }
+  }, [handleTextChange]);
+
+
+
+
+
 
   //  Memoized metadata getter with defaults
   const getFileMetadata = useCallback((fileId: string): FileMetadata => {
