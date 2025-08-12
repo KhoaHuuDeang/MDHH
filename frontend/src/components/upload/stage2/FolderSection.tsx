@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState, useMemo } from "react";
+import React, { useCallback, useState, useMemo, useRef, useEffect } from "react";
 import { getIcon } from "@/utils/getIcon";
 import { Folder, ClassificationLevel, Tag } from "@/types/FolderInterface";
 import { FolderManagement } from "@/types/FileUploadInterface";
@@ -31,38 +31,127 @@ function FolderSection({
   className = "",
 }: FolderSectionProps) {
   const [localMode, setLocalMode] = useState<"select" | "create">("select");
+  const [localFolderData, setLocalFolderData] = useState({
+    name: "",
+    description: "",
+    folderClassificationId: "",
+    folderTagIds: [] as string[],
+  });
 
+  const updateAbortController = useRef<AbortController | null>(null);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (folderManagement.newFolderData) {
+      setLocalFolderData({
+        name: folderManagement.newFolderData.name || "",
+        description: folderManagement.newFolderData.description || "",
+        folderClassificationId: folderManagement.newFolderData.folderClassificationId || "",
+        folderTagIds: folderManagement.newFolderData.folderTagIds || [],
+      });
+    }
+  }, [
+    folderManagement.newFolderData?.name,
+    folderManagement.newFolderData?.description,
+    folderManagement.newFolderData?.folderClassificationId,
+    folderManagement.newFolderData?.folderTagIds
+  ]);
   // Memoized folders
   const availableFolders = useMemo(() => existingFolders || [], [existingFolders]);
-
   // Handlers
+
+  const debouncedUpdateStore = useCallback(
+    (updatedData: Partial<typeof localFolderData>, delay = 300) => {
+      // Cancel previous update
+      if (updateAbortController.current) {
+        updateAbortController.current.abort();
+      }
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+
+      // Create new AbortController
+      const controller = new AbortController();
+      updateAbortController.current = controller;
+
+      debounceTimeoutRef.current = setTimeout(() => {
+        if (!controller.signal.aborted) {
+          onFolderManagementChange({
+            newFolderData: { ...localFolderData, ...updatedData }
+          });
+        }
+      }, delay);
+    },
+    [localFolderData, onFolderManagementChange]
+  );
   const handleModeChange = useCallback(
     (mode: "select" | "create") => {
       setLocalMode(mode);
+
+      // Cancel pending updates
+      if (updateAbortController.current) {
+        updateAbortController.current.abort();
+      }
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+
       if (mode === "select") {
-        onFolderManagementChange({ selectedFolderId: undefined, newFolderData: undefined });
-      } else {
+        // Reset both store and local state
         onFolderManagementChange({
           selectedFolderId: undefined,
-          newFolderData: { name: "", description: "", folderClassificationId: "", folderTagIds: [] },
+          newFolderData: undefined
         });
+        setLocalFolderData({
+          name: "",
+          description: "",
+          folderClassificationId: "",
+          folderTagIds: [],
+        });
+      } else {
+        // Initialize new folder creation
+        const initialData = {
+          name: "",
+          description: "",
+          folderClassificationId: "",
+          folderTagIds: []
+        };
+
+        onFolderManagementChange({
+          selectedFolderId: undefined,
+          newFolderData: initialData,
+        });
+        setLocalFolderData(initialData);
       }
     },
     [onFolderManagementChange]
   );
-
+  useEffect(() => {
+    return () => {
+      if (updateAbortController.current) {
+        updateAbortController.current.abort();
+      }
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
   const handleFolderSelect = useCallback(
     (folderId: string) => {
       const folder = availableFolders.find((f) => f.id === folderId);
       if (folder) {
+        const folderData = {
+          name: folder.name,
+          description: folder.description || "",
+          folderClassificationId: folder.classification_level_id!,
+          folderTagIds: folder.tags?.map((t) => t.id) || [],
+        };
+
+        // Immediate update cho folder selection (không cần debounce)
+        setLocalFolderData(folderData);
         onFolderManagementChange({
           selectedFolderId: folderId,
-          newFolderData: {
-            name: folder.name,
-            description: folder.description || "",
-            folderClassificationId: folder.classification_level_id!,
-            folderTagIds: folder.tags?.map((t) => t.id) || [],
-          },
+          newFolderData: folderData,
         });
       }
     },
@@ -71,9 +160,18 @@ function FolderSection({
 
   const handleNewFolderDataChange = useCallback(
     (field: string, value: any) => {
-      onFolderManagementChange({ newFolderData: { ...folderManagement.newFolderData!, [field]: value } });
+      setLocalFolderData(prev => ({ ...prev, [field]: value }));
+      const isTextField = field === 'name' || field === 'description';
+      if (isTextField) {
+        // Use debounced update for text fields
+        debouncedUpdateStore({ [field]: value });
+      } else {
+        onFolderManagementChange({
+          newFolderData: { ...folderManagement.newFolderData!, [field]: value }
+        });
+      }
     },
-    [folderManagement.newFolderData, onFolderManagementChange]
+    [folderManagement.newFolderData, onFolderManagementChange, debouncedUpdateStore]
   );
 
   return (
@@ -144,7 +242,7 @@ function FolderSection({
         ) : (
           <div className="transition-all duration-300 ease-[cubic-bezier(.25,.8,.25,1)]">
             <NewFolderForm
-              folderData={folderManagement.newFolderData}
+              folderData={localFolderData}
               onFolderDataChange={handleNewFolderDataChange}
               classificationLevels={classificationLevels}
               availableTags={availableTags}
