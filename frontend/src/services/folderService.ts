@@ -67,8 +67,8 @@ class FolderService {
     }
 
     // Folders CRUD API matching backend controller
-    async getUserFolders(options : {signal : AbortSignal}): Promise<Folder[]> {
-        return this.makeRequest<Folder[]>('/folders', {signal: options.signal});
+    async getUserFolders(options? : {signal?: AbortSignal}): Promise<Folder[]> {
+        return this.makeRequest<Folder[]>('/folders', {signal: options?.signal});
     }
 
     async createFolder(data: CreateFolderDto): Promise<Folder> {
