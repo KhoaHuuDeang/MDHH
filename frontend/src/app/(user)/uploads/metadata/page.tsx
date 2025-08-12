@@ -9,7 +9,6 @@ import FileMetadataEditor from "@/components/upload/stage2/FileMetadataEditor";
 import { getIcon } from "@/utils/getIcon";
 
 /**
- * MetadataPage (UI Pass)
  * - Follows Design UI Convention: brand greens, neutral grays, rounded-2xl cards
  * - Subtle Tailwind animations only (no custom keyframes): transitions, hover scale, ring
  * - Skeleton-only frame: keeps logic + layout but upgrades visuals/accessibility
@@ -18,7 +17,6 @@ import { getIcon } from "@/utils/getIcon";
 function MetadataPage() {
   const router = useRouter();
 
-  // Store selectors (kept granular to avoid over-renders)
   const files = useUploadStore((s) => s.files);
   const fileMetadata = useUploadStore((s) => s.fileMetadata);
   const folderManagement = useUploadStore((s) => s.folderManagement);
@@ -39,11 +37,21 @@ function MetadataPage() {
   const submitUpload = useUploadStore((s) => s.submitUpload);
   const setCurrentStep = useUploadStore((s) => s.setCurrentStep);
   const setValidationErrors = useUploadStore((s) => s.setValidationErrors);
+  const clearAllDebouncedOperations = useUploadStore((s) => s.clearAllDebouncedOperations)
+
+  useEffect(() => {
+    return () => {
+      clearAllDebouncedOperations();
+    };
+  }, [clearAllDebouncedOperations]);
 
   // Step management
   useEffect(() => {
     setCurrentStep(2);
-  }, [setCurrentStep]);
+    return () => {
+      clearAllDebouncedOperations();
+    }
+  }, [setCurrentStep, clearAllDebouncedOperations]);
 
   // Load base data
   useEffect(() => {
@@ -227,11 +235,10 @@ function MetadataPage() {
             type="button"
             onClick={handleSubmit}
             disabled={!validationState.canSubmit}
-            className={`px-5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50 disabled:opacity-60 disabled:cursor-not-allowed ${
-              validationState.canSubmit
+            className={`px-5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50 disabled:opacity-60 disabled:cursor-not-allowed ${validationState.canSubmit
                 ? "bg-[#386641] text-white hover:bg-[#2d4f31] shadow-md hover:shadow-lg"
                 : "bg-gray-300 text-white"
-            }`}
+              }`}
           >
             {isSubmitting ? (
               <>

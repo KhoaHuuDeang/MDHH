@@ -32,7 +32,7 @@ function TagSelector({
   showSelectionCount = true
 }: TagSelectorProps) {
 
-  // ✅ All logic remains here
+  // All logic remains here
   const handleTagToggle = useCallback((tagId: string) => {
     if (disabled) return;
 
