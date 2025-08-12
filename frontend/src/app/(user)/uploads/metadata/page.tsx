@@ -9,7 +9,6 @@ import FileMetadataEditor from "@/components/upload/stage2/FileMetadataEditor";
 import { getIcon } from "@/utils/getIcon";
 
 /**
- * MetadataPage (UI Pass)
  * - Follows Design UI Convention: brand greens, neutral grays, rounded-2xl cards
  * - Subtle Tailwind animations only (no custom keyframes): transitions, hover scale, ring
  * - Skeleton-only frame: keeps logic + layout but upgrades visuals/accessibility
@@ -17,8 +16,7 @@ import { getIcon } from "@/utils/getIcon";
 
 function MetadataPage() {
   const router = useRouter();
-
-  // Store selectors (kept granular to avoid over-renders)
+  
   const files = useUploadStore((s) => s.files);
   const fileMetadata = useUploadStore((s) => s.fileMetadata);
   const folderManagement = useUploadStore((s) => s.folderManagement);
@@ -39,6 +37,13 @@ function MetadataPage() {
   const submitUpload = useUploadStore((s) => s.submitUpload);
   const setCurrentStep = useUploadStore((s) => s.setCurrentStep);
   const setValidationErrors = useUploadStore((s) => s.setValidationErrors);
+  const clearAllDebouncedOperations = useUploadStore((s) => s.clearAllDebouncedOperations);
+
+  useEffect(() => {
+    return () => {
+      clearAllDebouncedOperations();
+    };
+  }, [clearAllDebouncedOperations]);
 
   // Step management
   useEffect(() => {
