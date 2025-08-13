@@ -2,20 +2,14 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { getIcon } from '@/utils/getIcon';
-import { DocumentCategory, FileUploadInterface, VisibilityType } from '@/types/FileUploadInterface';
+import { DocumentCategory, FileMetadata, FileUploadInterface, VisibilityType } from '@/types/FileUploadInterface';
 
-// Updated interface for Stage 2 per-file metadata
-interface FileMetadata {
-  title: string;
-  description: string;
-  category: DocumentCategory;
-  visibility: 'PUBLIC' | 'PRIVATE';
-}
+
 
 interface FileMetadataEditorProps {
   files: FileUploadInterface[];
   fileMetadata: Record<string, FileMetadata>;
-  onFileMetadataChange: (fileId: string, field: keyof FileMetadata, value: string) => void;
+  onFileMetadataChange: (fileId: string, field: keyof FileMetadata, value: string, options?: { debounce?: boolean }) => void;
   className?: string;
   showCompletionStatus?: boolean;
   maxDescriptionLength?: number;
@@ -39,7 +33,7 @@ const VISIBILITY_OPTIONS = [
   },
   {
     value: VisibilityType.PRIVATE,
-    label: '🔒 Private', 
+    label: '🔒 Private',
     description: 'Only you can access',
     icon: 'Lock'
   },
@@ -64,7 +58,12 @@ function FileMetadataEditor({
   const handleFieldChange = useCallback((fileId: string, field: keyof FileMetadata) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    onFileMetadataChange(fileId, field, e.target.value);
+    const isTextField = field === 'title' || field === 'description';
+    if (isTextField) {
+      onFileMetadataChange(fileId, field, e.target.value, { debounce: true });
+    } else {
+      onFileMetadataChange(fileId, field, e.target.value, { debounce: false });
+    }
   }, [onFileMetadataChange]);
 
   // Memoized metadata getter with defaults
@@ -149,10 +148,10 @@ const EmptyState = React.memo<{ className?: string }>(({ className = '' }) => (
   </section>
 ));
 
-const CompletionBadge = React.memo<{ 
-  completed: number; 
-  total: number; 
-  percentage: number; 
+const CompletionBadge = React.memo<{
+  completed: number;
+  total: number;
+  percentage: number;
 }>(({ completed, total, percentage }) => (
   <div className="flex items-center gap-2">
     <div className={`
@@ -304,8 +303,8 @@ const FileMetadataCard = React.memo<FileMetadataCardProps>(({
   );
 });
 
-const ProgressSummary = React.memo<{ 
-  stats: { completed: number; total: number; percentage: number }; 
+const ProgressSummary = React.memo<{
+  stats: { completed: number; total: number; percentage: number };
 }>(({ stats }) => (
   <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
     <div className="flex items-center justify-between mb-2">

@@ -4,22 +4,11 @@ import React, { useCallback, useMemo } from 'react';
 
 import { getIcon } from '@/utils/getIcon';
 
-import { DocumentCategory, FileUploadInterface } from '@/types/FileUploadInterface';
+import { DocumentCategory, FileMetadata, FileUploadInterface, VisibilityType } from '@/types/FileUploadInterface';
 import EmptyState from '@/components/layout/EmptyState';
 import CompletionBadge from '@/components/layout/user/CompletionBadge';
 import FileMetadataCard from './sub-components/FileMetadataEditor/FileMetadataCard';
 import ProgressSummary from '@/components/layout/ProgressSummary';
-
-
-
-
-// Updated interface for Stage 2 per-file metadata
-interface FileMetadata {
-  title: string;
-  description: string;
-  category: DocumentCategory;
-  visibility: 'PUBLIC' | 'PRIVATE';
-}
 
 // Constants for Stage 2 per-file categorization
 const DOCUMENT_CATEGORIES = [
@@ -34,13 +23,13 @@ const DEFAULT_METADATA: FileMetadata = {
   title: '',
   description: '',
   category: DocumentCategory.OTHER,
-  visibility: 'PUBLIC'
+  visibility: VisibilityType.PUBLIC
 };
 
 interface FileMetadataEditorProps {
   files: FileUploadInterface[];
   fileMetadata: Record<string, FileMetadata>;
-  onFileMetadataChange: (fileId: string, field: keyof FileMetadata, value: string) => void;
+  onFileMetadataChange: (fileId: string, field: keyof FileMetadata, value: string, options?: { debounce: boolean }) => void;
   className?: string;
   showCompletionStatus?: boolean;
   maxDescriptionLength?: number;
@@ -59,7 +48,7 @@ function FileMetadataEditor({
   const handleFieldChange = useCallback((fileId: string, field: keyof FileMetadata) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    onFileMetadataChange(fileId, field, e.target.value);
+    onFileMetadataChange(fileId, field, e.target.value, { debounce: true });
   }, [onFileMetadataChange]);
 
   // Memoized metadata getter with defaults
