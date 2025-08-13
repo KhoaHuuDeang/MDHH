@@ -1,21 +1,14 @@
 "use client";
 
-import React, { useCallback } from 'react';
+import React, { ChangeEvent, useCallback, useDeferredValue, useEffect, useState } from 'react';
 import { getIcon } from '@/utils/getIcon';
-import { DocumentCategory, FileUploadInterface } from '@/types/FileUploadInterface';
-
-interface FileMetadata {
-  title: string;
-  description: string;
-  category: DocumentCategory;
-  visibility: 'PUBLIC' | 'PRIVATE';
-}
+import { DocumentCategory, FileMetadata, FileUploadInterface, VisibilityType } from '@/types/FileUploadInterface';
 
 interface FileMetadataCardProps {
   file: FileUploadInterface;
   index: number;
   metadata: FileMetadata;
-  onFieldChange: (fileId: string, field: keyof FileMetadata) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  onFieldChange: (fileId: string, field: keyof FileMetadata, val: string)  => void;
   maxDescriptionLength: number;
 }
 
@@ -29,13 +22,13 @@ const DOCUMENT_CATEGORIES = [
 
 const VISIBILITY_OPTIONS = [
   {
-    value: 'PUBLIC',
+    value: VisibilityType.PUBLIC,
     label: '🌐 Public',
     description: 'Anyone can view and download',
     icon: 'Globe'
   },
   {
-    value: 'PRIVATE',
+    value: VisibilityType.PRIVATE,
     label: '🔒 Private',
     description: 'Only you can access',
     icon: 'Lock'
@@ -49,8 +42,46 @@ function FileMetadataCard({
   onFieldChange,
   maxDescriptionLength
 }: FileMetadataCardProps) {
+  const [title, setTitle] = useState(metadata.title)
+  const [description, setDescription] = useState(metadata.description)
+  const titleDl = useDeferredValue(title, null);
+  const descriptionDl = useDeferredValue(description, null);
   const isComplete = !!(metadata.title?.trim() && metadata.description?.trim() && metadata.category);
   const descriptionLength = metadata.description?.length || 0;
+  // parent's data change, son will do the same 
+  useEffect(() => {
+    setTitle(metadata.title)
+  }, [metadata.title])
+
+  useEffect(() => {
+    setDescription(metadata.description)
+  }, [metadata.description])
+
+  // will set the data when user stop typing 
+  useEffect(() => {
+    if (titleDl !== metadata.title) {
+      onFieldChange(file.id, 'title', titleDl!);
+    }
+  }, [titleDl, metadata.title, onFieldChange])
+  useEffect(() => {
+    if (descriptionDl !== metadata.description) {
+      onFieldChange(file.id, 'description', descriptionDl!);
+    }
+  }, [descriptionDl, metadata.description, onFieldChange])
+
+  const handleTitleChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setTitle(e.target.value)
+  }, [])
+  const handleDescriptionChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setDescription(e.target.value)
+  }, [])
+  const handleCategoryChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
+    onFieldChange(file.id, 'category', e.target.value)
+  }, [onFieldChange])
+  const handleVisibilityChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
+    onFieldChange(file.id, 'visibility', e.target.value)
+  }, [onFieldChange])
+
 
   return (
     <div
@@ -104,7 +135,7 @@ function FileMetadataCard({
           <input
             type="text"
             value={metadata.title}
-            onChange={onFieldChange(file.id, 'title')}
+            onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g., Chapter 5: Advanced Topics"
             className="w-full p-3 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
           />
@@ -117,7 +148,7 @@ function FileMetadataCard({
           </label>
           <select
             value={metadata.category}
-            onChange={onFieldChange(file.id, 'category')}
+            onChange={handleCategoryChange}
             className="w-full p-3 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
           >
             {DOCUMENT_CATEGORIES.map(category => (
@@ -135,7 +166,7 @@ function FileMetadataCard({
           </label>
           <textarea
             value={metadata.description}
-            onChange={onFieldChange(file.id, 'description')}
+            onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe the content, topics covered, learning objectives..."
             maxLength={maxDescriptionLength}
             rows={3}
@@ -153,7 +184,7 @@ function FileMetadataCard({
           </label>
           <select
             value={metadata.visibility}
-            onChange={onFieldChange(file.id, 'visibility')}
+            onChange={handleVisibilityChange}
             className="w-full p-3 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
           >
             {VISIBILITY_OPTIONS.map(option => (
@@ -170,4 +201,14 @@ function FileMetadataCard({
 
 FileMetadataCard.displayName = 'FileMetadataCard';
 
-export default React.memo(FileMetadataCard);
+function areEqual(prevProps: FileMetadataCardProps, nextProps: FileMetadataCardProps) {
+  return (
+    prevProps.file.id === nextProps.file.id &&
+    prevProps.metadata.title === nextProps.metadata.title &&
+    prevProps.metadata.description === nextProps.metadata.description &&
+    prevProps.metadata.category === nextProps.metadata.category &&
+    prevProps.metadata.visibility === nextProps.metadata.visibility &&
+    prevProps.maxDescriptionLength === nextProps.maxDescriptionLength
+  );
+}
+export default React.memo(FileMetadataCard, areEqual);
