@@ -8,7 +8,7 @@ interface FileMetadataCardProps {
   file: FileUploadInterface;
   index: number;
   metadata: FileMetadata;
-  onFieldChange: (fileId: string, field: keyof FileMetadata, val: string)  => void;
+  onFieldChange: (fileId: string, field: keyof FileMetadata, val: string) => void;
   maxDescriptionLength: number;
 }
 
@@ -42,45 +42,55 @@ function FileMetadataCard({
   onFieldChange,
   maxDescriptionLength
 }: FileMetadataCardProps) {
-  const [title, setTitle] = useState(metadata.title)
-  const [description, setDescription] = useState(metadata.description)
-  const titleDl = useDeferredValue(title, null);
-  const descriptionDl = useDeferredValue(description, null);
+  // Use local state for immediate UI updates without store subscriptions
+  const [localTitle, setLocalTitle] = useState(metadata.title || '');
+  const [localDescription, setLocalDescription] = useState(metadata.description || '');
+  
+  // Debounced values to reduce store updates
+  const deferredTitle = useDeferredValue(localTitle);
+  const deferredDescription = useDeferredValue(localDescription);
+  
   const isComplete = !!(metadata.title?.trim() && metadata.description?.trim() && metadata.category);
-  const descriptionLength = metadata.description?.length || 0;
-  // parent's data change, son will do the same 
+  const descriptionLength = localDescription.length;
+
+  // Sync local state when store metadata changes (from external updates)
   useEffect(() => {
-    setTitle(metadata.title)
-  }, [metadata.title])
+    setLocalTitle(metadata.title || '');
+  }, [metadata.title]);
 
   useEffect(() => {
-    setDescription(metadata.description)
-  }, [metadata.description])
+    setLocalDescription(metadata.description || '');
+  }, [metadata.description]);
 
-  // will set the data when user stop typing 
+  // Update store when deferred values change
   useEffect(() => {
-    if (titleDl !== metadata.title) {
-      onFieldChange(file.id, 'title', titleDl!);
+    if (deferredTitle !== metadata.title) {
+      onFieldChange(file.id, 'title', deferredTitle);
     }
-  }, [titleDl, metadata.title, onFieldChange])
-  useEffect(() => {
-    if (descriptionDl !== metadata.description) {
-      onFieldChange(file.id, 'description', descriptionDl!);
-    }
-  }, [descriptionDl, metadata.description, onFieldChange])
+  }, [deferredTitle, metadata.title, file.id, onFieldChange]);
 
+  useEffect(() => {
+    if (deferredDescription !== metadata.description) {
+      onFieldChange(file.id, 'description', deferredDescription);
+    }
+  }, [deferredDescription, metadata.description, file.id, onFieldChange]);
+
+  // Memoized event handlers to prevent unnecessary re-renders
   const handleTitleChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    setTitle(e.target.value)
-  }, [])
-  const handleDescriptionChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    setDescription(e.target.value)
-  }, [])
+    setLocalTitle(e.target.value);
+  }, []);
+
+  const handleDescriptionChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
+    setLocalDescription(e.target.value);
+  }, []);
+
   const handleCategoryChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
-    onFieldChange(file.id, 'category', e.target.value)
-  }, [onFieldChange])
+    onFieldChange(file.id, 'category', e.target.value);
+  }, [file.id, onFieldChange]);
+
   const handleVisibilityChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
-    onFieldChange(file.id, 'visibility', e.target.value)
-  }, [onFieldChange])
+    onFieldChange(file.id, 'visibility', e.target.value);
+  }, [file.id, onFieldChange]);
 
 
   return (
@@ -134,8 +144,8 @@ function FileMetadataCard({
           </label>
           <input
             type="text"
-            value={metadata.title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={localTitle}
+            onChange={handleTitleChange}
             placeholder="e.g., Chapter 5: Advanced Topics"
             className="w-full p-3 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
           />
@@ -165,8 +175,8 @@ function FileMetadataCard({
             Description *
           </label>
           <textarea
-            value={metadata.description}
-            onChange={(e) => setDescription(e.target.value)}
+            value={localDescription}
+            onChange={handleDescriptionChange}
             placeholder="Describe the content, topics covered, learning objectives..."
             maxLength={maxDescriptionLength}
             rows={3}

@@ -45,10 +45,8 @@ function FileMetadataEditor({
   maxDescriptionLength = 500
 }: FileMetadataEditorProps) {
   //  Optimized handler with proper typing
-  const handleFieldChange = useCallback((fileId: string, field: keyof FileMetadata) => (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    onFileMetadataChange(fileId, field, e.target.value, { debounce: true });
+  const handleFieldChange = useCallback((fileId: string, field: keyof FileMetadata, value: string) => {
+    onFileMetadataChange(fileId, field, value, { debounce: true });
   }, [onFileMetadataChange]);
 
   // Memoized metadata getter with defaults
