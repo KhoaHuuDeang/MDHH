@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { getSession } from 'next-auth/react'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL 
+const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 // Create axios instance
 const apiClient = axios.create({
@@ -29,7 +29,7 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // NextAuth will handle redirect to signin
-      window.location.href = '/api/auth/signin'
+      window.location.href = '/api/auth'
     }
     return Promise.reject(error)
   }
@@ -38,10 +38,11 @@ apiClient.interceptors.response.use(
 // Auth services
 export const authService = {
   register: async (userData: {
-    email: string
-    username: string
-    name: string
-    password: string
+    birth: string;
+    email: string;
+    displayname: string;
+    username: string;
+    password: string;
   }) => {
     const response = await apiClient.post('/auth/register', userData)
     return response.data
@@ -54,17 +55,17 @@ export const userService = {
     const response = await apiClient.get('/users')
     return response.data
   },
-  
+
   getUser: async (id: string) => {
     const response = await apiClient.get(`/users/${id}`)
     return response.data
   },
-  
+
   updateUser: async (id: string, userData: any) => {
     const response = await apiClient.patch(`/users/${id}`, userData)
     return response.data
   },
-  
+
   deleteUser: async (id: string) => {
     const response = await apiClient.delete(`/users/${id}`)
     return response.data

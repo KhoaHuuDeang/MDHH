@@ -23,7 +23,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (status === 'unauthenticated') {
       toast.error("Chưa đăng nhập đừng có mò vào đây")
-      router.push('/auth/signin')
+      router.push('/auth')
     }
   }, [status, router, toast])
 

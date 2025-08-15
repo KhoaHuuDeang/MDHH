@@ -13,5 +13,10 @@ export const registerSchema = z.object({
     message: "Passwords don't match",
     path: ["confirmPassword"],
 })
+export const loginSchema = z.object({
+    email: z.string().min(1, "Email is required").email("Invalid email address"),
+    password: z.string().min(1, "Password is required"),
+});
 
 export type RegisterFormData = z.infer<typeof registerSchema>
+export type LoginFormData = z.infer<typeof loginSchema>

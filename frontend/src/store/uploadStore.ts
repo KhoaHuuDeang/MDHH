@@ -71,7 +71,6 @@ interface UploadState {
 
   // Step management
   nextStep: () => void;
-  prevStep: () => void;
   setCurrentStep: (step: 1 | 2 | 3) => void;
   validateStep: (step: number) => boolean;
 

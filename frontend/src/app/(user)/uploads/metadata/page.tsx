@@ -68,7 +68,7 @@ function MetadataPage() {
 
   const completedFiles = useMemo(() => files.filter((f) => f.status === "completed"), [files]);
 
-  // Validation summary (unchanged logic, presented nicer)
+  // Validation
   const validationState = useMemo(() => {
     const missing: string[] = [];
 
