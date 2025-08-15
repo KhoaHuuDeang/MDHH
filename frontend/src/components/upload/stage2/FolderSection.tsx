@@ -9,7 +9,7 @@ import NewFolderForm from "./sub-components/FolderSection/NewFolderForm";
 
 interface FolderSectionProps {
   folderManagement: FolderManagement;
-  onFolderManagementChange: (data: Partial<FolderManagement>) => void;
+  onFolderManagementChange: (data: Partial<FolderManagement>, options? : {debounce? : boolean}) => void;
   existingFolders: Folder[];
   classificationLevels: ClassificationLevel[];
   availableTags: Tag[];
@@ -38,8 +38,6 @@ function FolderSection({
     folderTagIds: [] as string[],
   });
 
-  const updateAbortController = useRef<AbortController | null>(null);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (folderManagement.newFolderData) {
@@ -60,42 +58,9 @@ function FolderSection({
   const availableFolders = useMemo(() => existingFolders || [], [existingFolders]);
   // Handlers
 
-  const debouncedUpdateStore = useCallback(
-    (updatedData: Partial<typeof localFolderData>, delay = 300) => {
-      // Cancel previous update
-      if (updateAbortController.current) {
-        updateAbortController.current.abort();
-      }
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-
-      // Create new AbortController
-      const controller = new AbortController();
-      updateAbortController.current = controller;
-
-      debounceTimeoutRef.current = setTimeout(() => {
-        if (!controller.signal.aborted) {
-          onFolderManagementChange({
-            newFolderData: { ...localFolderData, ...updatedData }
-          });
-        }
-      }, delay);
-    },
-    [localFolderData, onFolderManagementChange]
-  );
   const handleModeChange = useCallback(
     (mode: "select" | "create") => {
       setLocalMode(mode);
-
-      // Cancel pending updates
-      if (updateAbortController.current) {
-        updateAbortController.current.abort();
-      }
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-
       if (mode === "select") {
         // Reset both store and local state
         onFolderManagementChange({
@@ -118,24 +83,14 @@ function FolderSection({
         };
 
         onFolderManagementChange({
-          selectedFolderId: undefined,
-          newFolderData: initialData,
+          newFolderData : initialData,
+          selectedFolderId: undefined
         });
         setLocalFolderData(initialData);
       }
     },
     [onFolderManagementChange]
   );
-  useEffect(() => {
-    return () => {
-      if (updateAbortController.current) {
-        updateAbortController.current.abort();
-      }
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-    };
-  }, []);
   const handleFolderSelect = useCallback(
     (folderId: string) => {
       const folder = availableFolders.find((f) => f.id === folderId);
@@ -163,15 +118,16 @@ function FolderSection({
       setLocalFolderData(prev => ({ ...prev, [field]: value }));
       const isTextField = field === 'name' || field === 'description';
       if (isTextField) {
-        // Use debounced update for text fields
-        debouncedUpdateStore({ [field]: value });
+        onFolderManagementChange({
+          newFolderData : { ...folderManagement.newFolderData!,[field] : value},
+        },{debounce : true})
       } else {
         onFolderManagementChange({
           newFolderData: { ...folderManagement.newFolderData!, [field]: value }
         });
       }
     },
-    [folderManagement.newFolderData, onFolderManagementChange, debouncedUpdateStore]
+    [folderManagement.newFolderData, onFolderManagementChange]
   );
 
   return (

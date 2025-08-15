@@ -25,7 +25,7 @@ export default function Home() {
           <div className="space-y-4">
             <p className="text-gray-700">Please sign in to continue</p>
             <Link
-              href="/auth/signin"
+              href="/auth"
               className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Sign In

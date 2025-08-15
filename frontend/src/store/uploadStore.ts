@@ -8,7 +8,7 @@ import { folderService } from '@/services/folderService';
 import { buildResourceCreationWithUploadDto } from '@/services/mappers/uploadMappers';
 
 interface UploadState {
-  // Current upload session state
+// Current upload session state
   files: FileUploadInterface[];
   currentStep: 1 | 2 | 3;
   isSubmitting: boolean;
@@ -71,7 +71,6 @@ interface UploadState {
 
   // Step management
   nextStep: () => void;
-  prevStep: () => void;
   setCurrentStep: (step: 1 | 2 | 3) => void;
   validateStep: (step: number) => boolean;
 
@@ -96,9 +95,9 @@ interface UploadState {
   fetchTagsByLevel: (levelId: string) => Promise<void>;
   fetchUserFolders: () => Promise<void>;
   createFolder: (name: string, levelId: string, tagIds?: string[]) => Promise<string>;
-  updateFolderManagement: (data: Partial<FolderManagement>) => void;
-  // Sử dụng generic vì typescript sẽ tìm tới gia đình tôi  
-  // K đại diện cho một field trong ResourceCreationMetadata ->  đó là lý do tại sao filed : K 
+  updateFolderManagement: (data: Partial<FolderManagement>,options? : {debounce?: boolean}) => void;
+  // Sử dụng generic vì typescript sẽ tìm tới gia đình tôi
+  // K đại diện cho một field trong ResourceCreationMetadata ->  đó là lý do tại sao filed : K
   // val (val)sẽ đại diện cho giá trị của field (K) trong ResourceCreationMetadata
   // tôi yêu geneirc 
   updateFileMetadata: <K extends keyof FileMetadata>(fileId: string, field: K, value: FileMetadata[K]) => void;

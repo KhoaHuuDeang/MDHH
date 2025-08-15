@@ -55,7 +55,7 @@ export default function Sidebar({
   const handleSignOut = async () => {
     setIsSigningOut(true);
     await signOut({
-      callbackUrl: '/auth/signin',
+      callbackUrl: '/auth',
       redirect: true
     })
   }
