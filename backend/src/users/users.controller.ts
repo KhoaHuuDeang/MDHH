@@ -50,6 +50,22 @@ export class UsersController {
     return this.usersService.update(id, updateUserDto);
   }
 
+  @Get(':id/stats')
+  @ApiOperation({ summary: 'Get user statistics' })
+  @ApiResponse({ status: 200, description: 'Return user statistics' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  getUserStats(@Param('id') id: string) {
+    return this.usersService.getUserStats(id);
+  }
+
+  // @Get(':id/activities')
+  // @ApiOperation({ summary: 'Get user recent activities' })
+  // @ApiResponse({ status: 200, description: 'Return user activities' })
+  // @ApiResponse({ status: 404, description: 'User not found' })
+  // getUserActivities(@Param('id') id: string) {
+  //   return this.usersService.getUserActivities(id);
+  // }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Delete user' })
   @ApiResponse({ status: 200, description: 'User deleted successfully' })

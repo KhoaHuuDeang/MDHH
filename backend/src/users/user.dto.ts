@@ -36,13 +36,13 @@ export class UpdateUserDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsEmail()
-  email: string;
+  email?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   @MinLength(6)
-  password: string;
+  password?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -52,7 +52,17 @@ export class UpdateUserDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  role_id: string;
+  username?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  avatar?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  role_id?: string;
 }
 
 export class LoginDto {
