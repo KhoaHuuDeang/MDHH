@@ -12,6 +12,7 @@ interface UserProfileSectionProps {
 }
 
 function UserProfileSection({ userId }: UserProfileSectionProps) {
+
     const { optimisticData: userData, isLoading, updateProfile } = useUserProfile(userId);
     
     // Internal state management
@@ -250,7 +251,7 @@ function UserProfileSection({ userId }: UserProfileSectionProps) {
                 {/* Essential info - always visible và 2 cột even trên mobile */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Display Name (editable) */}
-                    {editingField === "displayName" ? (
+                    {editingField === "displayname" ? (
                         <FieldRow
                             label="Display Name"
                             icon="User"
@@ -258,13 +259,13 @@ function UserProfileSection({ userId }: UserProfileSectionProps) {
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                                     <input
                                         type="text"
-                                        value={tempValues.displayName ?? userData.displayname}
-                                        onChange={(e) => handleTempChange?.("displayName", e.target.value)}
+                                        value={tempValues.displayname ?? userData.displayname}
+                                        onChange={(e) => handleTempChange?.("displayname", e.target.value)}
                                         className="w-full sm:w-48 min-h-[44px] rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[#6A994E] focus:ring-2 focus:ring-[#6A994E]/40"
                                     />
                                     <div className="flex gap-2 w-full sm:w-auto">
                                         <button
-                                            onClick={() => handleSave("displayName")}
+                                            onClick={() => handleSave("displayname")}
                                             className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 min-h-[44px] rounded-md bg-[#386641] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2d4f31] focus:outline-none focus:ring-2 focus:ring-[#386641]"
                                         >
                                             {getIcon("Check", 16)} Save
@@ -286,7 +287,7 @@ function UserProfileSection({ userId }: UserProfileSectionProps) {
                             value={<span className="font-medium">{userData.displayname}</span>}
                             action={
                                 <button
-                                    onClick={() => handleEdit("displayName")}
+                                    onClick={() => handleEdit("displayname")}
                                     className="inline-flex items-center gap-1 min-h-[44px] min-w-[44px] rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-300"
                                 >
                                     {getIcon("Pencil", 16)} <span className="hidden sm:inline">Edit</span>
