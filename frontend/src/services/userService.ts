@@ -33,7 +33,7 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // NextAuth will handle redirect to signin
-      window.location.href = '/api/auth'
+      window.location.href = '/auth'
     }
     return Promise.reject(error)
   }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useOptimistic } from 'react'
+import { useState, useEffect, useCallback, useOptimistic, useTransition } from 'react'
 import { userService } from '@/services/userService'
 import useNotifications from '@/hooks/useNotifications'
 
@@ -27,17 +27,19 @@ interface UseUserProfileReturn {
   refreshProfile: () => Promise<void>
 }
 
-type ProfileAction = 
-  | { type: 'UPDATE_FIELD', key: keyof UserProfile, value: any }
+type ProfileAction =
+  | { type: 'UPDATE_FIELD', field: keyof UserProfile, value: any }
   | { type: 'UPDATE_AVATAR', url: string }
   | { type: 'UPDATE_BANNER', url: string }
 
 export const useUserProfile = (userId: string): UseUserProfileReturn => {
-  
+
   const [userData, setUserData] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const toast = useNotifications()
+
+
 
   // useOptimistic for instant UI updates
   const [optimisticData, updateOptimistic] = useOptimistic(
@@ -46,7 +48,7 @@ export const useUserProfile = (userId: string): UseUserProfileReturn => {
       if (!state) return state
       switch (action.type) {
         case 'UPDATE_FIELD':
-          return { ...state, [action.key]: action.value }
+          return { ...state, [action.field]: action.value }
         case 'UPDATE_AVATAR':
           return { ...state, avatar: action.url }
         case 'UPDATE_BANNER':
@@ -56,6 +58,8 @@ export const useUserProfile = (userId: string): UseUserProfileReturn => {
       }
     }
   )
+
+  const [isPending, startTransition] = useTransition()
 
   const fetchUserProfile = useCallback(async () => {
     if (!userId) return
@@ -76,21 +80,29 @@ export const useUserProfile = (userId: string): UseUserProfileReturn => {
   const updateProfile = useCallback(async (updates: Partial<UserProfile>) => {
     if (!userId || !userData) return
     if (updates.avatar) {
-      updateOptimistic({ type: 'UPDATE_AVATAR', url: updates.avatar })
+      //wrap in startTransition
+      startTransition(() => {
+        updateOptimistic({ type: 'UPDATE_AVATAR', url: updates.avatar! })
+      })
     } else if (updates.banner) {
-      updateOptimistic({ type: 'UPDATE_BANNER', url: updates.banner })
+      startTransition(() => {
+        updateOptimistic({ type: 'UPDATE_BANNER', url: updates.banner || 'logo.svg' })
+      })
     } else {
       Object.entries(updates).forEach(([field, value]) => {
-        updateOptimistic({ 
-          type: 'UPDATE_FIELD', 
-          key: field as keyof UserProfile, 
-          value 
+        startTransition(() => {
+          updateOptimistic({
+            type: 'UPDATE_FIELD',
+            field: field as keyof UserProfile,
+            value
+          })
         })
       })
     }
 
     try {
       const updatedData = await userService.updateUser(userId, updates)
+      console.log('tao sure 100% avatar ở trong đây ', updatedData.avatar)
       setUserData(updatedData)
       toast.success('Profile đã được cập nhật')
     } catch (err: any) {
