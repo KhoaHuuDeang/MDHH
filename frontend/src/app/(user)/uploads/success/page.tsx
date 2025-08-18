@@ -12,7 +12,7 @@ export default function SuccessPage() {
 
   const handleReturnHome = useCallback(() => {
     resetUpload();
-    router.push('/homePage');
+    router.push('/');
   }, [resetUpload, router]);
 
   return (

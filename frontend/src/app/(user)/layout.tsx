@@ -12,18 +12,6 @@ export default async function UserLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // const session = await getServerSession(authOptions);
-  // if (!session) {
-  //   redirect('/auth/signin');
-  // }
-
-  // Create user data from session
-  // const userData = {
-  //   initials: session.user?.name?.substring(0, 2).toUpperCase() || 'UN',
-  //   name: session.user?.name || 'Unknown User',
-  //   email: session.user?.email || 'unknown@email.com'
-  // };
-
   return (
     <div className="flex h-screen bg-gray-900 text-gray-100 font-sans">
       {/* Sidebar - Hidden on mobile by default */}
