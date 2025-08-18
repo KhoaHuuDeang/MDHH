@@ -189,16 +189,11 @@ class UploadService {
       visibility: payload.visibility?.toUpperCase() ,
       folderManagement: {}
     };
-    console.log('PAYLOAD : ', payload);
-    console.log('PAYLOAD NEW FOLDER : ', payload.folderManagement.newFolderData);
-    console.log('PAYLOAD SELECTED FOLDER : ', payload.folderManagement.selectedFolderId);
-
     if (payload.folderManagement.selectedFolderId === undefined || !payload.folderManagement.newFolderData) {
       body.folderManagement.newFolderData = payload.folderManagement.newFolderData;
     }else{
       body.folderManagement.selectedFolderId = payload.folderManagement.selectedFolderId;
     }
-    console.log('SERVICE KKKK : ', body);
     body.files = payload.files;
 
     return this.makeRequest<ResourceResponseDto>(
@@ -236,8 +231,6 @@ class UploadService {
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable && onProgress) {
           const progress = Math.round((event.loaded * 100) / event.total);
-          console.log(`📊 S3 Upload progress: ${progress}%`);
-
           // Use requestAnimationFrame for smooth UI updates
           requestAnimationFrame(() => {
             onProgress(progress);
@@ -247,7 +240,6 @@ class UploadService {
 
       // Ensure we start with 0% progress
       xhr.upload.onloadstart = () => {
-        console.log(`🚀 S3 Upload started for file: ${file.name}`);
         if (onProgress) {
           requestAnimationFrame(() => {
             onProgress(0);
@@ -256,7 +248,6 @@ class UploadService {
       };
 
       xhr.onload = () => {
-        console.log(`✅ S3 Upload completed with status: ${xhr.status}`);
         if (xhr.status === 200 || xhr.status === 204) {
           // Ensure 100% progress on success
           if (onProgress) {

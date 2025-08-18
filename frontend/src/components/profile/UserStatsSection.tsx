@@ -1,12 +1,6 @@
 import React from 'react'
 import { getIcon } from '@/utils/getIcon'
-
-interface Stat {
-  label: string
-  value: string
-  icon: string
-  color: string
-}
+import useUserStats from '@/hooks/useUserStats'
 
 interface Achievement {
   title: string
@@ -16,14 +10,55 @@ interface Achievement {
 }
 
 interface UserStatsSectionProps {
-  stats: Stat[]
-  achievements: Achievement[]
+  userId: string
 }
 
-const UserStatsSection: React.FC<UserStatsSectionProps> = ({
-  stats,
-  achievements
-}) => {
+function UserStatsSection({ userId }: UserStatsSectionProps) {
+  const { stats, isLoading } = useUserStats(userId);
+
+  // Keep mockdata for achievements as requested
+  const achievements: Achievement[] = [
+    { title: "First Upload", description: "Tải lên tài liệu đầu tiên", icon: "Upload", unlocked: true },
+    { title: "Popular Creator", description: "Nhận 50 upvotes cho tài liệu", icon: "Star", unlocked: true },
+    { title: "Active Contributor", description: "Tải lên 10 tài liệu", icon: "Award", unlocked: false },
+    { title: "Helper", description: "Bình luận giúp đỡ 25 lần", icon: "Heart", unlocked: false },
+  ];
+
+  // Transform real stats data to display format
+  const statsDisplay = stats ? [
+    { label: "Uploads", value: stats.uploads.toString(), icon: "Upload", color: "text-[#6A994E]" },
+    { label: "Upvotes", value: stats.upvotes.toString(), icon: "ThumbsUp", color: "text-[#6A994E]" },
+    { label: "Comments", value: stats.comments.toString(), icon: "MessageCircle", color: "text-[#6A994E]" },
+    { label: "Downloads", value: stats.downloads.toString(), icon: "Download", color: "text-[#6A994E]" },
+  ] : [];
+
+  if (isLoading || !stats) {
+    return (
+      <div className="space-y-6">
+        <section className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+          <div className="animate-pulse">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-gray-200 rounded-lg" />
+              <div className="h-6 bg-gray-200 rounded w-48" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-gray-50 rounded-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full" />
+                    <div>
+                      <div className="h-6 bg-gray-200 rounded w-12 mb-1" />
+                      <div className="h-4 bg-gray-100 rounded w-16" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
       
@@ -37,7 +72,7 @@ const UserStatsSection: React.FC<UserStatsSectionProps> = ({
         </div>
         
         <div className="grid grid-cols-2 gap-4">
-          {stats.map((stat, index) => (
+          {statsDisplay.map((stat, index) => (
             <div
               key={index}
               className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-all duration-200 hover:scale-105 group"

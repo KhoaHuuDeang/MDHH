@@ -33,6 +33,8 @@ export class UsersService {
         username: true,
         displayname: true,
         birth: true,
+        avatar : true,
+        banner : true,
         roles: {
           select: {
             id: true,
@@ -47,7 +49,6 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-
     return user;
   }
   async create(createUserDto: CreateUserDto) {
@@ -59,8 +60,6 @@ export class UsersService {
     if (existingUser) {
       throw new BadRequestException('User already exists with this email');
     }
-
-
     // Tìm role 'user' mặc định
     const defaultRole = await this.prisma.roles.findUnique({
       where: { name: 'USER' }
@@ -70,7 +69,8 @@ export class UsersService {
       throw new BadRequestException('Default user role not found');
     }
 
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10); return this.prisma.users.create({
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10); 
+    return this.prisma.users.create({
       data: {
         ...createUserDto,
         password: hashedPassword,
@@ -94,7 +94,7 @@ export class UsersService {
     });
   }
   async update(id: string, updateUserDto: UpdateUserDto) {
-    // ✅ 1. Parallel validation - chạy song song để tối ưu tốc độ
+    // Parallel validation - chạy song song để tối ưu tốc độ
     const [existingUser, emailCheck, roleCheck] = await Promise.all([
       this.prisma.users.findUnique({
         where: { id },
@@ -119,7 +119,7 @@ export class UsersService {
       }) : null // trả về null nếu không có roleId 
     ])
 
-    // ✅ 2.Validate 
+   
     if (!existingUser) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
@@ -129,7 +129,7 @@ export class UsersService {
     if (!roleCheck && updateUserDto.role_id) {
       throw new NotFoundException(`Role with ID ${updateUserDto.role_id} not found`);
     }
-    // ✅ 3.update user
+    
     const updateUser = await this.prisma.users.update({
       where: { id },
       data: {
@@ -141,6 +141,208 @@ export class UsersService {
     const { password, ...result } = updateUser;
     return result;
   }
+
+  async getUserStats(id: string) {
+    await this.findOne(id);
+    //parallel fetching 
+    const [uploadsCount, upvotesCount, commentsCount, downloadsCount] = await Promise.all([
+      this.prisma.uploads.count({
+        where: {
+          status: 'COMPLETED',
+          resources: {
+            folder_files: {
+              some: {
+                folders: {
+                  user_id: id
+                }
+              }
+            }
+          }
+        }
+      }),
+
+      this.prisma.ratings.count({
+        where: {
+          value: { gte: 4 },
+          rating_targets: {
+            some: {
+              OR: [
+                {
+                  folders: {
+                    user_id: id
+                  }
+                },
+                {
+                  resources: {
+                    folder_files: {
+                      some: {
+                        folders: {
+                          user_id: id
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }),
+
+      this.prisma.comments.count({
+        where: {
+          user_id: id,
+          is_deleted: false
+        }
+      }),
+
+      this.prisma.downloads.count({
+        where: {
+          resources: {
+            folder_files: {
+              some: {
+                folders: {
+                  user_id: id
+                }
+              }
+            }
+          }
+        }
+      })
+    ]);
+
+    return {
+      uploads: uploadsCount,
+      upvotes: upvotesCount,
+      comments: commentsCount,
+      downloads: downloadsCount
+    };
+  }
+  
+  // async getUserActivities(id: string) {
+  //   await this.findOne(id);
+
+  //   const [uploads, comments, ratings] = await Promise.all([
+  //     this.prisma.uploads.findMany({
+  //       where: {
+  //         status: 'COMPLETED',
+  //         resources: {
+  //           folder_files: {
+  //             some: {
+  //               folders: {
+  //                 user_id: id
+  //               }
+  //             }
+  //           }
+  //         }
+  //       },
+  //       include: {
+  //         resources: {
+  //           select: {
+  //             title: true
+  //           }
+  //         }
+  //       },
+  //       orderBy: { created_at: 'desc' },
+  //       take: 5
+  //     }),
+
+  //     this.prisma.comments.findMany({
+  //       where: {
+  //         user_id: id,
+  //         is_deleted: false
+  //       },
+  //       include: {
+  //         resources: {
+  //           select: {
+  //             title: true
+  //           }
+  //         },
+  //         folders: {
+  //           select: {
+  //             name: true
+  //           }
+  //         }
+  //       },
+  //       orderBy: { created_at: 'desc' },
+  //       take: 3
+  //     }),
+
+  //     this.prisma.ratings.findMany({
+  //       where: {
+  //         user_id: id,
+  //         rating_targets: {
+  //           some: {
+  //             OR: [
+  //               {
+  //                 folders: {
+  //                   user_id: { not: id }
+  //                 }
+  //               },
+  //               {
+  //                 resources: {
+  //                   folder_files: {
+  //                     some: {
+  //                       folders: {
+  //                         user_id: { not: id }
+  //                       }
+  //                     }
+  //                   }
+  //                 }
+  //               }
+  //             ]
+  //           }
+  //         }
+  //       },
+  //       include: {
+  //         rating_targets: {
+  //           include: {
+  //             folders: {
+  //               select: {
+  //                 name: true
+  //               }
+  //             },
+  //             resources: {
+  //               select: {
+  //                 title: true
+  //               }
+  //             }
+  //           }
+  //         }
+  //       },
+  //       orderBy: { created_at: 'desc' },
+  //       take: 2
+  //     })
+  //   ]);
+
+  //   const activities = [
+  //     ...uploads.map(upload => ({
+  //       id: upload.id,
+  //       type: 'upload',
+  //       title: `Tải lên "${upload.resources?.title || 'Tài liệu'}"`,
+  //       time: upload.created_at,
+  //       icon: 'Upload'
+  //     })),
+  //     ...comments.map(comment => ({
+  //       id: comment.id,
+  //       type: 'comment',
+  //       title: `Bình luận về "${comment.resources?.title || comment.folders?.name || 'Tài liệu'}"`,
+  //       time: comment.created_at,
+  //       icon: 'MessageCircle'
+  //     })),
+  //     ...ratings.map(rating => ({
+  //       id: rating.id,
+  //       type: 'rating',
+  //       title: `Đánh giá "${rating.rating_targets[0]?.resources?.title || rating.rating_targets[0]?.folders?.name || 'Tài liệu'}"`,
+  //       time: rating.created_at,
+  //       icon: 'Star'
+  //     }))
+  //   ];
+
+  //   return activities
+  //     .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+  //     .slice(0, 10);
+  // }
 
   async delete(id: string) {
     await this.findOne(id)

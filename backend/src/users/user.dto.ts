@@ -36,13 +36,13 @@ export class UpdateUserDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsEmail()
-  email: string;
+  email?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   @MinLength(6)
-  password: string;
+  password?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -52,7 +52,22 @@ export class UpdateUserDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  role_id: string;
+  username?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  avatar?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  banner?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  role_id?: string;
 }
 
 export class LoginDto {
@@ -117,23 +132,22 @@ export class DiscordSignInDto {
 }
 
 
-
+//session_token can be null, user can delete accessToken -> cant access sessionToken after decoded 
 export type SessionUser = {
-  session_token: string | null; 
-  user_id: string | null; 
-  expires: Date | null; 
+  session_token: string | null;
+  user_id: string;
+  expires: Date;
   users: {
-    email: string | null;
-    username: string | null;
-    displayname: string | null;
-    role_name: RoleType | null;
-    birth: string | null;
-    avatar: string | null;
-    email_verified: boolean | null; 
+    email: string ;
+    username: string ;
+    displayname: string ;
+    birth: string ;
+    avatar: string ;
+    email_verified: boolean ;
     roles: {
-      name: RoleType | null; 
-    } | null;
-  } | null;
+      name: RoleType ;
+    } 
+  } ;
 };
 
 

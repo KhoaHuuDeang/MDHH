@@ -17,7 +17,7 @@ export class DiscordService {
   ) { }
 
   async handleDiscordOAuth(dto: DiscordSignInDto) {
-    // ✅ Input validation
+   
     this.validateDiscordDto(dto);
 
     try {
@@ -273,6 +273,7 @@ export class DiscordService {
         email: user.email,
         role: user.roles.name,
         displayname: user.displayname || user.username,
+        sessionToken: session.session_token, //sessionToken to JWT payload
       };
 
       const accessToken = this.jwtService.sign(payload);
@@ -285,7 +286,9 @@ export class DiscordService {
           role: user.roles.name,
           displayname: user.displayname,
         },
-        accessToken, 
+        accessToken,
+        sessionToken: session.session_token, // Add sessionToken to response
+        expires: session.expires, //  Add session expiry for consistency
       };
     } catch (error) {
       this.logger.error('Token creation failed:', error);

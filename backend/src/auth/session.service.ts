@@ -21,19 +21,66 @@ export class SessionService {
 
     return session;
   }
-
+  //You can fetch session from accessToken
   async getSession(sessionToken: string): Promise<SessionUser | null> {
-
+    if(!sessionToken || sessionToken.trim() === ''){
+      return null
+    }
     try {
       const session = await this.findSessionWithUserAndRoles(sessionToken);
       if (!session) {
         return null
       }
-      if (session.expires && this.isSessionExpired(session.expires)) {
+
+      // Validate required fields exist
+      if (!session.user_id || !session.expires) {
+        console.error('Session validation failed: Missing required fields', {
+          sessionToken: sessionToken.substring(0, 8) + '...',
+          hasUserId: !!session.user_id,
+          hasExpires: !!session.expires
+        });
+        await this.deleteSession(sessionToken); // Clean up invalid session
+        return null;
+      }
+
+      // Check expiration
+      if (this.isSessionExpired(session.expires)) {
         await this.deleteSession(sessionToken);
         return null;
       }
-      return session;
+
+      // Validate user data completeness
+      const { users } = session;
+      if (!users || !users.email || !users.username || !users.displayname || !users.roles?.name) {
+        console.error('User data incomplete in session', {
+          hasUsers: !!users,
+          hasEmail: !!users?.email,
+          hasUsername: !!users?.username,
+          hasDisplayname: !!users?.displayname,
+          hasRoles: !!users?.roles,
+          hasRoleName: !!users?.roles?.name
+        });
+        return null;
+      }
+
+      // Type-safe return with explicit casting after validation
+      return {
+        session_token: session.session_token,
+        user_id: session.user_id,
+        expires: session.expires,
+        users: {
+          email: users.email,
+          username: users.username,
+          displayname: users.displayname,
+          birth: users.birth || '',
+          avatar: users.avatar || '',
+          email_verified: users.email_verified ?? false,
+          roles: {
+            name: users.roles.name
+          }
+        }
+      } ;
+
     } catch (err) {
       console.error('Session not found:', err);
       return null;
@@ -43,26 +90,15 @@ export class SessionService {
 
   private async findSessionWithUserAndRoles(sessionToken: string) {
     return this.prisma.sessions.findUnique({
-      where: { session_token: sessionToken },
+      where: {
+        session_token: sessionToken,
+      },
       include: {
         users: {
-          select: {
-            email: true,
-            username: true,
-            displayname: true,
-            avatar: true,
-            birth: true,
-            email_verified: true,
-            role_name :  true
-          },
           include: {
-            roles: {
-              select: {
-                name: true
-              }
-            }
+            roles: true
           }
-        },
+        }
       },
     });
   }

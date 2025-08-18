@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { getSession } from 'next-auth/react'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
@@ -11,12 +10,17 @@ const apiClient = axios.create({
   },
 })
 
-// Request interceptor - auto attach token
+let authToken: string | null = null
+
+export const setAuthToken = (token: string | null) => {
+  authToken = token
+}
+
+// Request interceptor - use stored token
 apiClient.interceptors.request.use(
-  async (config) => {
-    const session = await getSession()
-    if (session?.accessToken) {
-      config.headers.Authorization = `Bearer ${session.accessToken}`
+  (config) => {
+    if (authToken) {
+      config.headers.Authorization = `Bearer ${authToken}`
     }
     return config
   },
@@ -29,7 +33,7 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // NextAuth will handle redirect to signin
-      window.location.href = '/api/auth'
+      window.location.href = '/auth'
     }
     return Promise.reject(error)
   }
@@ -63,6 +67,11 @@ export const userService = {
 
   updateUser: async (id: string, userData: any) => {
     const response = await apiClient.patch(`/users/${id}`, userData)
+    return response.data
+  },
+
+  getUserStats: async (id: string) => {
+    const response = await apiClient.get(`/users/${id}/stats`)
     return response.data
   },
 

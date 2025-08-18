@@ -38,7 +38,7 @@ export class NextAuthController {
         email: session.users?.email,
         name: session.users?.displayname,
         username: session.users?.username,
-        role: session.users?.role_name,
+        role: session.users?.roles?.name,
         birth: session.users?.birth,
         avatar: session.users?.avatar,
         emailVerified: session.users?.email_verified,
@@ -69,7 +69,22 @@ export class NextAuthController {
     // This will be used by NextAuth to get user data
     const user = await this.sessionService.prisma.users.findUnique({
       where: { id: userId },
-      include: { roles: true },
+      select : {
+        id : true,
+        email : true,
+        username : true,
+        displayname : true,
+        birth : true,
+        avatar : true, 
+        email_verified : true,
+        banner : true,
+        roles : {
+          select : {
+            name : true,
+            description :true
+          }
+        }
+      }
     });
 
     if (!user) {
@@ -81,7 +96,7 @@ export class NextAuthController {
       email: user.email,
       name: user.displayname,
       username: user.username,
-      role: user.roles.name,
+      role: user.roles?.name,
       birth: user.birth,
       avatar: user.avatar,
       emailVerified: user.email_verified,

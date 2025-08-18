@@ -1,11 +1,12 @@
 import { toast } from 'react-toastify'
+import { useMemo } from 'react'
 
 export const useNotifications = () => {
-  const success = (message: string) => toast.success(message)
-  const error = (message: string) => toast.error(message)
-  const info = (message: string) => toast.info(message)
-  
-  return { success, error, info }
+  return useMemo(() => ({
+    success: (message: string) => toast.success(message),
+    error: (message: string) => toast.error(message),
+    info: (message: string) => toast.info(message)
+  }), [])
 }
 
 export default useNotifications

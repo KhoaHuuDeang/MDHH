@@ -182,13 +182,12 @@ model resources {
 }
 
 model roles {
-  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  name             RoleType?          @unique
-  description      String?
-  created_at       DateTime?          @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime?          @default(now()) @db.Timestamptz(6)
-  user_guild_roles user_guild_roles[]
-  users            users[]
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name        RoleType  @unique
+  description String?
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime? @default(now()) @db.Timestamptz(6)
+  users       users[]
 }
 
 model sessions {
@@ -234,7 +233,6 @@ model user_guild_roles {
   user_id   String?   @db.Uuid
   guild_id  String?   @db.Uuid
   role_name RoleType?
-  roles     roles?    @relation(fields: [role_name], references: [name], onDelete: NoAction, onUpdate: NoAction)
   users     users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([user_id, guild_id, role_name])
@@ -246,12 +244,13 @@ model users {
   username         String?            @unique @db.VarChar
   displayname      String?            @db.VarChar
   password         String?            @db.VarChar
-  role_name        RoleType
   birth            String?            @db.VarChar
   avatar           String?            @db.VarChar
   email_verified   Boolean?           @default(false)
   created_at       DateTime?          @default(now()) @db.Timestamptz(6)
   updated_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  banner           String?            @db.VarChar
+  role_id_         String             @map("role_id ") @db.Uuid
   accounts         accounts[]
   comments         comments[]
   downloads        downloads[]
@@ -262,7 +261,7 @@ model users {
   sessions         sessions[]
   uploads          uploads[]
   user_guild_roles user_guild_roles[]
-  roles            roles              @relation(fields: [role_name], references: [name], onDelete: NoAction, onUpdate: NoAction)
+  roles            roles              @relation(fields: [role_id_], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_users_roles")
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.

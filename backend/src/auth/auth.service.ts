@@ -16,18 +16,36 @@ export class AuthService {
     async validateUser(email: string, password: string) {
         const user = await this.prisma.users.findUnique({
             where: { email },
-            include: { roles: true }
+            select: {
+                id: true,
+                email: true,
+                username: true,
+                displayname: true,
+                birth: true,
+                password: true,
+                avatar: true,
+                email_verified: true,
+                roles: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                created_at: true,
+                updated_at: true,
+            }
+
         })
         if (user && user.password && await bcrypt.compare(password, user.password)) {
             const { password: _, ...result } = user;
             return result;
         }
-        return null;
+
+        throw new UnauthorizedException('Invalid credentials');
     }
 
     async login(loginDto: LoginDto) {
         const user = await this.validateUser(loginDto.email, loginDto.password);
-        console.log('User found:', user);
         if (!user) {
             throw new UnauthorizedException('Invalid credentials');
         }
@@ -39,23 +57,24 @@ export class AuthService {
         const payload = {
             sub: user.id,
             email: user.email,
-            role: user.roles.name,
+            role: user.roles.name ,
             displayname: user.displayname,
+            sessionToken: session.session_token, // ← Add sessionToken to JWT
         }
 
         return {
             accessToken: this.jwtService.sign(payload),
             sessionToken: session.session_token,
             expires: session.expires,
-            user : {
+            user: {
                 id: user.id,
                 email: user.email,
                 displayname: user.displayname,
                 username: user.username,
                 role: user.roles.name,
                 birth: user.birth,
-                avatar: user.avatar ,
-                emailVerified: user.email_verified || false
+                avatar: user.avatar,
+                emailVerified: user.email_verified 
             }
         }
     }
@@ -72,7 +91,6 @@ export class AuthService {
             })
         ])
 
-        // ✅ Boundary error handling - kiểm tra từng case
         if (existingUser) {
             throw new ConflictException('Email already exists');
         }
@@ -100,5 +118,5 @@ export class AuthService {
         }
     }
 
-    
+
 }
