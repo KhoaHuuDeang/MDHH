@@ -62,6 +62,11 @@ export class UpdateUserDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
+  banner?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   role_id?: string;
 }
 
@@ -129,21 +134,20 @@ export class DiscordSignInDto {
 
 
 export type SessionUser = {
-  session_token: string | null; 
-  user_id: string | null; 
-  expires: Date | null; 
+  session_token: string | null;
+  user_id: string ;
+  expires: Date ;
   users: {
-    email: string | null;
-    username: string | null;
-    displayname: string | null;
-    role_name: RoleType | null;
-    birth: string | null;
-    avatar: string | null;
-    email_verified: boolean | null; 
+    email: string ;
+    username: string ;
+    displayname: string ;
+    birth: string ;
+    avatar: string ;
+    email_verified: boolean ;
     roles: {
-      name: RoleType | null; 
-    } | null;
-  } | null;
+      name: RoleType ;
+    } 
+  } ;
 };
 
 

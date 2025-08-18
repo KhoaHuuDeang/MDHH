@@ -33,6 +33,8 @@ export class UsersService {
         username: true,
         displayname: true,
         birth: true,
+        avatar : true,
+        banner : true,
         roles: {
           select: {
             id: true,
@@ -59,8 +61,6 @@ export class UsersService {
     if (existingUser) {
       throw new BadRequestException('User already exists with this email');
     }
-
-
     // Tìm role 'user' mặc định
     const defaultRole = await this.prisma.roles.findUnique({
       where: { name: 'USER' }
@@ -70,7 +70,8 @@ export class UsersService {
       throw new BadRequestException('Default user role not found');
     }
 
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10); return this.prisma.users.create({
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10); 
+    return this.prisma.users.create({
       data: {
         ...createUserDto,
         password: hashedPassword,
@@ -94,7 +95,7 @@ export class UsersService {
     });
   }
   async update(id: string, updateUserDto: UpdateUserDto) {
-    // ✅ 1. Parallel validation - chạy song song để tối ưu tốc độ
+    // Parallel validation - chạy song song để tối ưu tốc độ
     const [existingUser, emailCheck, roleCheck] = await Promise.all([
       this.prisma.users.findUnique({
         where: { id },
@@ -119,7 +120,7 @@ export class UsersService {
       }) : null // trả về null nếu không có roleId 
     ])
 
-    // ✅ 2.Validate 
+   
     if (!existingUser) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
@@ -129,7 +130,7 @@ export class UsersService {
     if (!roleCheck && updateUserDto.role_id) {
       throw new NotFoundException(`Role with ID ${updateUserDto.role_id} not found`);
     }
-    // ✅ 3.update user
+    
     const updateUser = await this.prisma.users.update({
       where: { id },
       data: {

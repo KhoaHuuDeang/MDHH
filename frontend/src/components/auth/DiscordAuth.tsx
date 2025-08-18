@@ -18,7 +18,7 @@ interface DiscordAuthProps {
   redirectUrl?: string; // where to redirect after success
 }
 
-export default function DiscordAuth({ variant = "inline", redirectUrl = "/homePage" }: DiscordAuthProps) {
+export default function DiscordAuth({ variant = "inline", redirectUrl = "/" }: DiscordAuthProps) {
   const router = useRouter();
   const { status } = useSession();
   const isLoading = status === "loading";
