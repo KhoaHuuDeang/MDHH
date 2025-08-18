@@ -132,11 +132,11 @@ export class DiscordSignInDto {
 }
 
 
-
+//session_token can be null, user can delete accessToken -> cant access sessionToken after decoded 
 export type SessionUser = {
   session_token: string | null;
-  user_id: string ;
-  expires: Date ;
+  user_id: string;
+  expires: Date;
   users: {
     email: string ;
     username: string ;

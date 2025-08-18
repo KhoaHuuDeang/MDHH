@@ -21,8 +21,11 @@ export class SessionService {
 
     return session;
   }
-
+  //You can fetch session from accessToken
   async getSession(sessionToken: string): Promise<SessionUser | null> {
+    if(!sessionToken || sessionToken.trim() === ''){
+      return null
+    }
     try {
       const session = await this.findSessionWithUserAndRoles(sessionToken);
       if (!session) {
