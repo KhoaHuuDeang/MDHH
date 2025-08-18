@@ -9,3 +9,5 @@ dist/*
 dist
 backend/dist/tsconfig.build.tsbuildinfo
 .github
+.DEVELOPMENT_GUIDELINES
+CLAUDE

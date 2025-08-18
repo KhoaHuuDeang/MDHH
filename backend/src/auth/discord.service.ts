@@ -273,7 +273,7 @@ export class DiscordService {
         email: user.email,
         role: user.roles.name,
         displayname: user.displayname || user.username,
-        sessionToken: session.session_token, // ← Add sessionToken to JWT payload
+        sessionToken: session.session_token, //sessionToken to JWT payload
       };
 
       const accessToken = this.jwtService.sign(payload);

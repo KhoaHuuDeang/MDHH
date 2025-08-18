@@ -19,7 +19,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     // decoded jwt accesstoken -> payload 
   async validate(payload: any) {
-    console.log('JWT payload:', payload);
     const sessionToken = payload.sessionToken;
     if (!sessionToken) {
       throw new UnauthorizedException('Invalid session token format');

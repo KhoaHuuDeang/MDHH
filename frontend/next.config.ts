@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     domains: [
       'lh3.googleusercontent.com',
       'images.unsplash.com',
+      "cdn.discordapp.com"
       // thêm domain khác nếu cần
     ],
   },

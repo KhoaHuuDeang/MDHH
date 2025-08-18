@@ -49,7 +49,6 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-    console.log('USER BACKENDDD : ', user)
     return user;
   }
   async create(createUserDto: CreateUserDto) {
