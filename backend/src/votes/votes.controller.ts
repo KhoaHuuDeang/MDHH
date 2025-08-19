@@ -72,7 +72,7 @@ export class VotesController {
     @Body() voteDto: VoteResourceDto,
     @Request() req: any
   ): Promise<VoteResultDto> {
-    const userId = req.user?.sub || req.user?.id;
+    const userId = req.user?.userId;
     if (!userId) {
       throw new BadRequestException('User ID not found in token');
     }
@@ -118,7 +118,7 @@ export class VotesController {
     // Get userId if user is authenticated and wants user vote status
     let userId: string | undefined;
     if (query.includeUserVote === 'true' && req?.user) {
-      userId = req.user?.sub || req.user?.id;
+      userId = req.user?.userId;
     }
 
     return this.votesService.getResourceVotes(resourceId, userId);
@@ -160,7 +160,7 @@ export class VotesController {
     @Body() voteDto: VoteFolderDto,
     @Request() req: any
   ): Promise<VoteResultDto> {
-    const userId = req.user?.sub || req.user?.id;
+    const userId = req.user?.userId;
     if (!userId) {
       throw new BadRequestException('User ID not found in token');
     }
@@ -206,7 +206,7 @@ export class VotesController {
     // Get userId if user is authenticated and wants user vote status
     let userId: string | undefined;
     if (query.includeUserVote === 'true' && req?.user) {
-      userId = req.user?.sub || req.user?.id;
+      userId = req.user?.userId;
     }
 
     return this.votesService.getFolderVotes(folderId, userId);
@@ -257,7 +257,7 @@ export class VotesController {
     // Get userId if user is authenticated and wants user vote status
     let userId: string | undefined;
     if (query.includeUserVote === 'true' && req?.user) {
-      userId = req.user?.sub || req.user?.id;
+      userId = req.user?.userId;
     }
 
     const requestDto = {

@@ -1,5 +1,5 @@
 import {  BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { UpdateUserDto,CreateUserDto } from './user.dto';
 @Injectable()
@@ -164,15 +164,21 @@ export class UsersService {
       this.prisma.ratings.count({
         where: {
           value: { gte: 4 },
-          rating_targets: {
-            some: {
-              OR: [
-                {
+          OR: [
+            // Ratings on user's folders
+            {
+              ratings_folders: {
+                some: {
                   folders: {
                     user_id: id
                   }
-                },
-                {
+                }
+              }
+            },
+            // Ratings on user's resources
+            {
+              ratings_resources: {
+                some: {
                   resources: {
                     folder_files: {
                       some: {
@@ -183,9 +189,9 @@ export class UsersService {
                     }
                   }
                 }
-              ]
+              }
             }
-          }
+          ]
         }
       }),
 
@@ -268,48 +274,35 @@ export class UsersService {
   //       take: 3
   //     }),
 
+  //     // TODO: Update this query to use new rating schema when enabling getUserActivities
+  //     // Need to replace rating_targets with ratings_resources/ratings_folders
   //     this.prisma.ratings.findMany({
   //       where: {
   //         user_id: id,
-  //         rating_targets: {
-  //           some: {
-  //             OR: [
-  //               {
-  //                 folders: {
-  //                   user_id: { not: id }
-  //                 }
-  //               },
-  //               {
-  //                 resources: {
-  //                   folder_files: {
-  //                     some: {
-  //                       folders: {
-  //                         user_id: { not: id }
-  //                       }
-  //                     }
-  //                   }
-  //                 }
-  //               }
-  //             ]
-  //           }
-  //         }
+  //         // FIXME: rating_targets table no longer exists
+  //         // Need to update with new schema:
+  //         // OR: [
+  //         //   {
+  //         //     ratings_folders: {
+  //         //       some: {
+  //         //         folders: { user_id: { not: id } }
+  //         //       }
+  //         //     }
+  //         //   },
+  //         //   {
+  //         //     ratings_resources: {
+  //         //       some: {
+  //         //         resources: {
+  //         //           folder_files: {
+  //         //             some: { folders: { user_id: { not: id } } }
+  //         //           }
+  //         //         }
+  //         //       }
+  //         //     }
+  //         //   }
+  //         // ]
   //       },
-  //       include: {
-  //         rating_targets: {
-  //           include: {
-  //             folders: {
-  //               select: {
-  //                 name: true
-  //               }
-  //             },
-  //             resources: {
-  //               select: {
-  //                 title: true
-  //               }
-  //             }
-  //           }
-  //         }
-  //       },
+  //       // FIXME: Update include to use new relations
   //       orderBy: { created_at: 'desc' },
   //       take: 2
   //     })
@@ -333,7 +326,9 @@ export class UsersService {
   //     ...ratings.map(rating => ({
   //       id: rating.id,
   //       type: 'rating',
-  //       title: `Đánh giá "${rating.rating_targets[0]?.resources?.title || rating.rating_targets[0]?.folders?.name || 'Tài liệu'}"`,
+  //       // FIXME: Update to use new rating relations
+  //       // title: `Đánh giá "${rating.ratings_resources[0]?.resources?.title || rating.ratings_folders[0]?.folders?.name || 'Tài liệu'}"`,
+  //       title: `Đánh giá tài liệu`, // Temporary fallback
   //       time: rating.created_at,
   //       icon: 'Star'
   //     }))

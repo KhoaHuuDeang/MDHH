@@ -136,6 +136,7 @@ export class DiscordSignInDto {
 export type SessionUser = {
   session_token: string | null; 
   user_id: string ;
+  userId: string; // camelCase alias for consistency with frontend
   expires: Date ;
   users: {
     email: string ;

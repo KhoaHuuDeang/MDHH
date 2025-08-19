@@ -1,5 +1,5 @@
 import { Injectable, ConflictException, InternalServerErrorException, UnauthorizedException, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { DiscordSignInDto } from 'src/users/user.dto';
 import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';

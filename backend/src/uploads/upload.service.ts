@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
-import { PrismaService } from 'src/prisma.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { S3Service } from 'src/Aws/aws.service';
 import { v4 as uuidv4 } from 'uuid';
 import {

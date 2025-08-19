@@ -1,5 +1,5 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { HomepageResponseDto, FileDataDto, FolderDataDto } from './dto/homepage.dto';
 
 @Injectable()

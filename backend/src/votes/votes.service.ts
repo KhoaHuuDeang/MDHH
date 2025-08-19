@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { 
   VoteType, 
   VoteDataDto, 
@@ -114,44 +114,31 @@ export class VotesService {
       throw new NotFoundException(`Resource with ID ${resourceId} not found`);
     }
 
-    // Get vote counts using aggregation
-    const [upvoteCount, downvoteCount, userVote] = await Promise.all([
-      // Count upvotes (value = 1)
-      this.prisma.ratings.count({
-        where: {
-          value: 1,
-          ratings_resources: {
-            some: { resource_id: resourceId }
-          }
-        }
-      }),
+    // Optimized single query with aggregation to reduce connections
+    const voteStats = await this.prisma.$queryRaw<Array<{
+      upvotes: bigint;
+      downvotes: bigint;
+      userVote: number | null;
+    }>>`
+      SELECT 
+        COUNT(CASE WHEN r.value = 1 THEN 1 END)::bigint as upvotes,
+        COUNT(CASE WHEN r.value = -1 THEN 1 END)::bigint as downvotes,
+        ${userId ? `MAX(CASE WHEN r.user_id = ${userId} THEN r.value END)` : 'NULL'} as "userVote"
+      FROM ratings r
+      INNER JOIN ratings_resources rr ON r.id = rr.rating_id
+      WHERE rr.resource_id = ${resourceId}::uuid
+    `;
 
-      // Count downvotes (value = -1)  
-      this.prisma.ratings.count({
-        where: {
-          value: -1,
-          ratings_resources: {
-            some: { resource_id: resourceId }
-          }
-        }
-      }),
-
-      // Get user's vote if userId provided
-      userId ? this.prisma.ratings.findFirst({
-        where: {
-          user_id: userId,
-          ratings_resources: {
-            some: { resource_id: resourceId }
-          }
-        },
-        select: { value: true }
-      }) : null
-    ]);
+    const stats = voteStats[0] || { upvotes: 0n, downvotes: 0n, userVote: null };
+    
+    const upvoteCount = Number(stats.upvotes);
+    const downvoteCount = Number(stats.downvotes);
+    const userVoteValue = stats.userVote;
 
     // Determine user's vote status
     let userVoteStatus: VoteType | null = null;
-    if (userVote) {
-      userVoteStatus = userVote.value === 1 ? VoteType.UP : userVote.value === -1 ? VoteType.DOWN : null;
+    if (userVoteValue !== null) {
+      userVoteStatus = userVoteValue === 1 ? VoteType.UP : userVoteValue === -1 ? VoteType.DOWN : null;
     }
 
     return {
@@ -319,44 +306,31 @@ export class VotesService {
       throw new NotFoundException(`Folder with ID ${folderId} not found`);
     }
 
-    // Get vote counts
-    const [upvoteCount, downvoteCount, userVote] = await Promise.all([
-      // Count upvotes (value = 1)
-      this.prisma.ratings.count({
-        where: {
-          value: 1,
-          ratings_folders: {
-            some: { folder_id: folderId }
-          }
-        }
-      }),
+    // Optimized single query with aggregation to reduce connections
+    const voteStats = await this.prisma.$queryRaw<Array<{
+      upvotes: bigint;
+      downvotes: bigint;
+      userVote: number | null;
+    }>>`
+      SELECT 
+        COUNT(CASE WHEN r.value = 1 THEN 1 END)::bigint as upvotes,
+        COUNT(CASE WHEN r.value = -1 THEN 1 END)::bigint as downvotes,
+        ${userId ? `MAX(CASE WHEN r.user_id = ${userId} THEN r.value END)` : 'NULL'} as "userVote"
+      FROM ratings r
+      INNER JOIN ratings_folders rf ON r.id = rf.rating_id
+      WHERE rf.folder_id = ${folderId}::uuid
+    `;
 
-      // Count downvotes (value = -1)
-      this.prisma.ratings.count({
-        where: {
-          value: -1,
-          ratings_folders: {
-            some: { folder_id: folderId }
-          }
-        }
-      }),
-
-      // Get user's vote if userId provided
-      userId ? this.prisma.ratings.findFirst({
-        where: {
-          user_id: userId,
-          ratings_folders: {
-            some: { folder_id: folderId }
-          }
-        },
-        select: { value: true }
-      }) : null
-    ]);
+    const stats = voteStats[0] || { upvotes: 0n, downvotes: 0n, userVote: null };
+    
+    const upvoteCount = Number(stats.upvotes);
+    const downvoteCount = Number(stats.downvotes);
+    const userVoteValue = stats.userVote;
 
     // Determine user's vote status
     let userVoteStatus: VoteType | null = null;
-    if (userVote) {
-      userVoteStatus = userVote.value === 1 ? VoteType.UP : userVote.value === -1 ? VoteType.DOWN : null;
+    if (userVoteValue !== null) {
+      userVoteStatus = userVoteValue === 1 ? VoteType.UP : userVoteValue === -1 ? VoteType.DOWN : null;
     }
 
     return {

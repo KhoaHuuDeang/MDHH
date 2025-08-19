@@ -7,7 +7,6 @@ import { NextAuthController } from './nextauth.controller';
 import { SessionService } from './session.service';
 import { DiscordService } from './discord.service';
 import { JwtStrategy } from './jwt.strategy';
-import { PrismaService } from '../prisma.service';
 import { ConfigModule } from '@nestjs/config';
 import { UsersService } from 'src/users/users.service';
 @Module({
@@ -19,7 +18,7 @@ import { UsersService } from 'src/users/users.service';
       signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '7d' },
     }),
   ],  controllers: [AuthController, NextAuthController],
-  providers: [AuthService, SessionService, DiscordService, JwtStrategy, PrismaService, UsersService],
+  providers: [AuthService, SessionService, DiscordService, JwtStrategy, UsersService],
   exports: [AuthService, SessionService, DiscordService],
 })
 export class AuthModule {}

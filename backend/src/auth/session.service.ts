@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { randomBytes } from 'crypto';
 import { session } from 'passport';
 import { SessionUser } from 'src/users/user.dto';
@@ -67,6 +67,7 @@ export class SessionService {
       return {
         session_token: session.session_token,
         user_id: session.user_id,
+        userId: session.user_id, // camelCase alias for frontend consistency
         expires: session.expires,
         users: {
           email: users.email,
