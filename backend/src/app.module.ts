@@ -9,9 +9,10 @@ import { FoldersModule } from './folders/folders.module';
 import { TagsModule } from './tags/tag.module';
 import { ClassificationLevelsModule } from './level/level.module';
 import { HomepageModule } from './homepage/homepage.module';
+import { VotesModule } from './votes/votes.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, ConfigModule.forRoot(), UploadsModule, FoldersModule, TagsModule, ClassificationLevelsModule, HomepageModule],
+  imports: [AuthModule, UsersModule, ConfigModule.forRoot(), UploadsModule, FoldersModule, TagsModule, ClassificationLevelsModule, HomepageModule, VotesModule],
   controllers: [AppController],
   providers: [AppService],
 })
