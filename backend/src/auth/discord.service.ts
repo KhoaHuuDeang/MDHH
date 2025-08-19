@@ -167,7 +167,7 @@ export class DiscordService {
         username: uniqueUsername,
         avatar: dto.avatar,
         email_verified: true,
-        role_name: userRole.name,
+        role_id: userRole.id,
         accounts: {
           create: {
             type: dto.type || 'oauth',
