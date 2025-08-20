@@ -135,9 +135,8 @@ export const useFileActions = (): UseFileActionsReturn => {
 
   // Get file votes
   const getFileVotes = useCallback(async (fileId: string): Promise<VoteData> => {
-    const includeUserVote = !!session; // Include user vote if authenticated
-    return await homepageService.getFileVotes(fileId, includeUserVote);
-  }, [session]);
+    return await homepageService.getFileVotes(fileId);
+  }, []);
 
   // Rate file action (legacy - kept for backward compatibility)
   const rateFile = useCallback(async (fileId: string, rating: number): Promise<FileActionResult> => {

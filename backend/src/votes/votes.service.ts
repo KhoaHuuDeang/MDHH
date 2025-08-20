@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { 
   VoteType, 
   VoteDataDto, 
@@ -87,7 +88,7 @@ export class VotesService {
 
       // Get updated vote counts and user's current vote
       const voteData = await this.getResourceVotes(dto.resourceId, userId);
-
+      console.log('BACKEND VoteResource - Updated vote data:', voteData);
       return {
         success: true,
         voteData,
@@ -114,6 +115,9 @@ export class VotesService {
       throw new NotFoundException(`Resource with ID ${resourceId} not found`);
     }
 
+    // Debug: Log query parameters
+    console.log('🔍 SQL Query executing:', { userId, resourceId });
+    
     // Optimized single query with aggregation to reduce connections
     const voteStats = await this.prisma.$queryRaw<Array<{
       upvotes: bigint;
@@ -123,17 +127,19 @@ export class VotesService {
       SELECT 
         COUNT(CASE WHEN r.value = 1 THEN 1 END)::bigint as upvotes,
         COUNT(CASE WHEN r.value = -1 THEN 1 END)::bigint as downvotes,
-        ${userId ? `MAX(CASE WHEN r.user_id = ${userId} THEN r.value END)` : 'NULL'} as "userVote"
+        ${userId ? Prisma.sql`MAX(CASE WHEN r.user_id = ${userId}::uuid THEN r.value END)` : Prisma.sql`NULL`} as "userVote"
       FROM ratings r
       INNER JOIN ratings_resources rr ON r.id = rr.rating_id
       WHERE rr.resource_id = ${resourceId}::uuid
     `;
-
     const stats = voteStats[0] || { upvotes: 0n, downvotes: 0n, userVote: null };
+    console.log('🔍 Raw SQL results:', stats);
+    console.log('USER ID:', userId);
     
     const upvoteCount = Number(stats.upvotes);
     const downvoteCount = Number(stats.downvotes);
     const userVoteValue = stats.userVote;
+    console.log('🔍 UserVoteValue extracted:', userVoteValue);
 
     // Determine user's vote status
     let userVoteStatus: VoteType | null = null;
@@ -315,7 +321,7 @@ export class VotesService {
       SELECT 
         COUNT(CASE WHEN r.value = 1 THEN 1 END)::bigint as upvotes,
         COUNT(CASE WHEN r.value = -1 THEN 1 END)::bigint as downvotes,
-        ${userId ? `MAX(CASE WHEN r.user_id = ${userId} THEN r.value END)` : 'NULL'} as "userVote"
+        ${userId ? Prisma.sql`MAX(CASE WHEN r.user_id = ${userId}::uuid THEN r.value END)` : Prisma.sql`NULL`} as "userVote"
       FROM ratings r
       INNER JOIN ratings_folders rf ON r.id = rf.rating_id
       WHERE rf.folder_id = ${folderId}::uuid
