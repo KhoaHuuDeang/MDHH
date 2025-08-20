@@ -36,7 +36,8 @@ export class HomepageService {
         r.created_at as "createdAt",
         u.displayname as author,
         up.mime_type as "fileType",
-        COALESCE(dc.download_count, 0)::integer as "downloadCount"
+        COALESCE(dc.download_count, 0)::integer as "downloadCount",
+        f.name as "folderName"
       FROM resources r
       LEFT JOIN folder_files ff ON r.id = ff.resource_id
       LEFT JOIN folders f ON ff.folder_id = f.id  
@@ -62,6 +63,7 @@ export class HomepageService {
       dto.createdAt = row.createdAt;
       dto.fileType = row.fileType || 'application/octet-stream';
       dto.downloadCount = Math.max(0, row.downloadCount || 0);
+      dto.folderName = row.folderName || undefined;
       return dto;
     });
   }
@@ -76,7 +78,8 @@ export class HomepageService {
         r.created_at as "createdAt",
         u.displayname as author,
         up.mime_type as "fileType",
-        dc.download_count::integer as "downloadCount"
+        dc.download_count::integer as "downloadCount",
+        f.name as "folderName"
       FROM resources r
       LEFT JOIN folder_files ff ON r.id = ff.resource_id
       LEFT JOIN folders f ON ff.folder_id = f.id
@@ -103,6 +106,7 @@ export class HomepageService {
       dto.createdAt = row.createdAt;
       dto.fileType = row.fileType || 'application/octet-stream';
       dto.downloadCount = Math.max(0, row.downloadCount || 0);
+      dto.folderName = row.folderName || undefined;
       return dto;
     });
   }
