@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import * as lucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 import SearchSection from '@/components/homepage/SearchSection';
@@ -91,9 +93,20 @@ const LoadingSkeleton = React.memo(() => (
 LoadingSkeleton.displayName = 'LoadingSkeleton';
 
 export default function HomePage() {
-  // Hooks for data fetching
+  // Authentication hooks
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  // Hooks for data fetching (now handles auth internally)
   const { data: homepageData, isLoading, error } = useHomepageData();
   const { query, setQuery } = useFileSearch();
+
+  // Auth check - redirect if not authenticated
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth");
+    }
+  }, [status, router]);
 
   // Memoized handlers for performance
   const handleSearch = useCallback((searchQuery: string) => {
@@ -127,13 +140,28 @@ export default function HomePage() {
   // Memoized quick actions to prevent recreation
   const memoizedQuickActions = useMemo(() => quickActions, []);
 
+  // Loading state while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-16 w-16 animate-spin rounded-full border-4 border-gray-200 border-t-[#386641]"></div>
+          <p className="text-lg text-gray-600">Đang tải...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated
+  if (!session?.user?.id) return null;
+
   if (error) {
     return (
       <div className='min-h-screen bg-gray-50 flex items-center justify-center'>
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Oops! Something went wrong</h2>
           <p className="text-gray-600 mb-6">We couldn't load the homepage data. Please try refreshing the page.</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="bg-[#386641] text-white px-6 py-3 rounded-lg hover:bg-[#2d4f31] transition-colors"
           >
@@ -148,7 +176,7 @@ export default function HomePage() {
     <div className='min-h-screen bg-gray-50'>
       <div className='max-w-7xl mx-auto px-4 md:px-8 py-8'>
         {/* Search Section */}
-        <SearchSection 
+        <SearchSection
           onSearch={handleSearch}
           onCategoryChange={handleCategoryChange}
         />
@@ -181,9 +209,9 @@ export default function HomePage() {
           ) : recentFiles.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
               {recentFiles.map(file => (
-                <FileCard 
-                  key={file.id} 
-                  file={file} 
+                <FileCard
+                  key={file.id}
+                  file={file}
                   onView={handleFileView}
                 />
               ))}
@@ -211,9 +239,9 @@ export default function HomePage() {
           ) : popularFiles.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
               {popularFiles.map(file => (
-                <FileCard 
-                  key={file.id} 
-                  file={file} 
+                <FileCard
+                  key={file.id}
+                  file={file}
                   onView={handleFileView}
                 />
               ))}
@@ -232,7 +260,7 @@ export default function HomePage() {
           <h2 className="text-4xl font-bold text-gray-800 mb-10">
             Popular Folders
           </h2>
-          
+
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
               {[...Array(5)].map((_, i) => (
@@ -248,9 +276,9 @@ export default function HomePage() {
           ) : folders.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
               {folders.map(folder => (
-                <FolderCard 
-                  key={folder.id} 
-                  folder={folder} 
+                <FolderCard
+                  key={folder.id}
+                  folder={folder}
                   onView={handleFolderView}
                 />
               ))}
