@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import Image from 'next/image';
 import * as lucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 import { getMimeTypeIcon, getFileTypeDescription } from '@/utils/mimeTypeIcons';
 import { FileData } from '@/hooks/useHomepageData';
 import useFileActions from '@/hooks/useFileActions';
+import { VoteData } from '@/types/vote.types';
 
 const getIcons = (iconName: string, size: number, className?: string) => {
   const IconComponent = lucideIcons[iconName as keyof typeof lucideIcons] as LucideIcon;
@@ -26,7 +27,28 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
   showThumbnail = true,
   className = ''
 }) => {
-  const { downloadFile, rateFile, bookmarkFile, viewFile, isDownloading, isRating, isBookmarking } = useFileActions();
+  const { downloadFile, voteFile, getFileVotes, bookmarkFile, viewFile, isDownloading, isVoting, isBookmarking } = useFileActions();
+
+  // Vote data state
+  const [voteData, setVoteData] = useState<VoteData>({
+    upvotes: 0,
+    downvotes: 0,
+    userVote: null
+  });
+
+  // Load vote data on mount
+  useEffect(() => {
+    const loadVoteData = async () => {
+      try {
+        const data = await getFileVotes(file.id);
+        setVoteData(data);
+      } catch (error) {
+        console.error('Failed to load vote data:', error);
+      }
+    };
+
+    loadVoteData();
+  }, [file.id, getFileVotes]);
 
   // Memoized file icon and type description
   const { iconName, typeDescription } = useMemo(() => {
@@ -67,10 +89,57 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
     await bookmarkFile(file.id);
   }, [file.id, bookmarkFile]);
 
-  // Handle rating
-  const handleRate = useCallback(async (rating: number) => {
-    await rateFile(file.id, rating);
-  }, [file.id, rateFile]);
+  // Handle upvote with optimistic update
+  const handleUpvote = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Optimistic update
+    const wasUpvoted = voteData.userVote === 'up';
+    const newVoteData: VoteData = {
+      upvotes: wasUpvoted ? voteData.upvotes - 1 : voteData.upvotes + 1,
+      downvotes: voteData.userVote === 'down' ? voteData.downvotes - 1 : voteData.downvotes,
+      userVote: wasUpvoted ? null : 'up'
+    };
+    
+    setVoteData(newVoteData);
+    
+    try {
+      const result = await voteFile(file.id, 'up');
+      if (result.success && result.data) {
+        setVoteData(result.data);
+      }
+    } catch (error) {
+      // Revert optimistic update on error
+      setVoteData(voteData);
+      console.error('Vote failed:', error);
+    }
+  }, [file.id, voteFile, voteData]);
+
+  // Handle downvote with optimistic update (hidden UI but functional)
+  const handleDownvote = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Optimistic update
+    const wasDownvoted = voteData.userVote === 'down';
+    const newVoteData: VoteData = {
+      upvotes: voteData.userVote === 'up' ? voteData.upvotes - 1 : voteData.upvotes,
+      downvotes: wasDownvoted ? voteData.downvotes - 1 : voteData.downvotes + 1,
+      userVote: wasDownvoted ? null : 'down'
+    };
+    
+    setVoteData(newVoteData);
+    
+    try {
+      const result = await voteFile(file.id, 'down');
+      if (result.success && result.data) {
+        setVoteData(result.data);
+      }
+    } catch (error) {
+      // Revert optimistic update on error
+      setVoteData(voteData);
+      console.error('Vote failed:', error);
+    }
+  }, [file.id, voteFile, voteData]);
 
   return (
     <div className={`group ${className}`}>
@@ -171,23 +240,24 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
 
           {/* Action buttons */}
           <div className="flex items-center space-x-2">
-            {/* Quick rating */}
-            <div className="flex items-center space-x-1">
-              {[1, 2, 3, 4, 5].map((rating) => (
-                <button
-                  key={rating}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRate(rating);
-                  }}
-                  disabled={isRating}
-                  className="text-gray-300 hover:text-yellow-400 transition-colors duration-200 disabled:opacity-50"
-                  aria-label={`Rate ${rating} stars`}
-                >
-                  {getIcons("Star", 12)}
-                </button>
-              ))}
-            </div>
+            {/* Upvote button */}
+            <button
+              onClick={handleUpvote}
+              disabled={isVoting}
+              className={`flex items-center text-xs font-medium transition-all duration-200 px-3 py-1.5 rounded-md border ${
+                voteData.userVote === 'up'
+                  ? 'bg-[#6A994E] text-white border-[#6A994E] shadow-sm'
+                  : 'text-gray-600 border-gray-200 hover:border-[#6A994E] hover:text-[#6A994E] hover:bg-[#6A994E]/5'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+              aria-label={`Upvote ${file.title}`}
+            >
+              {isVoting ? (
+                getIcons("Loader2", 12, "mr-1 animate-spin")
+              ) : (
+                getIcons("ChevronUp", 12, "mr-1")
+              )}
+              <span>{voteData.upvotes}</span>
+            </button>
 
             {/* Bookmark button */}
             <button
