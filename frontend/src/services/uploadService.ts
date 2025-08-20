@@ -104,7 +104,6 @@ class UploadService {
   ): Promise<T> {
     let lastError: Error;
     const token = this.getToken();
-    console.log("LẤY THÀNH CÔNG, CHUẨN BỊ CHO VÀO BEARER", token)
     if (!token) {
       throw new Error('Authentication token is missing');
     }

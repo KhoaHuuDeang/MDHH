@@ -22,7 +22,6 @@ const UploadPage = () => {
   useEffect(() => {
     if (session?.accessToken) {
       setAuthToken(session.accessToken);
-      console.log("ACCESSTOKEN ĐẨY THÀNH CÔNG Ở UPLOADS")
     } else {
       setAuthToken(null);
     }
