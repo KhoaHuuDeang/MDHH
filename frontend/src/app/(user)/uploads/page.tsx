@@ -1,13 +1,16 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo } from 'react';
+import { useSession } from 'next-auth/react';
 import UploadHeader from '@/components/layout/user/uploads/UploadHeader';
 import UploadStepper from '@/components/layout/user/uploads/UploadStepper';
 import FileUploadArea from '@/components/upload/stage1/FileUploadArea';
 import UploadedFilesList from '@/components/upload/stage1/UploadedFilesList';
 import { useUploadStore } from '@/store/uploadStore';
 import { useRouter } from 'next/navigation';
+import { setAuthToken } from '@/services/userService';
 const UploadPage = () => {
+  const { data: session } = useSession();
   const files = useUploadStore(state => state.files);
   const isSubmitting = useUploadStore(state => state.isSubmitting);
   const removeFile = useUploadStore(state => state.removeFile);
@@ -15,6 +18,15 @@ const UploadPage = () => {
   const setCurrentStep = useUploadStore(state => state.setCurrentStep);
   const nextStep = useUploadStore(state => state.nextStep)
   const router = useRouter();
+  // Set auth token when session changes
+  useEffect(() => {
+    if (session?.accessToken) {
+      setAuthToken(session.accessToken);
+    } else {
+      setAuthToken(null);
+    }
+  }, [session?.accessToken]);
+
   // Debug: Track files array changes
   useEffect(() => {
     setCurrentStep(1);

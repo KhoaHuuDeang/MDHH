@@ -16,6 +16,10 @@ export const setAuthToken = (token: string | null) => {
   authToken = token
 }
 
+export const getAuthToken = (): string | null => {
+  return authToken
+}
+
 // Request interceptor - use stored token
 apiClient.interceptors.request.use(
   (config) => {

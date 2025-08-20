@@ -51,6 +51,7 @@ model comments {
   resources            resources?             @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                users?                 @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   notification_targets notification_targets[]
+  ratings_comments     ratings_comments[]
 }
 
 model downloads {
@@ -85,10 +86,10 @@ model folders {
   name                    String?                @db.VarChar
   visibility              Visibility?            @default(PUBLIC)
   created_at              DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime?              @default(now()) @db.Timestamptz(6)
   user_id                 String                 @db.Uuid
   classification_level_id String                 @db.Uuid
   description             String?
-  updated_at              DateTime?              @default(now()) @db.Timestamptz(6)
   comments                comments[]
   folder_files            folder_files[]
   folder_tags             folder_tags[]
@@ -96,7 +97,7 @@ model folders {
   users                   users                  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   follows                 follows[]
   notification_targets    notification_targets[]
-  rating_targets          rating_targets[]
+  ratings_folders         ratings_folders[]
 }
 
 model follows {
@@ -135,25 +136,45 @@ model notifications {
   users                users?                 @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model rating_targets {
-  id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  rating_id   String     @db.Uuid
-  resource_id String?    @db.Uuid
-  folder_id   String?    @db.Uuid
-  folders     folders?   @relation(fields: [folder_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  ratings     ratings    @relation(fields: [rating_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  resources   resources? @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([rating_id, resource_id, folder_id])
+model ratings {
+  id                String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id           String?             @db.Uuid
+  value             Int?
+  rated_at          DateTime?           @default(now()) @db.Timestamptz(6)
+  users             users?              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ratings_comments  ratings_comments[]
+  ratings_folders   ratings_folders[]
+  ratings_resources ratings_resources[]
 }
 
-model ratings {
-  id             String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  user_id        String?          @db.Uuid
-  value          Int?
-  rated_at       DateTime?        @default(now()) @db.Timestamptz(6)
-  rating_targets rating_targets[]
-  users          users?           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model ratings_comments {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  rating_id  String   @db.Uuid
+  comment_id String   @db.Uuid
+  comments   comments @relation(fields: [comment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ratings    ratings  @relation(fields: [rating_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([rating_id, comment_id])
+}
+
+model ratings_folders {
+  id        String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  rating_id String  @db.Uuid
+  folder_id String  @db.Uuid
+  folders   folders @relation(fields: [folder_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ratings   ratings @relation(fields: [rating_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([rating_id, folder_id])
+}
+
+model ratings_resources {
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  rating_id   String    @db.Uuid
+  resource_id String    @db.Uuid
+  ratings     ratings   @relation(fields: [rating_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  resources   resources @relation(fields: [resource_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([rating_id, resource_id])
 }
 
 model resource_tags {
@@ -176,7 +197,7 @@ model resources {
   downloads            downloads[]
   folder_files         folder_files[]
   notification_targets notification_targets[]
-  rating_targets       rating_targets[]
+  ratings_resources    ratings_resources[]
   resource_tags        resource_tags[]
   uploads              uploads[]
 }
@@ -246,11 +267,11 @@ model users {
   password         String?            @db.VarChar
   birth            String?            @db.VarChar
   avatar           String?            @db.VarChar
+  banner           String?            @db.VarChar
   email_verified   Boolean?           @default(false)
   created_at       DateTime?          @default(now()) @db.Timestamptz(6)
   updated_at       DateTime?          @default(now()) @db.Timestamptz(6)
-  banner           String?            @db.VarChar
-  role_id_         String             @map("role_id ") @db.Uuid
+  role_id          String             @db.Uuid
   accounts         accounts[]
   comments         comments[]
   downloads        downloads[]
@@ -261,7 +282,7 @@ model users {
   sessions         sessions[]
   uploads          uploads[]
   user_guild_roles user_guild_roles[]
-  roles            roles              @relation(fields: [role_id_], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_users_roles")
+  roles            roles              @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.

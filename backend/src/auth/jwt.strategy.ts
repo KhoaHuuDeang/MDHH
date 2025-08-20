@@ -1,7 +1,7 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { SessionService } from './session.service';
 @Injectable()
@@ -27,6 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!sessionUser) {
       throw new UnauthorizedException('Session not found or expired');
     }
-    return sessionUser
+    console.log('Session user:', sessionUser);
+    return sessionUser;
   }
 }

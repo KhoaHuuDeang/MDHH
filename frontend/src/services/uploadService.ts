@@ -7,7 +7,7 @@ import {
   PaginatedUploads,
   VisibilityType,
 } from '@/types/FileUploadInterface';
-import { getSession } from 'next-auth/react';
+import { getAuthToken } from '@/services/userService';
 
 
 // Backend API response types (matching uploadsService.md patterns)
@@ -92,6 +92,7 @@ export interface ResourceCreationWithUploadDto {
   folderManagement: FolderManagementDto;
   files: UploadCreationData[];
 }
+
 class UploadService {
   private baseUrl = process.env.NEXT_PUBLIC_API_URL;
   private maxRetries = 3;
@@ -102,18 +103,18 @@ class UploadService {
     options: RequestInit = {}
   ): Promise<T> {
     let lastError: Error;
-    const token = await this.getToken();
+    const token = this.getToken();
     if (!token) {
       throw new Error('Authentication token is missing');
     }
-    console.log()
+    
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       try {
         const response = await fetch(endpoint, {
           ...options,
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${await this.getToken()}`,
+            'Authorization': `Bearer ${token}`,
             ...options.headers,
           },
         });
@@ -363,15 +364,11 @@ class UploadService {
   }
 
   /**
-   * Get JWT token from NextAuth session (not localStorage)
-   * This fixes the 401 authentication errors
+   * Get JWT token from global authToken (set by page-level useSession)
+   * This follows the new pattern used in userService
    */
-  private async getToken(): Promise<string> {
-    if (typeof window !== 'undefined') {
-      const session = await getSession();
-      return session?.accessToken!;
-    }
-    return '';
+  private getToken(): string {
+    return getAuthToken() || '';
   }
 }
 

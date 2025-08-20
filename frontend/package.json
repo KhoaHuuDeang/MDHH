@@ -25,6 +25,8 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.57.0",
     "react-toastify": "^11.0.5",
+    "swr": "^2.2.5",
+    "use-debounce": "^10.0.1",
     "zod": "^3.25.64",
     "zustand": "^5.0.5"
   },
