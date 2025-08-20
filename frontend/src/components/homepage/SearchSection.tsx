@@ -2,24 +2,24 @@
 
 import React from 'react';
 import SearchBar from './SearchBar';
-import CategoryFilter from './CategoryFilter';
+import CategoryFilter, { FilterChangeParams } from './CategoryFilter';
 
 interface SearchSectionProps {
   onSearch?: (query: string) => void;
-  onCategoryChange?: (category: string) => void;
+  onFilterChange?: (params: FilterChangeParams) => void;
   className?: string;
 }
 
 const SearchSection: React.FC<SearchSectionProps> = React.memo(({
   onSearch,
-  onCategoryChange,
+  onFilterChange,
   className = ''
 }) => {
   return (
     <section className={`mb-12 ${className}`}>
       <div className="space-y-6">
         <SearchBar onSearch={onSearch} />
-        <CategoryFilter onCategoryChange={onCategoryChange} />
+        <CategoryFilter onFilterChange={onFilterChange} />
       </div>
     </section>
   );

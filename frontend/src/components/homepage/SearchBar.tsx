@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import * as lucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 
@@ -22,12 +23,37 @@ const SearchBar: React.FC<SearchBarProps> = React.memo(({
   className = '',
   initialValue = ''
 }) => {
+  // URL state management
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
   const [searchQuery, setSearchQuery] = useState(initialValue);
+
+  // Initialize from URL on mount
+  useEffect(() => {
+    const queryFromUrl = searchParams.get('query') || '';
+    setSearchQuery(queryFromUrl);
+  }, [searchParams]);
+
+  // Update URL when search is triggered
+  const updateUrlWithQuery = useCallback((query: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    if (query.trim()) {
+      params.set('query', query.trim());
+    } else {
+      params.delete('query');
+    }
+    
+    const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+    router.replace(newUrl, { scroll: false });
+  }, [router, searchParams]);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
+    updateUrlWithQuery(searchQuery);
     onSearch?.(searchQuery);
-  }, [searchQuery, onSearch]);
+  }, [searchQuery, onSearch, updateUrlWithQuery]);
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -39,8 +65,9 @@ const SearchBar: React.FC<SearchBarProps> = React.memo(({
 
   const handleClear = useCallback(() => {
     setSearchQuery('');
+    updateUrlWithQuery('');
     onSearch?.('');
-  }, [onSearch]);
+  }, [onSearch, updateUrlWithQuery]);
 
   return (
     <form onSubmit={handleSubmit} className={`relative ${className}`}>
