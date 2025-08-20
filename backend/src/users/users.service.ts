@@ -144,8 +144,8 @@ export class UsersService {
 
   async getUserStats(id: string) {
     await this.findOne(id);
-    //parallel fetching 
     const [uploadsCount, upvotesCount, commentsCount, downloadsCount] = await Promise.all([
+      // Simplified uploads count - count resources owned by user that have completed uploads
       this.prisma.uploads.count({
         where: {
           status: 'COMPLETED',
@@ -161,11 +161,12 @@ export class UsersService {
         }
       }),
 
+      // Fixed upvotes count - use new vote system (value: 1 for upvotes)
       this.prisma.ratings.count({
         where: {
-          value: { gte: 4 },
+          value: 1, 
           OR: [
-            // Ratings on user's folders
+            // Upvotes on user's folders
             {
               ratings_folders: {
                 some: {
@@ -175,7 +176,7 @@ export class UsersService {
                 }
               }
             },
-            // Ratings on user's resources
+            // Upvotes on user's resources
             {
               ratings_resources: {
                 some: {
@@ -195,6 +196,7 @@ export class UsersService {
         }
       }),
 
+      // Comments count 
       this.prisma.comments.count({
         where: {
           user_id: id,
@@ -202,6 +204,7 @@ export class UsersService {
         }
       }),
 
+      // Downloads count - count downloads of user's resources
       this.prisma.downloads.count({
         where: {
           resources: {
@@ -216,7 +219,6 @@ export class UsersService {
         }
       })
     ]);
-
     return {
       uploads: uploadsCount,
       upvotes: upvotesCount,
