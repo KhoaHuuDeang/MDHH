@@ -10,6 +10,26 @@ import {
   CompleteUploadDto,
   FileMetadataDto,
 } from './uploads.dto';
+import {
+  UserResourcesResponseDto,
+  ResourceVisibility,
+} from './dto/user-resources.dto';
+import { Prisma } from '@prisma/client';
+
+// Interface for raw SQL query results
+interface ResourceWithMetrics {
+  resource_id: string;
+  file_size: number;
+  mime_type: string;
+  created_at: Date;
+  title: string;
+  description: string;
+  visibility: string;
+  category: string;
+  folder_name: string;
+  downloads_count: number;
+  upvotes_count: number;
+}
 
 @Injectable()
 export class UploadsService {
@@ -579,6 +599,139 @@ export class UploadsService {
     } catch (error) {
       this.logger.error(`Failed to delete multiple S3 files:`, error);
       throw new BadRequestException('Failed to delete files from storage');
+    }
+  }
+
+  /**
+   * Get user resources with social metrics for listing page
+   * Optimized with raw SQL query for better performance
+   */
+  async getUserResources(
+    userId: string,
+    page: number = 1,
+    limit: number = 10,
+    status?: string,
+    search?: string
+  ): Promise<UserResourcesResponseDto> {
+    // Ensure parameters are numbers (defensive programming)
+    const pageNum = Number(page);
+    const limitNum = Number(limit) ;
+    const offset = (pageNum - 1) * limitNum;
+    
+    this.logger.log(`Type check - page: ${typeof page} (${page}), limit: ${typeof limit} (${limit})`);
+
+    try {
+      this.logger.log(`Fetching resources for user ${userId}, page ${page}, limit ${limit}`);
+
+      // Build Prisma.sql query with proper type handling
+      let baseQuery = Prisma.sql`
+        SELECT 
+          u.resource_id,
+          u.user_id,
+          u.file_size,
+          u.mime_type,
+          u.created_at,
+          r.title,
+          r.description,
+          r.visibility,
+          r.category,
+          COALESCE(f.name, 'No Folder') as folder_name,
+          COALESCE(d.downloads_count, 0) as downloads_count,
+          COALESCE(rt.upvotes_count, 0) as upvotes_count
+        FROM uploads u
+        INNER JOIN resources r ON u.resource_id = r.id
+        LEFT JOIN (
+          SELECT ff.resource_id, fo.name
+          FROM folder_files ff
+          INNER JOIN folders fo ON ff.folder_id = fo.id
+          WHERE ff.resource_id IS NOT NULL
+        ) f ON u.resource_id = f.resource_id
+        LEFT JOIN (
+          SELECT resource_id, COUNT(*) as downloads_count
+          FROM downloads
+          GROUP BY resource_id
+        ) d ON u.resource_id = d.resource_id
+        LEFT JOIN (
+          SELECT rr.resource_id, COUNT(*) as upvotes_count
+          FROM ratings_resources rr
+          INNER JOIN ratings rt ON rr.rating_id = rt.id
+          WHERE rt.value > 0
+          GROUP BY rr.resource_id
+        ) rt ON u.resource_id = rt.resource_id
+        WHERE u.user_id = ${userId}::uuid AND u.resource_id IS NOT NULL`;
+      
+      let countQuery = Prisma.sql`
+        SELECT COUNT(*) as total
+        FROM uploads u
+        INNER JOIN resources r ON u.resource_id = r.id
+        WHERE u.user_id = ${userId}::uuid AND u.resource_id IS NOT NULL`;
+
+      // Add search filter if provided
+      if (search && search.trim()) {
+        const searchPattern = `%${search.trim()}%`;
+        baseQuery = Prisma.sql`${baseQuery} AND (r.title ILIKE ${searchPattern} OR r.description ILIKE ${searchPattern})`;
+        countQuery = Prisma.sql`${countQuery} AND (r.title ILIKE ${searchPattern} OR r.description ILIKE ${searchPattern})`;
+      }
+      console.log("STATUSSS:", status);
+      // Add status filter if provided
+      if (status && status !== 'all') {
+        const visibilityMapping = {
+          'APPROVED': 'PUBLIC',
+          'PENDING': 'PRIVATE',
+          'REJECTED': 'PRIVATE'
+        };
+        if (visibilityMapping[status]) {
+          const visibility = visibilityMapping[status];
+          baseQuery = Prisma.sql`${baseQuery} AND r.visibility = '${visibility}'`;
+          countQuery = Prisma.sql`${countQuery} AND r.visibility = '${visibility}'`;
+        }
+      }
+
+      // Add pagination
+      const finalQuery = Prisma.sql`${baseQuery} ORDER BY u.created_at DESC LIMIT ${limitNum} OFFSET ${offset}`;
+
+      // Execute both queries in parallel
+      const [rawResults, countResult] = await Promise.all([
+        this.prisma.$queryRaw<ResourceWithMetrics[]>(finalQuery),
+        this.prisma.$queryRaw<[{ total: bigint }]>(countQuery)
+      ]);
+
+      const total = Number(countResult[0]?.total || 0);
+      const totalPages = Math.ceil(total / limitNum);
+
+      // Transform raw SQL results to DTO format
+      const resources = rawResults.map(row => ({
+        resource_id: row.resource_id,
+        user_id: userId,
+        file_size: Number(row.file_size) || 0,
+        mime_type: row.mime_type || '',
+        created_at: new Date(row.created_at),
+        resource_details: {
+          title: row.title || '',
+          description: row.description || '',
+          visibility: (row.visibility as ResourceVisibility) || ResourceVisibility.PRIVATE,
+          category: row.category || '',
+          folder_name: row.folder_name || 'No Folder',
+          upvotes_count: Number(row.upvotes_count) || 0,
+          downloads_count: Number(row.downloads_count) || 0
+        }
+      }));
+
+      this.logger.log(`Retrieved ${resources.length} resources for user ${userId}`);
+      this.logger.log(`full information: ${JSON.stringify(resources, null, 2)}`);
+      return {
+        resources,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages
+        }
+      };
+
+    } catch (error) {
+      this.logger.error(`Failed to get user resources for user ${userId}:`, error);
+      throw new BadRequestException('Failed to retrieve user resources');
     }
   }
 
