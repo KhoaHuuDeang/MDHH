@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect, ChangeEvent } from "react";
-import { useSession, signOut } from "next-auth/react";
+import {  useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import useNotifications from "@/hooks/useNotifications";
 import UserProfileSection from "@/components/profile/UserProfileSection";
 import UserStatsSection from "@/components/profile/UserStatsSection";
 import ActivityFeedSection from "@/components/profile/ActivityFeedSection";
 import { setAuthToken } from "@/services/userService";
+import SpinnerLoading from "@/components/layout/spinner";
 
 export default function ProfilePage() {
   
@@ -33,12 +34,7 @@ export default function ProfilePage() {
 
   if (status === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="mx-auto mb-4 h-16 w-16 animate-spin rounded-full border-4 border-gray-200 border-t-[#386641]"></div>
-          <p className="text-lg text-gray-600">Đang tải thông tin...</p>
-        </div>
-      </div>
+      <SpinnerLoading />
     );
   }
 

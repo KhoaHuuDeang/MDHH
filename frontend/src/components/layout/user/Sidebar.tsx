@@ -85,7 +85,7 @@ export default function Sidebar({
               } border-b border-[#386641]/20`}
           >
             <Link
-              href="/"
+              href="/home"
               aria-label="Home page"
               className="p-3 rounded-xl focus:outline-none transition-all duration-300 
                 text-white hover:text-[#6A994E] hover:bg-[#386641]/10

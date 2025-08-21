@@ -111,7 +111,7 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
                             </button>
 
                             {/* Logo */}
-                            <Link href="/" className="flex-shrink-0 group">
+                            <Link href="/home" className="flex-shrink-0 group">
                                 <div className="relative">
                                     <Image
                                         src="/logo.svg"
