@@ -6,6 +6,7 @@ import * as lucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 import { getMimeTypeIcon, getFileTypeDescription } from '@/utils/mimeTypeIcons';
 import { FileData } from '@/hooks/useHomepageData';
+import { FileWithFolder } from '@/services/homepageService';
 import useFileActions from '@/hooks/useFileActions';
 import { VoteData } from '@/types/vote.types';
 
@@ -15,7 +16,7 @@ const getIcons = (iconName: string, size: number, className?: string) => {
 };
 
 interface FileCardProps {
-  file: FileData;
+  file: FileData | FileWithFolder;
   onView?: (fileId: string) => void;
   showThumbnail?: boolean;
   className?: string;
@@ -115,7 +116,7 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
     }
   }, [file.id, voteFile, voteData]);
 
-  // Handle downvote with optimistic update (hidden UI but functional)
+  // Handle downvote with optimistic update
   const handleDownvote = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     
@@ -200,16 +201,24 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
               </p>
             )}
             
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-xs text-gray-500">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm text-gray-400">
                 <span>By {file.author}</span>
                 <span>{formattedDate}</span>
               </div>
               
               {file.category && (
-                <div className="flex items-center text-xs text-gray-500">
-                  {getIcons("Tag", 12, "mr-1")}
+                <div className="flex items-center text-sm text-gray-500">
+                  {getIcons("Tag", 14, "mr-1")}
                   <span>{file.category}</span>
+                </div>
+              )}
+              
+              {/* Folder information */}
+              {file.folderName && (
+                <div className="flex items-center text-sm text-gray-500 cursor-pointer hover:text-[#386641] transition-colors duration-200 px-2 py-1 hover:bg-gray-50 rounded-md -mx-2">
+                  {getIcons("Folder", 14, "mr-2")}
+                  <span>From folder: <span className="text-gray-400 font-normal">{file.folderName}</span></span>
                 </div>
               )}
             </div>
@@ -244,19 +253,50 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
             <button
               onClick={handleUpvote}
               disabled={isVoting}
-              className={`flex items-center text-xs font-medium transition-all duration-200 px-3 py-1.5 rounded-md border ${
+              className={`min-h-[44px] min-w-[44px] flex items-center justify-center text-xs font-medium transition-all duration-200 px-3 py-1.5 rounded-md border focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50 ${
                 voteData.userVote === 'up'
                   ? 'bg-[#6A994E] text-white border-[#6A994E] shadow-sm'
                   : 'text-gray-600 border-gray-200 hover:border-[#6A994E] hover:text-[#6A994E] hover:bg-[#6A994E]/5'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
               aria-label={`Upvote ${file.title}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleUpvote(e);
+                }
+              }}
             >
-              {isVoting ? (
+              {isVoting && voteData.userVote === 'up' ? (
                 getIcons("Loader2", 12, "mr-1 animate-spin")
               ) : (
                 getIcons("ChevronUp", 12, "mr-1")
               )}
               <span>{voteData.upvotes}</span>
+            </button>
+
+            {/* Downvote button */}
+            <button
+              onClick={handleDownvote}
+              disabled={isVoting}
+              className={`min-h-[44px] min-w-[44px] flex items-center justify-center text-xs font-medium transition-all duration-200 px-3 py-1.5 rounded-md border focus:outline-none focus:ring-2 focus:ring-red-300/50 ${
+                voteData.userVote === 'down'
+                  ? 'text-red-600 border-red-300 bg-red-50'
+                  : 'text-gray-600 border-gray-200 hover:border-red-300 hover:text-red-600 hover:bg-red-50'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+              aria-label={`Downvote ${file.title}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleDownvote(e);
+                }
+              }}
+            >
+              {isVoting && voteData.userVote === 'down' ? (
+                getIcons("Loader2", 12, "mr-1 animate-spin")
+              ) : (
+                getIcons("ChevronDown", 12, "mr-1")
+              )}
+              <span>{voteData.downvotes}</span>
             </button>
 
             {/* Bookmark button */}

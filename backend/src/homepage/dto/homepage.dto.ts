@@ -64,6 +64,15 @@ export class FileDataDto {
   })
   @IsNumber()
   downloadCount: number;
+
+  @ApiProperty({
+    description: 'Name of the folder containing this file',
+    example: 'Web Development Course',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  folderName?: string;
 }
 
 export class FolderDataDto {

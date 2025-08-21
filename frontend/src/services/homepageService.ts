@@ -97,9 +97,8 @@ export const homepageService = {
     return response.data;
   },
 
-  getFileVotes: async (fileId: string, includeUserVote: boolean = false): Promise<VoteData> => {
-    const params = includeUserVote ? { includeUserVote: 'true' } : {};
-    const response = await apiClient.get(`/votes/resources/${fileId}`, { params });
+  getFileVotes: async (fileId: string): Promise<VoteData> => {
+    const response = await apiClient.get(`/votes/resources/${fileId}`);
     return response.data;
   },
 

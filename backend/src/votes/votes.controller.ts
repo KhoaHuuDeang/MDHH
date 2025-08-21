@@ -86,20 +86,16 @@ export class VotesController {
   }
 
   @Get('resources/:resourceId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ 
     summary: 'Get vote statistics for a resource',
-    description: 'Retrieve upvote/downvote counts for a resource. Include user vote status if authenticated.'
+    description: 'Retrieve upvote/downvote counts for a resource with current user vote status.'
   })
   @ApiParam({
     name: 'resourceId',
     description: 'ID of the resource to get votes for',
     example: '123e4567-e89b-12d3-a456-426614174000'
-  })
-  @ApiQuery({
-    name: 'includeUserVote',
-    required: false,
-    description: 'Include current user vote status (requires authentication)',
-    example: 'true'
   })
   @ApiResponse({ 
     status: 200, 
@@ -107,18 +103,20 @@ export class VotesController {
     type: VoteDataDto
   })
   @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - authentication required'
+  })
+  @ApiResponse({
     status: 404,
     description: 'Resource not found'
   })
   async getResourceVotes(
     @Param('resourceId') resourceId: string,
-    @Query() query: GetVotesQueryDto,
-    @Request() req?: any
+    @Request() req: any
   ): Promise<VoteDataDto> {
-    // Get userId if user is authenticated and wants user vote status
-    let userId: string | undefined;
-    if (query.includeUserVote === 'true' && req?.user) {
-      userId = req.user?.userId;
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new BadRequestException('User ID not found in token');
     }
 
     return this.votesService.getResourceVotes(resourceId, userId);
