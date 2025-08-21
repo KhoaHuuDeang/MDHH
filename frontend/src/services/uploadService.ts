@@ -7,6 +7,7 @@ import {
   PaginatedUploads,
   VisibilityType,
 } from '@/types/FileUploadInterface';
+import { UserResourcesResponse } from '@/types/uploads.types';
 import { getAuthToken } from '@/services/userService';
 
 
@@ -121,6 +122,16 @@ class UploadService {
 
         if (!response.ok) {
           const errorText = await response.text();
+          
+          // Enhanced logging for debugging
+          console.error(`API Error - ${endpoint}:`, {
+            status: response.status,
+            statusText: response.statusText,
+            method: options.method || 'GET',
+            headers: response.headers,
+            body: errorText,
+            timestamp: new Date().toISOString()
+          });
 
           if (response.status === 409 && errorText.includes('folder')) {
             throw new Error('Folder name already exists. Please choose a different name.');
@@ -130,10 +141,17 @@ class UploadService {
             throw new Error('Invalid classification level. Please select a valid classification.');
           }
 
-          if (response.status === 400 && errorText.includes('metadata')) {
-            throw new Error('File metadata validation failed. Please check all required fields.');
+          if (response.status === 400) {
+            if (errorText.includes('metadata')) {
+              throw new Error('File metadata validation failed. Please check all required fields.');
+            }
+            if (errorText.includes('Failed to retrieve user resources')) {
+              throw new Error('Database query failed. Please check your request parameters.');
+            }
+            if (errorText.includes('Type conversion')) {
+              throw new Error('Invalid request parameters. Please check page and limit values.');
+            }
           }
-
 
           throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
@@ -308,6 +326,35 @@ class UploadService {
 
     return this.makeRequest<PaginatedUploads>(
       `${this.baseUrl}/uploads/my-uploads?${params.toString()}`,
+      { method: 'GET' }
+    );
+  }
+
+  /**
+   * Get user's resources for listing page with social metrics
+   * Matches backend GET /uploads/resources endpoint
+   */
+  async getUserResources(
+    page = 1, 
+    limit = 10, 
+    status?: string,
+    search?: string
+  ): Promise<UserResourcesResponse> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+
+    if (status && status !== 'all') {
+      params.append('status', status);
+    }
+
+    if (search) {
+      params.append('search', search);
+    }
+
+    return this.makeRequest<UserResourcesResponse>(
+      `${this.baseUrl}/uploads/resources?${params.toString()}`,
       { method: 'GET' }
     );
   }

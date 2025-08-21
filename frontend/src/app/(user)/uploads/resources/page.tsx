@@ -1,26 +1,21 @@
-'use client'
-import React, { useState, useEffect } from 'react';
+'use client';
+
+import React, { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import * as LucideIcons from 'lucide-react';
-import { LucideIcon } from 'lucide-react';
 import Image from 'next/image';
 import useNotifications from '@/hooks/useNotifications';
+import SpinnerLoading from '@/components/layout/spinner';
+import { useUserResources } from '@/hooks/useUserResources';
+import { getIcon } from '@/utils/getIcon';
+import ResourcesListSection from '@/components/uploads/ResourcesListSection';
 
-export default function UploadsPage() {
+export default function UploadManagement() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const toast = useNotifications();
+
     
-    const [activeTab, setActiveTab] = useState<'all' | 'approved' | 'pending' | 'rejected'>('all');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [sortBy, setSortBy] = useState<'date' | 'views' | 'ratings'>('date');
-
-    const getIcon = (iconName: string, size = 20, className?: string) => {
-        const IconComponent = LucideIcons[iconName as keyof typeof LucideIcons] as LucideIcon;
-        return IconComponent ? <IconComponent size={size} className={className} /> : null;
-    };
-
     useEffect(() => {
         if (status === 'unauthenticated') {
             toast.error("Chưa đăng nhập đừng có mò vào đây");
@@ -28,14 +23,17 @@ export default function UploadsPage() {
         }
     }, [status, router, toast]);
 
+
+    // Use the custom hook for stats calculation
+    const { stats } = useUserResources({
+        userId: session?.user?.id,
+        accessToken: session?.accessToken,
+        enabled: Boolean(session?.user?.id && session?.accessToken)
+    });
+
     if (status === 'loading') {
         return (
-            <div className="min-h-screen bg-[#F7F8FA] flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600 text-lg">Đang tải thông tin...</p>
-                </div>
-            </div>
+          <SpinnerLoading />
         );
     }
 
@@ -48,91 +46,6 @@ export default function UploadsPage() {
         avatar: session.user?.avatar,
     };
 
-    // Mock data for uploads
-    const uploads = [
-        {
-            id: 1,
-            title: 'Bài giảng Hệ Cơ sở dữ liệu',
-            description: 'Tổng hợp các slide bài giảng môn Hệ cơ sở dữ liệu, bao gồm các chủ đề về mô hình quan hệ, SQL, và tối ưu hóa truy vấn.',
-            fileType: 'PDF',
-            fileSize: '2.5 MB',
-            uploadDate: '2025-07-15',
-            views: 1234,
-            downloads: 56,
-            ratings: 15,
-            ratingCount: 15,
-            status: 'approved',
-            subject: 'Hệ CSDL',
-            category: 'Bài giảng',
-            thumbnail: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=100&h=100&fit=crop'
-        },
-        {
-            id: 2,
-            title: 'Đề thi cuối kỳ Giải tích 1',
-            description: 'Đề thi có đáp án chi tiết, giúp sinh viên ôn tập hiệu quả cho kỳ thi cuối kỳ.',
-            fileType: 'PDF',
-            fileSize: '1.2 MB',
-            uploadDate: '2025-07-12',
-            views: 0,
-            downloads: 0,
-            ratings: 0,
-            ratingCount: 0,
-            status: 'rejected',
-            rejectionReason: 'Slide bài giảng không được phép.',
-            subject: 'Giải tích 1',
-            category: 'Đề thi',
-            thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=100&h=100&fit=crop'
-        }
-    ];
-
-    const stats = [
-        { label: 'Tài liệu', value: '2', icon: 'FileText', color: 'blue' },
-        { label: 'Lượt xem', value: '1.2K', icon: 'Eye', color: 'green' },
-        { label: 'Tải xuống', value: '56', icon: 'Download', color: 'purple' },
-        { label: 'Upvotes', value: '15', icon: 'ThumbsUp', color: 'yellow' }
-    ];
-
-    const filteredUploads = uploads.filter(upload => {
-        const matchesTab = activeTab === 'all' || upload.status === activeTab;
-        const matchesSearch = upload.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            upload.subject.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesTab && matchesSearch;
-    });
-
-    const getStatusBadge = (status: string, rejectionReason?: string) => {
-        const statusConfig = {
-            approved: { 
-                color: 'bg-green-100 text-green-800', 
-                icon: 'CheckCircle', 
-                text: 'Approved' 
-            },
-            pending: { 
-                color: 'bg-yellow-100 text-yellow-800', 
-                icon: 'Clock', 
-                text: 'Pending' 
-            },
-            rejected: { 
-                color: 'bg-red-100 text-red-800', 
-                icon: 'XCircle', 
-                text: 'Rejected' 
-            }
-        };
-
-        const config = statusConfig[status as keyof typeof statusConfig];
-        return (
-            <div className="flex flex-col">
-                <span className={`inline-flex items-center gap-1.5 ${config.color} text-xs font-semibold px-2.5 py-1 rounded-full mb-1`}>
-                    {getIcon(config.icon, 12)}
-                    {config.text}
-                </span>
-                {status === 'rejected' && rejectionReason && (
-                    <p className="text-xs text-red-600 text-left md:text-right">
-                        Lý do: {rejectionReason}
-                    </p>
-                )}
-            </div>
-        );
-    };
     return (
         <div className="min-h-screen bg-[#F7F8FA] text-gray-800">
             <main className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
@@ -190,141 +103,13 @@ export default function UploadsPage() {
                     </div>
                 </section>
 
-                {/* Uploads Management Section */}
-                <section className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-                    {/* Header with Tabs and Controls */}
-                    <div className="p-6 border-b border-gray-200">
-                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                            <div>
-                                <h2 className="text-2xl font-bold text-gray-900 mb-2">Quản lý tài liệu</h2>
-                                <div className="flex flex-wrap gap-2">
-                                    {[
-                                        { key: 'all', label: 'Tất cả', count: uploads.length },
-                                        { key: 'approved', label: 'Đã duyệt', count: uploads.filter(u => u.status === 'approved').length },
-                                        { key: 'pending', label: 'Chờ duyệt', count: uploads.filter(u => u.status === 'pending').length },
-                                        { key: 'rejected', label: 'Bị từ chối', count: uploads.filter(u => u.status === 'rejected').length }
-                                    ].map(tab => (
-                                        <button
-                                            key={tab.key}
-                                            onClick={() => setActiveTab(tab.key as any)}
-                                            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-                                                activeTab === tab.key
-                                                    ? 'bg-blue-500 text-white shadow-lg'
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                            }`}
-                                        >
-                                            {tab.label} ({tab.count})
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Search and Sort Controls */}
-                            <div className="flex flex-col sm:flex-row gap-3">
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="Tìm kiếm tài liệu..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-auto"
-                                    />
-                                    {getIcon('Search', 20, 'absolute left-3 top-2.5 text-gray-400')}
-                                </div>
-                                <select
-                                    value={sortBy}
-                                    onChange={(e) => setSortBy(e.target.value as any)}
-                                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                >
-                                    <option value="date">Sắp xếp theo ngày</option>
-                                    <option value="views">Sắp xếp theo lượt xem</option>
-                                    <option value="ratings">Sắp xếp theo đánh giá</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Enhanced Document List */}
-                    <div className="grid gap-6 p-6">
-                        {filteredUploads.length > 0 ? (
-                            filteredUploads.map((upload) => (
-                                <div key={upload.id} className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition-shadow duration-300 border border-gray-200">
-                                    <div className="flex flex-col md:flex-row gap-6">
-                                        {/* Left Part */}
-                                        <div className="flex-1">
-                                            <div className="flex items-start gap-4">
-                                                <Image
-                                                    src={upload.thumbnail}
-                                                    alt="thumbnail"
-                                                    width={60}
-                                                    height={80}
-                                                    className="w-16 h-20 rounded-lg object-cover border bg-white"
-                                                />
-                                                <div className="flex-1">
-                                                    <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 cursor-pointer">
-                                                        {upload.title}
-                                                    </h3>
-                                                    <p className="text-sm text-gray-600 mt-1 mb-3 line-clamp-2">
-                                                        {upload.description}
-                                                    </p>
-                                                    <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-gray-500 border-b border-gray-200 pb-3 mb-3">
-                                                        <span className="flex items-center gap-1.5">
-                                                            {getIcon('BookOpen', 14)}
-                                                            {upload.subject}
-                                                        </span>
-                                                        <span className="flex items-center gap-1.5">
-                                                            {getIcon('Tag', 14)}
-                                                            {upload.category}
-                                                        </span>
-                                                        <span className="flex items-center gap-1.5">
-                                                            {getIcon('Calendar', 14)}
-                                                            {new Date(upload.uploadDate).toLocaleDateString('vi-VN')}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-600">
-                                                        <div className="flex items-center gap-1 font-medium">
-                                                            {getIcon('Eye', 16, 'text-blue-500')}
-                                                            {upload.views.toLocaleString()}
-                                                        </div>
-                                                        <div className="flex items-center gap-1 font-medium">
-                                                            {getIcon('Download', 16, 'text-green-500')}
-                                                            {upload.downloads}
-                                                        </div>
-                                                        <div className="flex items-center gap-1 font-medium">
-                                                            {getIcon('Star', 16, 'text-purple-500')}
-                                                            {upload.ratingCount} Ratings
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        {/* Right Part */}
-                                        <div className="flex flex-col justify-between items-start md:items-end gap-4 md:w-48">
-                                            {getStatusBadge(upload.status, upload.rejectionReason)}
-                                            <div className="flex gap-2">
-                                                <button className="flex items-center justify-center gap-2 px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm">
-                                                    Xem
-                                                </button>
-                                                <button className="flex items-center justify-center gap-2 px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm">
-                                                    Xóa
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="p-12 text-center">
-                                <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                                    {getIcon('FileText', 48, 'text-gray-400')}
-                                </div>
-                                <h3 className="text-xl font-semibold text-gray-900 mb-2">Không tìm thấy tài liệu</h3>
-                                <p className="text-gray-500">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
-                            </div>
-                        )}
-                    </div>
-                </section>
+                {/* Resources List Section - Clean component separation */}
+                {session?.user?.id && session?.accessToken && (
+                    <ResourcesListSection 
+                        userId={session.user.id} 
+                        accessToken={session.accessToken} 
+                    />
+                )}
 
                 {/* Quick Upload Button */}
                 <div className="fixed bottom-8 right-8">

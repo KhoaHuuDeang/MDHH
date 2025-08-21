@@ -75,15 +75,15 @@ function UserStatsSection({ userId }: UserStatsSectionProps) {
           {statsDisplay.map((stat, index) => (
             <div
               key={index}
-              className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-all duration-200 hover:scale-105 group"
+              className="bg-white rounded-2xl p-4 border hover:bg-gray-100 group-hover:bg-[#386641] text-[#6A994E] group-hover:text-white transition-all duration-300 hover:scale-105 hover:shadow-lg group cursor-pointer"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
-                  {getIcon(stat.icon, 24, stat.color)}
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full flex items-center justify-center bg-gray-100 group-hover:bg-[#386641] text-[#6A994E] group-hover:text-white transition-all">
+                  {getIcon(stat.icon, 24)}
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-                  <div className="text-gray-600 text-sm">{stat.label}</div>
+                  <div className="text-2xl font-bold text-gray-900 group-hover:text-black transition-colors">{stat.value}</div>
+                  <div className="text-gray-500 text-sm group-hover:text-black transition-colors">{stat.label}</div>
                 </div>
               </div>
             </div>

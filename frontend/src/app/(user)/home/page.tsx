@@ -178,7 +178,6 @@ export default function HomePage() {
         {/* Search Section */}
         <SearchSection
           onSearch={handleSearch}
-          onCategoryChange={handleCategoryChange}
         />
         {/* Quick Actions Section */}
         <section className="mb-16">

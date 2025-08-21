@@ -20,6 +20,10 @@ import {
   ResourceResponseDto,
   CompleteUploadDto,
 } from './uploads.dto';
+import {
+  UserResourcesResponseDto,
+  GetUserResourcesQueryDto,
+} from './dto/user-resources.dto';
 import { UploadsService } from './upload.service';
 
 @ApiTags('uploads')
@@ -110,6 +114,33 @@ export class UploadsController {
       parseInt(page),
       parseInt(limit),
       status
+    );
+  }
+
+  /**
+   * Get user's resources for listing page with social metrics
+   */
+  @Get('resources')
+  @ApiOperation({ 
+    summary: 'Get user resources for listing page',
+    description: 'Returns user resources with social metrics, folder information, and pagination'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'User resources retrieved successfully',
+    type: UserResourcesResponseDto
+  })
+  async getUserResources(
+    @Request() req: any,
+    @Query() queryDto: GetUserResourcesQueryDto
+  ): Promise<UserResourcesResponseDto> {
+    
+    return await this.uploadsService.getUserResources(
+      req.user.userId,
+      queryDto.page || 1,
+      queryDto.limit || 10,
+      queryDto.status,
+      queryDto.search
     );
   }
 
