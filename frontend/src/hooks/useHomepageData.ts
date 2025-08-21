@@ -23,7 +23,6 @@ const fetcher = async (): Promise<HomepageData> => {
 export const useHomepageData = (): UseHomepageDataReturn => {
   const { data: session, status } = useSession();
 
-  // Set auth token synchronously BEFORE SWR key calculation
   if (session?.accessToken) {
     setAuthToken(session.accessToken);
   } else if (status === "unauthenticated") {
