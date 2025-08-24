@@ -45,7 +45,8 @@ class CSRAxiosClient {
       (response: AxiosResponse) => response,
       (error) => {
         if (error.response?.status === 401) {
-          window.location.href = '/auth';
+          // window.location.href = '/auth';  // ← Commented for debugging
+          console.error('401 from axiosClient:', error.config.url);
         }
         return Promise.reject(error);
       }
@@ -71,6 +72,10 @@ class CSRAxiosClient {
     return this.instance.delete(url, config);
   }
 
+  async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.instance.patch(url, data, config);
+  }
+
   /**
    * SWR-compatible fetcher function
    */
@@ -82,7 +87,7 @@ class CSRAxiosClient {
   /**
    * SWR-compatible mutator function for optimistic updates
    */
-  mutator = async <T = any>(url: string, data?: any, method: 'POST' | 'PUT' | 'DELETE' = 'POST'): Promise<T> => {
+  mutator = async <T = any>(url: string, data?: any, method: 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'POST'): Promise<T> => {
     let response: AxiosResponse<T>;
     
     switch (method) {
@@ -91,6 +96,9 @@ class CSRAxiosClient {
         break;
       case 'PUT':
         response = await this.put<T>(url, data);
+        break;
+      case 'PATCH':
+        response = await this.patch<T>(url, data);
         break;
       case 'DELETE':
         response = await this.delete<T>(url);
