@@ -99,7 +99,6 @@ export const authOptions: NextAuthOptions = {
         })
     ], callbacks: {
         async signIn({ user, account, profile }) {
-            console.log("INFORMATION SIGNIN :", { user, account, profile });
             // Handle credentials login
             if (account?.provider === "credentials") {
                 return true
@@ -164,7 +163,8 @@ export const authOptions: NextAuthOptions = {
                 token.role = user.role
                 token.username = user.username
                 token.birth = user.birth
-                token.accessToken = user.backendToken!
+                //accessToken ở đây là dúng vì backend tạo
+                token.accessToken = user.accessToken!
                 token.provider = "credentials"
             }
 
@@ -179,6 +179,8 @@ export const authOptions: NextAuthOptions = {
                 token.birth = user.birth
                 token.image = user.avatar
                 // @ts-ignore
+                //accessToken ở đây là của accessToken, nên ta cần phải 
+                //rạch ròi giữa 2 cái (1 của app 1 của discord)
                 token.accessToken = user.backendToken!
             }
 
@@ -191,6 +193,29 @@ export const authOptions: NextAuthOptions = {
                 session.user.role = token.role as string || ""
                 session.user.username = token.username as string || ""
                 session.user.birth = token.birth as string || ""
+                session.user.displayname = token.name as string || ""
+
+                // Check if user is disabled by making backend request
+                try {
+                    const userStatusRes = await fetch(`${BACKEND_URL}/users/${session.user.id}/status`, {
+                        headers: {
+                            'Authorization': `Bearer ${token.accessToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (userStatusRes.ok) {
+                        const statusData = await userStatusRes.json();
+                        session.user.is_disabled = statusData.is_disabled;
+                        session.user.disabled_until = statusData.disabled_until;
+                        session.user.disabled_reason = statusData.disabled_reason;
+                        
+                        // If user is disabled, we could potentially end the session
+                        // But for now, we'll just add the info to session for frontend handling
+                    }
+                } catch (error) {
+                    console.error('Error checking user status:', error);
+                }
 
                 // Add Discord-specific data
                 if (token.provider === "discord") {

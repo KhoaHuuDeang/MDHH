@@ -15,24 +15,24 @@ export const useAuth = (mode: 'login' | 'register', setMode: (mode: 'login' | 'r
         try {
             if (mode === 'login') {
                 const result = await signIn('credentials', data as LoginFormData);
+                console.log("result tu frontend gui xuong", result)
                 if (result?.error) throw new Error(result.error);
                 success("Login successful");
                 router.push("/profile");
             } else {
                 const rawPayload = data as RegisterFormData
-                //loại bỏ day-month-year ra khỏi data (rest)
-                const { day, month, year, ...rest } = rawPayload
-                const birth = `${day}/${month}/${year}`
-                //loại bỏ confirmPassword ra khỏi data (result)
-                const { confirmPassword: _confirmPassword, ...result } = rest
-                //tạo formData mới bao gồm result và birth
-                const formData = { ...result, birth }
+                // eliminate confirmpassword
+                const { confirmPassword: _confirmPassword, ...result } = rawPayload
+                //tạo formData mới bao gồm result
+                const formData = { ...result }
                 await authService.register(formData)
                 success("Account created! Please sign in.");
                 setMode('login');
             }
-        } catch (err) {
-            error(err.message);
+        } catch (err: any) {
+            // Extract meaningful error message from backend response
+            const errorMessage = err.response?.data?.message || err.message || 'Đã có lỗi xảy ra';
+            error(errorMessage);
         } finally {
             setLoading(false);
         }

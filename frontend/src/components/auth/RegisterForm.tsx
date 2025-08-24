@@ -1,5 +1,4 @@
 interface RegisterSubmitData {
-  type: "register";
   email: string;
   displayname: string;
   username: string;
@@ -47,7 +46,6 @@ export default function RegisterForm({ onSubmit, isLoading, onSwitchMode }: Regi
     setErrors({});
     const birth = `${formData.day}/${formData.month}/${formData.year}`;
     onSubmit({
-      type: "register",
       email: formData.email,
       displayname: formData.displayname,
       username: formData.username,
