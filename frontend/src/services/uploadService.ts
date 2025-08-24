@@ -8,7 +8,7 @@ import {
   VisibilityType,
 } from '@/types/FileUploadInterface';
 import { UserResourcesResponse } from '@/types/uploads.types';
-import { getAuthToken } from '@/services/userService';
+import { getSession } from 'next-auth/react';
 
 
 // Backend API response types (matching uploadsService.md patterns)
@@ -104,7 +104,7 @@ class UploadService {
     options: RequestInit = {}
   ): Promise<T> {
     let lastError: Error;
-    const token = this.getToken();
+    const token = await this.getToken();
     if (!token) {
       throw new Error('Authentication token is missing');
     }
@@ -411,11 +411,12 @@ class UploadService {
   }
 
   /**
-   * Get JWT token from global authToken (set by page-level useSession)
-   * This follows the new pattern used in userService
+   * Get JWT token from NextAuth session
+   * Uses fresh session data for each request
    */
-  private getToken(): string {
-    return getAuthToken() || '';
+  private async getToken(): Promise<string> {
+    const session = await getSession();
+    return session?.accessToken || '';
   }
 }
 

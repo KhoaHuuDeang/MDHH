@@ -17,7 +17,6 @@ class SSRFetchClient {
       'Content-Type': 'application/json',
     };
   }
-
   /**
    * Get auth token from server session
    */

@@ -1,7 +1,6 @@
 import useSWR from 'swr';
 import { useSession } from 'next-auth/react';
 import { homepageService, type HomepageData, type FileData, type FolderData } from '@/services/homepageService';
-import { setAuthToken } from '@/services/userService';
 
 interface UseHomepageDataReturn {
   data: HomepageData | undefined;
@@ -22,13 +21,6 @@ const fetcher = async (): Promise<HomepageData> => {
  */
 export const useHomepageData = (): UseHomepageDataReturn => {
   const { data: session, status } = useSession();
-
-  if (session?.accessToken) {
-    setAuthToken(session.accessToken);
-  } else if (status === "unauthenticated") {
-    setAuthToken(null);
-  }
-
   // Conditional SWR key - only fetch if authenticated and has access token
   const swrKey = status === "authenticated" && session?.accessToken 
     ? 'homepage-data' 

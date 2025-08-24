@@ -319,7 +319,13 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
                                     <div className="hidden sm:flex items-center gap-2">
                                         <div className="text-left">
                                             <p className="text-sm font-semibold">{userProps.name}</p>
-                                            <p className="text-xs text-gray-300">Học viên</p>
+                                            <p className="text-xs text-gray-300">
+                                                {userProps.role === 'ADMIN' ? (
+                                                    <span className="bg-gradient-to-r from-[#386641] to-[#6A994E] text-white px-2 py-0.5 rounded-full text-xs font-semibold">
+                                                        Admin
+                                                    </span>
+                                                ) : 'Học viên'}
+                                            </p>
                                         </div>
                                         {getIcons('ChevronDown', 16, `transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180' : ''}`)}
                                     </div>
