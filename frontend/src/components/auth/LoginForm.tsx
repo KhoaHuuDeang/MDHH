@@ -1,5 +1,5 @@
 interface LoginFormProps {
-  onSubmit: (data: { type: "login"; email: string; password: string }) => void;
+  onSubmit: (data: {  email: string; password: string }) => void;
   isLoading: boolean;
   onSwitchMode?: () => void;
 }
@@ -25,7 +25,7 @@ export default function LoginForm({ onSubmit, isLoading, onSwitchMode }: LoginFo
       return;
     }
     setErrors({});
-    onSubmit({ type: "login", email: email.trim(), password: password.trim() });
+    onSubmit({  email: email.trim(), password: password.trim() });
   };
 
   return (

@@ -3,7 +3,6 @@ import { uploadService } from '@/services/uploadService';
 import { transformResourcesResponse } from '@/utils/resourceMappers';
 import { ResourceListItem } from '@/types/uploads.types';
 import useNotifications from '@/hooks/useNotifications';
-import { setAuthToken } from '@/services/userService';
 
 type FilterStatus = 'all' | 'approved' | 'pending' | 'rejected';
 
@@ -42,7 +41,6 @@ interface UseFilteredResourcesReturn {
   setCurrentPage: (page: number) => void;
   refetch: () => void;
 }
-
 const ITEMS_PER_PAGE = 10;
 const SEARCH_DEBOUNCE_MS = 500;
 
@@ -98,8 +96,6 @@ export const useFilteredResources = ({
 
     try {
       // Set auth token before making API calls to avoid race condition
-      setAuthToken(accessToken);
-      
       setIsLoading(true);
       setError(null);
       const response = await uploadService.getUserResources(
@@ -141,7 +137,6 @@ export const useFilteredResources = ({
 
     try {
       // Set auth token before making API calls to avoid race condition
-      setAuthToken(accessToken);
       // Fetch counts for all tabs in parallel
       const [allResponse, approvedResponse, pendingResponse, rejectedResponse] = await Promise.all([
         uploadService.getUserResources(1, 1, undefined, undefined),

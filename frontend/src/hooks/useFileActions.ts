@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { homepageService } from '@/services/homepageService';
-import { setAuthToken } from '@/services/userService';
 import useNotifications from './useNotifications';
 import { VoteType, VoteData } from '@/types/vote.types';
 
@@ -48,16 +47,6 @@ export const useFileActions = (): UseFileActionsReturn => {
   const [isBookmarking, setIsBookmarking] = useState(false);
   const [isViewing, setIsViewing] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
-
-  // Use useSession for authentication check and token setup
-  useEffect(() => {
-    if (session?.accessToken) {
-      setAuthToken(session.accessToken);
-    } else if (status === "unauthenticated") {
-      setAuthToken(null);
-    }
-  }, [session?.accessToken, status]);
-
   // Download file action
   const downloadFile = useCallback(async (fileId: string, fileName?: string): Promise<FileActionResult> => {
     if (!session) {

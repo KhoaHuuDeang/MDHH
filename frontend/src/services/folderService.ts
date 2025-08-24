@@ -114,11 +114,8 @@ class FolderService {
         return errors;
     }
     private async getToken(): Promise<string> {
-        if (typeof window !== 'undefined') {
             const session = await getSession();
             return session?.accessToken!;
-        }
-        return '';
     }
 }
 

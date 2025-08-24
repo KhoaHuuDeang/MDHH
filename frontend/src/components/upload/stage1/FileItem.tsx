@@ -2,7 +2,7 @@
 
 import React, { memo, useEffect, useMemo } from 'react';
 import { FileUploadInterface } from '@/types/FileUploadInterface';
-import { formatBytes } from '@/data/FileUploadMockdata';
+import { formatBytes } from '@/utils/formatBytes';
 import { getIcon } from '@/utils/getIcon';
 
 interface FileItemProps {

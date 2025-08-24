@@ -13,6 +13,38 @@ export const registerSchema = z.object({
     message: "Passwords don't match",
     path: ["confirmPassword"],
 })
+.refine((data) => {
+    // 1. Gộp lại để tạo đối tượng Date
+    const dateString = `${data.year}-${data.month.padStart(2, '0')}-${data.day.padStart(2, '0')}`;
+    const date = new Date(dateString);
+
+    // 2. Kiểm tra tính hợp lệ
+    // Kiểm tra xem các giá trị ngày, tháng, năm có khớp với đối tượng Date được tạo ra không.
+    // Nếu bạn nhập 30/02, đối tượng Date sẽ tự chuyển thành 01/03, và kiểm tra này sẽ báo lỗi.
+    if (date.getFullYear() !== Number(data.year) || date.getMonth() + 1 !== Number(data.month) || date.getDate() !== Number(data.day)) {
+        return false;
+    }
+    
+    return true;
+}, {
+    message: "Ngày sinh không hợp lệ",
+    // Gán lỗi cho cả 3 trường để frontend highlight
+    path: ["day", "month", "year"], 
+})
+// --------------------------------------------------------
+// BƯỚC 3: Biến đổi (Transform) dữ liệu cuối cùng
+.transform((data) => {
+    // Tạo chuỗi ngày tháng theo định dạng bạn cần (DD/MM/YYYY)
+    const birthDate = `${data.day}/${data.month}/${data.year}`;
+
+    // Loại bỏ các trường day, month, year và thêm trường birth mới
+    const { day, month, year, ...rest } = data;
+    
+    return {
+        ...rest,
+        birth: birthDate, // Thêm trường birth với định dạng mong muốn
+    };
+});
 export const loginSchema = z.object({
     email: z.string().min(1, "Email is required").email("Invalid email address"),
     password: z.string().min(1, "Password is required"),

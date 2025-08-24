@@ -80,10 +80,14 @@ export class AuthService {
     }
 
     async register(createUserDto: CreateUserDto) {
-        const [existingUser, RoleCheck] = await Promise.all([
+        const [existingEmail, existingUsername, RoleCheck] = await Promise.all([
             this.prisma.users.findUnique({
                 where: { email: createUserDto.email },
-                select: { id: true }
+                select: { id: true, email: true }
+            }),
+            this.prisma.users.findUnique({
+                where: { username: createUserDto.username },
+                select: { id: true, username: true }
             }),
             this.prisma.roles.findUnique({
                 where: { name: 'USER' },
@@ -91,8 +95,12 @@ export class AuthService {
             })
         ])
 
-        if (existingUser) {
-            throw new ConflictException('Email already exists');
+        // Specific field validation with clear error messages
+        if (existingEmail) {
+            throw new ConflictException('Email đã được sử dụng');
+        }
+        if (existingUsername) {
+            throw new ConflictException('Username đã được sử dụng');
         }
         if (!RoleCheck) {
             throw new InternalServerErrorException('Role not found');

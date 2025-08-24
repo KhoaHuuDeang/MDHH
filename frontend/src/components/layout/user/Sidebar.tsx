@@ -6,14 +6,6 @@ import * as LucideIcons from 'lucide-react';
 import { SidebarProfileMenuProps, SidebarMenuItems } from '@/types/user.types';
 import { LucideIcon } from 'lucide-react';
 import { signOut } from 'next-auth/react';
-// Define AdminSidebarItems
-const AdminSidebarItems = [
-  { id: 'admin-dashboard', label: 'Bảng điều khiển Quản trị', icon: 'LayoutDashboard', href: '/admin/dashboard' },
-  { id: 'admin-moderation', label: 'Kiểm soát Nội dung', icon: 'ShieldCheck', href: '/admin/moderation' },
-  { id: 'admin-users', label: 'Quản lý Người dùng', icon: 'Users', href: '/admin/users' },
-  { id: 'admin-orders', label: 'Quản lý Đơn hàng', icon: 'ShoppingCart', href: '/admin/orders' },
-];
-
 export default function Sidebar({
   navItems,
   userItems,
@@ -209,40 +201,6 @@ export default function Sidebar({
                 </li>
               ))}
             </ul>
-
-            {/* Admin Menu Items (only for admin users) */}
-            {/* {user.role === 'admin' && ( */}
-            <>
-              <div className="my-4 border-t border-[#386641]/20" /> {/* Separator */}
-              <h3
-                className={`text-sm font-semibold text-gray-300 px-4 ${isCollapsed ? 'text-center' : ''
-                  }`}
-              >
-                {!isCollapsed && ''}
-              </h3>
-              <ul className={`flex flex-col space-y-2 ${isCollapsed ? 'items-center' : ''}`}>
-                {AdminSidebarItems.map((item) => (
-                  <li key={item.id} className="relative group/menu-item">
-                    {item.href && (
-                      <Link
-                        href={item.href}
-                        className="flex items-center w-full gap-4 rounded-xl transition-all duration-300
-                            text-sm h-12 px-4 text-white font-medium tracking-wide
-                            hover:bg-gradient-to-r hover:from-[#386641]/20 hover:to-[#2d4a2d]/50
-                            hover:text-[#6A994E] hover:shadow-lg hover:shadow-[#386641]/20
-                            focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50
-                            border border-transparent hover:border-[#386641]/30
-                            group/link"
-                      >
-                        {item.icon && getIcon(item.icon, 20, 'group-hover/link:text-[#6A994E] transition-colors duration-300')}
-                        {!isCollapsed && <span>{item.label}</span>}
-                      </Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </>
-            {/* )} */}
           </nav>
 
           {/* Footer với user menu */}

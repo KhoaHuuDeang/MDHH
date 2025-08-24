@@ -14,6 +14,9 @@ declare module "next-auth" {
     backendToken?: string
     accessToken?: string
     sessionToken?: string
+    disabled_reason?: string
+    disabled_until?: Date
+    is_disabled?: boolean
   }
   interface Session {
     user: {
@@ -25,6 +28,10 @@ declare module "next-auth" {
       birth?: string
       avatar?: string
       emailVerified?: boolean
+      displayname: string
+      disabled_reason?: string
+      disabled_until?: Date
+      is_disabled?: boolean
       // Discord-specific fields
       discordId?: string
       discordGuilds?: string[]
@@ -55,5 +62,8 @@ declare module "next-auth/jwt" {
     discordGuilds?: string[]
     discordRoles?: int[]
     provider?: string
+    disabled_reason?: string 
+    disabled_until?: Date
+    is_disabled?: boolean
   }
 }
