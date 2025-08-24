@@ -1,61 +1,90 @@
-# MDHH Full-Stack Application
+# MDHH Document Management Platform
 
-> Modern web application built with Next.js frontend and NestJS backend, featuring user authentication, role-based access control, and modern UI components.
+> Enterprise-grade document management system built with modern full-stack architecture, featuring advanced file upload, role-based access control, and comprehensive document organization capabilities.
 
 ## 🏗️ **Project Architecture**
 
 ```
 MDHH/
 ├── frontend/           # Next.js 15 + React 19 + TypeScript
-├── backend/           # NestJS + Prisma + PostgreSQL
-└── package.json      # Root workspace configuration
+├── backend/            # NestJS + Prisma + PostgreSQL + AWS S3
+├── docs/               # Documentation and guidelines
+├── CLAUDE.md          # Development guidelines & patterns
+└── package.json       # Root workspace configuration
 ```
 
 ## 🚀 **Tech Stack**
 
-### **Frontend**
-- **Framework**: Next.js 15 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS v4
-- **Authentication**: NextAuth.js v4
+### **Frontend (Next.js 15)**
+- **Framework**: Next.js 15 with App Router & React Server Components
+- **Language**: TypeScript with strict type checking
+- **Styling**: Tailwind CSS v4 with custom design system
+- **Authentication**: NextAuth.js v4 (Credentials + Discord OAuth)
+- **State Management**: Zustand with performance optimizations
 - **Form Handling**: React Hook Form + Zod validation
-- **State Management**: Zustand
-- **HTTP Client**: Axios
+- **HTTP Client**: Axios with custom interceptors
+- **File Upload**: Direct S3 upload with progress tracking
 
-### **Backend**
-- **Framework**: NestJS
+### **Backend (NestJS)**
+- **Framework**: NestJS with dependency injection
 - **Database**: PostgreSQL with Prisma ORM
-- **Authentication**: JWT + Passport.js
-- **Validation**: Class Validator
-- **Documentation**: Swagger/OpenAPI
-- **Security**: bcrypt for password hashing
+- **File Storage**: AWS S3 with pre-signed URLs
+- **Authentication**: JWT + NextAuth integration
+- **Validation**: Class Validator with comprehensive DTOs
+- **Documentation**: Swagger/OpenAPI with auto-generation
+- **Security**: bcrypt, input sanitization, rate limiting
+- **Health Monitoring**: Built-in health checks and logging
 
-### **Database Schema** (Current, Code First)
-- **Users**: Email, username, displayname, password, role
-- **Roles**: Role-based access control (user, admin)
+### **Database Schema** (Enterprise-Ready)
+- **Users**: Multi-provider auth, role management, profile data
+- **Roles**: Granular permissions (USER, ADMIN)
+- **Documents**: File metadata, classification, visibility
+- **Folders**: Hierarchical organization with tags
+- **Upload Sessions**: Multi-file upload tracking
+- **Classifications**: Security levels and access control
 
-## 📦 **Features** (Current)
+## 📦 **Features**
 
-### **Authentication & Authorization**
-- ✅ User registration with email validation (@gmail.com only)
-- ✅ JWT-based authentication
-- ✅ NextAuth.js integration for session management
-- ✅ Role-based access control
+### **🔐 Authentication & Authorization**
+- ✅ Multi-provider authentication (Credentials + Discord OAuth)
+- ✅ NextAuth.js v4 with session management
+- ✅ JWT-based API authentication
+- ✅ Role-based access control (USER, ADMIN)
 - ✅ Protected routes and API endpoints
+- ✅ User disable/enable system with tracking
 
-### **User Interface**
+### **📁 Document Management**
+- ✅ Multi-file upload with drag & drop interface
+- ✅ AWS S3 integration with pre-signed URLs
+- ✅ Real-time upload progress tracking
+- ✅ Document classification and tagging system
+- ✅ Folder hierarchical organization
+- ✅ File metadata management
+- ✅ Document visibility controls (PUBLIC/PRIVATE)
+
+### **👨‍💼 Admin Management**
+- ✅ Comprehensive user management interface
+- ✅ Hybrid pagination system (offset + cursor)
+- ✅ Real-time user search and filtering
+- ✅ User disable/enable with reason tracking
+- ✅ Admin-only route protection
+- ✅ User status monitoring
+
+### **🎨 User Interface**
 - ✅ Modern, responsive design with Tailwind CSS
-- ✅ Custom color scheme (Green theme: #6A994E, #386641, #A7C957)
+- ✅ Custom design system (Green theme: #6A994E, #386641, #A7C957)
 - ✅ Loading states and error handling
 - ✅ Form validation with real-time feedback
-- ✅ Dashboard with user profile
+- ✅ Interactive upload wizard (3-step process)
+- ✅ Mobile-first responsive design
 
-### **Development Experience**
+### **⚡ Performance & Development**
+- ✅ Zustand state management with optimizations
 - ✅ TypeScript throughout the stack
-- ✅ Shared types between frontend and backend
-- ✅ ESLint configuration
+- ✅ ESLint configuration with strict rules
 - ✅ Concurrent development setup
 - ✅ API documentation with Swagger
+- ✅ Health monitoring and logging
 
 ## 🛠️ **Installation & Setup**
 
@@ -132,16 +161,6 @@ Once the backend is running, visit:
 - **Swagger UI**: http://localhost:3001/api/docs
 - **API Base URL**: http://localhost:3001
 
-### **Main Endpoints**
-```
-POST /auth/login      # User login
-POST /auth/register   # User registration
-GET  /users           # Get all users (protected)
-GET  /users/:id       # Get user by ID (protected)
-PATCH /users/:id      # Update user (protected)
-DELETE /users/:id     # Delete user (protected)
-```
-
 ## 🎨 **UI/UX Design**
 
 ### **Color Palette**
@@ -153,14 +172,17 @@ DELETE /users/:id     # Delete user (protected)
 
 ### **Key Pages**
 - `/` - Landing page with session status
-- `/auth/signin` - Login form
-- `/auth/register` - Registration form
-- `/dashboard` - Protected user dashboard
+- `/auth` - Authentication (Login/Register)
+- `/profile` - User profile management
+- `/uploads` - Document upload interface
+- `/uploads/resources` - Document library
+- `/admin/users` - Admin user management (admin only)
 
 ### **Form Validation**
-- **Email**: Must be @gmail.com format
+- **Email**: Standard email format validation
 - **Username**: 3+ characters, alphanumeric + underscore/period
 - **Password**: 6+ characters minimum
+- **Files**: PDF, DOC, DOCX support with 50MB limit
 - **Real-time validation** with Zod schema
 
 ## 🔧 **Development Scripts**
@@ -204,65 +226,47 @@ npx prisma db seed       # Run database seeding
 ```
 
 ### **Database Schema**
-```sql
--- Users table
-users {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  username    String?   
-  displayname String   
-  password    String
-  roleId      String  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
--- Roles table
-roles {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-```
+Modern PostgreSQL database with comprehensive document management schema supporting:
+- User authentication and role management
+- Document classification and organization
+- File upload session tracking
+- Hierarchical folder structure
+- Administrative user controls
 
 ## 🚦 **Project Status**
 
-### **Completed Features**
-- ✅ Full authentication system (login/register)
-- ✅ Role-based access control
-- ✅ Protected routes and API endpoints
-- ✅ Form validation with Zod
-- ✅ Modern UI with Tailwind CSS
-- ✅ Error handling and loading states
-- ✅ Swagger API documentation
-- ✅ TypeScript integration
-- ✅ Concurrent development setup
+### **Current Status**
+✅ **Production Ready Features:**
+- Multi-provider authentication system
+- Document upload and management
+- Role-based admin controls
+- User profile management
+- Responsive modern UI/UX
+- File organization with folders/tags
+- Real-time upload progress
+- Security and validation
 
-### **Known Issues**
-- Username uniqueness validation needs improvement in backend
-- Global error display could be optimized
-- Toast notifications not yet implemented
+🚧 **In Development:**
+- Performance optimizations
+- Advanced search capabilities
+- Enhanced mobile experience
+- Additional file format support
 
-### **Future Enhancements**
-- [ ] shadcn/ui component integration
-- [ ] Toast notification system
-- [ ] Password reset functionality
-- [ ] Email verification
-- [ ] User profile editing
-- [ ] Admin dashboard
-- [ ] File upload capabilities
-- [ ] Advanced search and filtering
+🔮 **Planned Features:**
+- Public document preview pages
+- Advanced analytics dashboard
+- Enhanced collaboration tools
+- API rate limiting improvements
 
 ## 🔒 **Security Features**
 
-- **Password Hashing**: bcrypt with salt rounds
-- **JWT Authentication**: Secure token-based auth
-- **CORS Configuration**: Proper cross-origin setup
-- **Input Validation**: Both client and server-side
-- **Protected Routes**: Route guards for sensitive pages
-- **Role-based Access**: Different permissions per user role
+- **Multi-layer Authentication**: NextAuth.js + JWT integration
+- **Password Security**: bcrypt hashing with salt rounds
+- **File Upload Security**: Pre-signed URLs, file type validation
+- **Input Sanitization**: Comprehensive validation on all inputs
+- **Role-based Access Control**: Granular permission system
+- **Protected Routes**: Authentication guards throughout app
+- **CORS & Headers**: Security headers and origin policies
 
 ## 🤝 **Contributing**
 
