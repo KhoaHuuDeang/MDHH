@@ -1,10 +1,15 @@
-import {  BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { UpdateUserDto,CreateUserDto } from './user.dto';
+import { UpdateUserDto, CreateUserDto } from './user.dto';
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
   async findAll() {
     return this.prisma.users.findMany({
       select: {
@@ -33,8 +38,8 @@ export class UsersService {
         username: true,
         displayname: true,
         birth: true,
-        avatar : true,
-        banner : true,
+        avatar: true,
+        banner: true,
         roles: {
           select: {
             id: true,
@@ -54,27 +59,27 @@ export class UsersService {
   async create(createUserDto: CreateUserDto) {
     // Kiểm tra email đã tồn tại
     const existingUser = await this.prisma.users.findUnique({
-      where: { email: createUserDto.email }
-    })
+      where: { email: createUserDto.email },
+    });
 
     if (existingUser) {
       throw new BadRequestException('User already exists with this email');
     }
     // Tìm role 'user' mặc định
     const defaultRole = await this.prisma.roles.findUnique({
-      where: { name: 'USER' }
+      where: { name: 'USER' },
     });
 
     if (!defaultRole) {
       throw new BadRequestException('Default user role not found');
     }
 
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10); 
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     return this.prisma.users.create({
       data: {
         ...createUserDto,
         password: hashedPassword,
-        roles: { connect: { id: defaultRole.id } }
+        roles: { connect: { id: defaultRole.id } },
       },
       select: {
         id: true,
@@ -99,27 +104,33 @@ export class UsersService {
       this.prisma.users.findUnique({
         where: { id },
         select: {
-          id: true, email: true, username: true, password: true
-        }
+          id: true,
+          email: true,
+          username: true,
+          password: true,
+        },
       }),
 
-      updateUserDto.email ? this.prisma.users.findUnique({
-        where: {
-          email: updateUserDto.email,
-          NOT: { id } // ngoại trừ người dùng hiện tại
-        },
-        select: {
-          id: true, // id của người dùng nếu tồn tại
-        }
-      }) : null, // trả về null nếu không có email bị duplicate
+      updateUserDto.email
+        ? this.prisma.users.findFirst({
+            where: {
+              email: updateUserDto.email,
+              id: { not: id }, // ngoại trừ người dùng hiện tại
+            },
+            select: {
+              id: true, // id của người dùng nếu tồn tại
+            },
+          })
+        : null, // trả về null nếu không có email bị duplicate
 
-      updateUserDto.role_id ? this.prisma.roles.findUnique({
-        where: { id: updateUserDto.role_id },
-        select: { id: true }
-      }) : null // trả về null nếu không có roleId 
-    ])
+      updateUserDto.role_id
+        ? this.prisma.roles.findUnique({
+            where: { id: updateUserDto.role_id },
+            select: { id: true },
+          })
+        : null, // trả về null nếu không có roleId
+    ]);
 
-   
     if (!existingUser) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
@@ -127,106 +138,112 @@ export class UsersService {
       throw new ConflictException('Email already exists');
     }
     if (!roleCheck && updateUserDto.role_id) {
-      throw new NotFoundException(`Role with ID ${updateUserDto.role_id} not found`);
+      throw new NotFoundException(
+        `Role with ID ${updateUserDto.role_id} not found`,
+      );
     }
-    
+
     const updateUser = await this.prisma.users.update({
       where: { id },
       data: {
         ...updateUserDto,
-        password: updateUserDto.password ? await bcrypt.hash(updateUserDto.password, 10) : existingUser.password,
+        password: updateUserDto.password
+          ? await bcrypt.hash(updateUserDto.password, 10)
+          : existingUser.password,
       },
-      include: { roles: true }
-    })
-    const { password, ...result } = updateUser;
+      include: { roles: true },
+    });
+    const { password: _password, ...result } = updateUser;
+    void _password;
     return result;
   }
 
   async getUserStats(id: string) {
     await this.findOne(id);
-    const [uploadsCount, upvotesCount, commentsCount, downloadsCount] = await Promise.all([
-      // Simplified uploads count - count resources owned by user that have completed uploads
-      this.prisma.uploads.count({
-        where: {
-          status: 'COMPLETED',
-          resources: {
-            folder_files: {
-              some: {
-                folders: {
-                  user_id: id
-                }
-              }
-            }
-          }
-        }
-      }),
-
-      // Fixed upvotes count - use new vote system (value: 1 for upvotes)
-      this.prisma.ratings.count({
-        where: {
-          value: 1, 
-          OR: [
-            // Upvotes on user's folders
-            {
-              ratings_folders: {
+    const [uploadsCount, upvotesCount, commentsCount, downloadsCount] =
+      await Promise.all([
+        // Simplified uploads count - count resources owned by user that have completed uploads
+        this.prisma.uploads.count({
+          where: {
+            status: 'COMPLETED',
+            resources: {
+              folder_files: {
                 some: {
                   folders: {
-                    user_id: id
-                  }
-                }
-              }
+                    user_id: id,
+                  },
+                },
+              },
             },
-            // Upvotes on user's resources
-            {
-              ratings_resources: {
+          },
+        }),
+
+        // Fixed upvotes count - use new vote system (value: 1 for upvotes)
+        this.prisma.ratings.count({
+          where: {
+            value: 1,
+            OR: [
+              // Upvotes on user's folders
+              {
+                ratings_folders: {
+                  some: {
+                    folders: {
+                      user_id: id,
+                    },
+                  },
+                },
+              },
+              // Upvotes on user's resources
+              {
+                ratings_resources: {
+                  some: {
+                    resources: {
+                      folder_files: {
+                        some: {
+                          folders: {
+                            user_id: id,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        }),
+
+        // Comments count
+        this.prisma.comments.count({
+          where: {
+            user_id: id,
+            is_deleted: false,
+          },
+        }),
+
+        // Downloads count - count downloads of user's resources
+        this.prisma.downloads.count({
+          where: {
+            resources: {
+              folder_files: {
                 some: {
-                  resources: {
-                    folder_files: {
-                      some: {
-                        folders: {
-                          user_id: id
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        }
-      }),
-
-      // Comments count 
-      this.prisma.comments.count({
-        where: {
-          user_id: id,
-          is_deleted: false
-        }
-      }),
-
-      // Downloads count - count downloads of user's resources
-      this.prisma.downloads.count({
-        where: {
-          resources: {
-            folder_files: {
-              some: {
-                folders: {
-                  user_id: id
-                }
-              }
-            }
-          }
-        }
-      })
-    ]);
+                  folders: {
+                    user_id: id,
+                  },
+                },
+              },
+            },
+          },
+        }),
+      ]);
     return {
       uploads: uploadsCount,
       upvotes: upvotesCount,
       comments: commentsCount,
-      downloads: downloadsCount
+      downloads: downloadsCount,
     };
   }
-  
+
   // async getUserActivities(id: string) {
   //   await this.findOne(id);
 
@@ -342,9 +359,9 @@ export class UsersService {
   // }
 
   async delete(id: string) {
-    await this.findOne(id)
+    await this.findOne(id);
     return this.prisma.users.delete({
-      where: { id }
+      where: { id },
     });
   }
 }
