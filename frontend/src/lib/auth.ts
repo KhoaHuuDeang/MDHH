@@ -79,6 +79,9 @@ export const authOptions: NextAuthOptions = {
                             birth: data.user.birth,
                             accessToken: data.accessToken,
                             sessionToken: data.sessionToken,
+                            is_disabled: data.user.is_disabled || false,
+                            disabled_until: data.user.disabled_until,
+                            disabled_reason: data.user.disabled_reason,
                         }
                     }
                     return null
@@ -145,6 +148,9 @@ export const authOptions: NextAuthOptions = {
                     user.role = data.user.role;
                     user.username = data.user.username;
                     user.birth = data.user.birth;
+                    user.is_disabled = data.user.is_disabled || false;
+                    user.disabled_until = data.user.disabled_until;
+                    user.disabled_reason = data.user.disabled_reason;
                     user.accessToken = account.access_token!;
                     user.backendToken = data.accessToken!;
                     return true;
@@ -163,6 +169,9 @@ export const authOptions: NextAuthOptions = {
                 token.role = user.role
                 token.username = user.username
                 token.birth = user.birth
+                token.is_disabled = user.is_disabled
+                token.disabled_until = user.disabled_until
+                token.disabled_reason = user.disabled_reason
                 //accessToken ở đây là dúng vì backend tạo
                 token.accessToken = user.accessToken!
                 token.provider = "credentials"
@@ -178,6 +187,9 @@ export const authOptions: NextAuthOptions = {
                 token.role = user.role
                 token.birth = user.birth
                 token.image = user.avatar
+                token.is_disabled = user.is_disabled
+                token.disabled_until = user.disabled_until
+                token.disabled_reason = user.disabled_reason
                 // @ts-ignore
                 //accessToken ở đây là của accessToken, nên ta cần phải 
                 //rạch ròi giữa 2 cái (1 của app 1 của discord)
@@ -195,7 +207,13 @@ export const authOptions: NextAuthOptions = {
                 session.user.birth = token.birth as string || ""
                 session.user.displayname = token.name as string || ""
 
-                // Check if user is disabled by making backend request
+                // Add disabled status from token (primary source)
+                session.user.is_disabled = token.is_disabled as boolean || false;
+                session.user.disabled_until = token.disabled_until as Date;
+                session.user.disabled_reason = token.disabled_reason as string;
+
+                // Optionally refresh disabled status from backend for real-time updates
+                // (This is useful if admin disables user while they're logged in)
                 try {
                     const userStatusRes = await fetch(`${BACKEND_URL}/users/${session.user.id}/status`, {
                         headers: {
@@ -206,15 +224,14 @@ export const authOptions: NextAuthOptions = {
 
                     if (userStatusRes.ok) {
                         const statusData = await userStatusRes.json();
+                        // Override with fresh backend data
                         session.user.is_disabled = statusData.is_disabled;
                         session.user.disabled_until = statusData.disabled_until;
                         session.user.disabled_reason = statusData.disabled_reason;
-                        
-                        // If user is disabled, we could potentially end the session
-                        // But for now, we'll just add the info to session for frontend handling
                     }
                 } catch (error) {
-                    console.error('Error checking user status:', error);
+                    console.error('Error refreshing user status from backend:', error);
+                    // Continue with token data if backend fails
                 }
 
                 // Add Discord-specific data

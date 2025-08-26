@@ -58,6 +58,14 @@ export class UsersController {
     return this.usersService.getUserStats(id);
   }
 
+  @Get(':id/status')
+  @ApiOperation({ summary: 'Get user account status (disabled, etc.)' })
+  @ApiResponse({ status: 200, description: 'Return user account status' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  getUserStatus(@Param('id') id: string) {
+    return this.usersService.getUserStatus(id);
+  }
+
   // @Get(':id/activities')
   // @ApiOperation({ summary: 'Get user recent activities' })
   // @ApiResponse({ status: 200, description: 'Return user activities' })
