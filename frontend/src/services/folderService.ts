@@ -1,10 +1,10 @@
 import { ClassificationLevel, Folder, Tag, CreateFolderDto } from '@/types/FolderInterface';
 import { getSession } from 'next-auth/react';
 
-interface ApiResponse<T> {
-    data: T;
-    message?: string;
-}
+// interface ApiResponse<T> {
+//     data: T;
+//     message?: string;
+// }
 
 class FolderService {
     private baseUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -115,7 +115,7 @@ class FolderService {
     }
     private async getToken(): Promise<string> {
             const session = await getSession();
-            return session?.accessToken!;
+            return session?.accessToken || '';
     }
 }
 

@@ -21,6 +21,7 @@ export const EnableUserModal: React.FC<EnableUserModalProps> = ({
     try {
       await onConfirm();
     } catch (error) {
+      console.error('Failed to enable user:', error);
       // Error handled by parent component
     } finally {
       setIsSubmitting(false);

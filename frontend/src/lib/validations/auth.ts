@@ -38,7 +38,7 @@ export const registerSchema = z.object({
     const birthDate = `${data.day}/${data.month}/${data.year}`;
 
     // Loại bỏ các trường day, month, year và thêm trường birth mới
-    const { day, month, year, ...rest } = data;
+    const { day: _day, month: _month, year: _year, ...rest } = data;
     
     return {
         ...rest,

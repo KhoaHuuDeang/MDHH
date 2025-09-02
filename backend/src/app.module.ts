@@ -11,9 +11,22 @@ import { ClassificationLevelsModule } from './level/level.module';
 import { HomepageModule } from './homepage/homepage.module';
 import { VotesModule } from './votes/votes.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, ConfigModule.forRoot(), UploadsModule, FoldersModule, TagsModule, ClassificationLevelsModule, HomepageModule, VotesModule, PrismaModule],
+  imports: [
+    AuthModule, 
+    UsersModule, 
+    ConfigModule.forRoot(), 
+    UploadsModule, 
+    FoldersModule, 
+    TagsModule, 
+    ClassificationLevelsModule, 
+    HomepageModule, 
+    VotesModule, 
+    PrismaModule,
+    HealthModule
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

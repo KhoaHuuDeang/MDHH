@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState, useMemo, useRef, useEffect } from "react";
+import React, { useCallback, useState, useMemo, useEffect } from "react";
 import { getIcon } from "@/utils/getIcon";
 import { Folder, ClassificationLevel, Tag } from "@/types/FolderInterface";
 import { FolderManagement } from "@/types/FileUploadInterface";

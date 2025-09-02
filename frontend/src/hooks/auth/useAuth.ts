@@ -22,16 +22,16 @@ export const useAuth = (mode: 'login' | 'register', setMode: (mode: 'login' | 'r
             } else {
                 const rawPayload = data as RegisterFormData
                 // eliminate confirmpassword
-                const { confirmPassword: _confirmPassword, ...result } = rawPayload
+                const { confirmPassword, ...result } = rawPayload
                 //tạo formData mới bao gồm result
                 const formData = { ...result }
                 await authService.register(formData)
                 success("Account created! Please sign in.");
                 setMode('login');
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             // Extract meaningful error message from backend response
-            const errorMessage = err.response?.data?.message || err.message || 'Đã có lỗi xảy ra';
+            const errorMessage = (err as {response?: {data?: {message?: string}}, message?: string})?.response?.data?.message || (err as {message?: string})?.message || 'Đã có lỗi xảy ra';
             error(errorMessage);
         } finally {
             setLoading(false);

@@ -26,15 +26,15 @@ function UserProfileSection({ userId }: UserProfileSectionProps) {
     // Internal handlers
     const handleEdit = useCallback((field: string) => {
         setEditingField(field);
-        setTempValues((prev) => ({ ...prev, [field]: (userData as any)?.[field] ?? "" }));
-    }, []); // 
+        setTempValues((prev) => ({ ...prev, [field]: (userData as any)?.[field] as string ?? "" }));
+    }, [userData]); // 
     const handleSave = useCallback(async (field: string) => {
         if (!userData) return;
         
         const value = tempValues[field];
         await updateProfile({ [field]: value });
         setEditingField(null);
-    }, [tempValues, updateProfile]); 
+    }, [tempValues, updateProfile, userData]); 
 
     const handleCancel = useCallback(() => {
         setEditingField(null);

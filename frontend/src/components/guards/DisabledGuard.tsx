@@ -15,13 +15,17 @@ export default function DisabledGuard({ children, redirectTo = '/auth' }: Disabl
 
   useEffect(() => {
     if (status === 'loading') return
-
-
+    
+    // If no session, user will be redirected by auth system
+    if (!session) {
+      setIsChecking(false)
+      return
+    }
 
     // Check if user is disabled
-    if (session!.user.is_disabled) {
+    if (session.user?.is_disabled) {
       const now = new Date()
-      const disabledUntil = session!.user.disabled_until ? new Date(session!.user.disabled_until) : null
+      const disabledUntil = session.user.disabled_until ? new Date(session.user.disabled_until) : null
 
       // If permanently disabled or still within disabled period
       if (!disabledUntil || now < disabledUntil) {
@@ -70,32 +74,40 @@ export default function DisabledGuard({ children, redirectTo = '/auth' }: Disabl
               </p>
               
               {session.user.disabled_reason && (
-                <div className="p-3 bg-red-50 rounded-md">
+                <div className="p-3 bg-red-50 rounded-md border border-red-200">
                   <p className="text-sm text-red-800">
-                    <strong>Lý do:</strong> {session.user.disabled_reason}
+                    <strong>Lý do khóa tài khoản:</strong> {session.user.disabled_reason}
                   </p>
                 </div>
               )}
               
               {disabledUntil && (
-                <div className="p-3 bg-yellow-50 rounded-md">
+                <div className="p-3 bg-yellow-50 rounded-md border border-yellow-200">
                   <p className="text-sm text-yellow-800">
-                    <strong>Khóa đến:</strong> {disabledUntil.toLocaleDateString('vi-VN')} lúc {disabledUntil.toLocaleTimeString('vi-VN')}
+                    <strong>Thời hạn khóa:</strong> Đến {disabledUntil.toLocaleDateString('vi-VN')} lúc {disabledUntil.toLocaleTimeString('vi-VN', { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
                   </p>
                 </div>
               )}
               
-              <div className="pt-4 space-y-2">
+              <div className="pt-4 space-y-3">
                 <button
                   onClick={() => signOut({ callbackUrl: '/auth' })}
-                  className="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                  className="w-full min-h-[44px] px-4 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 hover:shadow-lg transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500/50"
                 >
-                  Đăng xuất
+                  Đăng xuất tài khoản
                 </button>
                 
-                <p className="text-xs text-gray-500 text-center">
-                  Liên hệ admin nếu bạn cho rằng đây là lỗi
-                </p>
+                <div className="text-center space-y-1">
+                  <p className="text-xs text-gray-500">
+                    Liên hệ quản trị viên nếu bạn cho rằng đây là lỗi
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Email: support@mdhh.vn | Discord: MDHH Community
+                  </p>
+                </div>
               </div>
             </div>
           </div>

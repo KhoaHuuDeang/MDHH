@@ -11,13 +11,13 @@ import FileMetadataCard from './sub-components/FileMetadataEditor/FileMetadataCa
 import ProgressSummary from '@/components/layout/ProgressSummary';
 
 // Constants for Stage 2 per-file categorization
-const DOCUMENT_CATEGORIES = [
-  { value: DocumentCategory.LECTURE, label: '📚 Lecture', icon: 'BookOpen' },
-  { value: DocumentCategory.EXAM, label: '📋 Exam', icon: 'FileText' },
-  { value: DocumentCategory.EXERCISE, label: '📝 Exercise', icon: 'PenTool' },
-  { value: DocumentCategory.REFERENCE, label: '📖 Reference', icon: 'Book' },
-  { value: DocumentCategory.OTHER, label: '📄 Other', icon: 'File' },
-] as const;
+// const DOCUMENT_CATEGORIES = [
+//   { value: DocumentCategory.LECTURE, label: '📚 Lecture', icon: 'BookOpen' },
+//   { value: DocumentCategory.EXAM, label: '📋 Exam', icon: 'FileText' },
+//   { value: DocumentCategory.EXERCISE, label: '📝 Exercise', icon: 'PenTool' },
+//   { value: DocumentCategory.REFERENCE, label: '📖 Reference', icon: 'Book' },
+//   { value: DocumentCategory.OTHER, label: '📄 Other', icon: 'File' },
+// ] as const;
 
 const DEFAULT_METADATA: FileMetadata = {
   title: '',

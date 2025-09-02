@@ -103,7 +103,8 @@ function MetadataPage() {
     try {
       await submitUpload();
       router.push("/uploads/success");
-    } catch (e) {
+    } catch {
+      console.error('Upload failed');
       setValidationErrors("submit", ["Failed to complete upload. Please try again."]);
     }
   }, [validationState, submitUpload, router, setValidationErrors]);
