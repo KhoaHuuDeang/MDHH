@@ -27,7 +27,7 @@ COPY . .
 
 # Set environment for build
 ENV NEXT_TELEMETRY_DISABLED 1
-ENV NODE_ENV production
+ENV NODE_ENV development
 
 # Build Next.js application with standalone output
 RUN npm run build
@@ -44,7 +44,7 @@ RUN adduser --system --uid 1001 nextjs
 WORKDIR /app
 
 # Set environment variables
-ENV NODE_ENV=production
+ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 

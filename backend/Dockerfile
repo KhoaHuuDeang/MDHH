@@ -57,7 +57,7 @@ COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/prisma ./prisma
 
 # Set environment variables
-ENV NODE_ENV=production
+ENV NODE_ENV=development
 ENV PORT=3001
 
 # Expose port
@@ -68,7 +68,7 @@ USER nestjs
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3001/health || exit 1
+  CMD wget --quiet --tries=1 --spider http://localhost:3001/health || exit 1
 
 # Start application with dumb-init
 ENTRYPOINT ["dumb-init", "--"]

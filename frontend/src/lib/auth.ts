@@ -2,7 +2,7 @@ import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import DiscordProvider from "next-auth/providers/discord"
 
-const BACKEND_URL = process.env.NEXTAUTH_BACKEND_URL
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL!
 
 // Helper function to map Discord roles to app roles
 // function mapDiscordRolesToAppRole(discordRoles: string[]): string {
