@@ -12,7 +12,7 @@ import Image from "next/image";
 // ------------------------------------
 export default function AuthPage() {
   const [mode, setMode] = useState<"login" | "register">("login");
-  const { isLoading, setLoading } = useLoadingStore();
+  const { isLoading } = useLoadingStore();
   const { handleAuth } = useAuth(mode, setMode);
 
   const isLogin = mode === "login";

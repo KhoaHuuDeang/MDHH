@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import * as lucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 import { useClassificationLevels, useTagsByLevel } from '@/hooks/useClassificationData';
-import { ClassificationLevel, TagsByLevel } from '@/types/classification.types';
 
 const getIcons = (iconName: string, size: number, className?: string) => {
   const IconComponent = lucideIcons[iconName as keyof typeof lucideIcons] as LucideIcon;
@@ -331,4 +330,3 @@ const CategoryFilter: React.FC<CategoryFilterProps> = React.memo(({
 CategoryFilter.displayName = 'CategoryFilter';
 
 export default CategoryFilter;
-export type { FilterChangeParams };

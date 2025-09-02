@@ -332,7 +332,7 @@ export default function MDHHLandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {popularDocuments
               .filter(doc => activeCategory === 'all' || doc.category.toLowerCase().includes(activeCategory))
-              .map((doc, index) => (
+              .map((doc) => (
                 <div
                   key={doc.id}
                   className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden"
@@ -524,20 +524,22 @@ export default function MDHHLandingPage() {
               >
                 {/* Quote Icon */}
                 <div className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-to-r from-[#386641] to-[#6A994E] rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <span className="text-white text-2xl font-serif">"</span>
+                  <span className="text-white text-2xl font-serif">&quot;</span>
                 </div>
 
                 {/* Content */}
                 <div className="relative">
                   {/* Stars */}
                   <div className="flex mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      getIcon('Star', 20, 'text-yellow-400 fill-current mr-1')
+                    {[...Array(testimonial.rating)].map((_, starIndex) => (
+                      <div key={starIndex}>
+                        {getIcon('Star', 20, 'text-yellow-400 fill-current mr-1')}
+                      </div>
                     ))}
                   </div>
 
                   <p className="text-gray-600 mb-6 italic leading-relaxed text-sm sm:text-base">
-                    "{testimonial.content}"
+                    &quot;{testimonial.content}&quot;
                   </p>
 
                   {/* Author */}

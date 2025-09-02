@@ -3,7 +3,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import * as lucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
-import { FolderData } from '@/hooks/useHomepageData';
+import { FolderData } from '@/services/homepageService';
 import useFileActions from '@/hooks/useFileActions';
 
 const getIcons = (iconName: string, size: number, className?: string) => {

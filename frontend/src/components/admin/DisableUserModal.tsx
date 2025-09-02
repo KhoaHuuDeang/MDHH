@@ -32,6 +32,7 @@ export const DisableUserModal: React.FC<DisableUserModalProps> = ({
       setReason('');
       setDisableUntil('');
     } catch (error) {
+      console.error('Failed to disable user:', error);
       // Error handled by parent component
     } finally {
       setIsSubmitting(false);

@@ -178,9 +178,18 @@ export const useSearchSuggestions = (query: string) => {
     return `${process.env.NEXT_PUBLIC_API_URL}/files/suggestions?q=${encodeURIComponent(debouncedQuery.trim())}`;
   }, [debouncedQuery]);
 
+  // Create a separate fetcher for suggestions
+  const suggestionsFetcher = async (url: string): Promise<string[]> => {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('Failed to fetch suggestions');
+    }
+    return response.json();
+  };
+
   const { data: suggestions, isLoading: isLoadingSuggestions } = useSWR<string[]>(
     suggestionsUrl,
-    searchFetcher,
+    suggestionsFetcher,
     {
       dedupingInterval: 500,
       revalidateOnFocus: false,

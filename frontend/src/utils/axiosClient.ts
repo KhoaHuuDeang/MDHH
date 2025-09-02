@@ -46,7 +46,6 @@ class CSRAxiosClient {
       (error) => {
         if (error.response?.status === 401) {
           // window.location.href = '/auth';  // ← Commented for debugging
-          console.error('401 from axiosClient:', error.config.url);
         }
         return Promise.reject(error);
       }

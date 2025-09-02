@@ -38,6 +38,7 @@ function AdminUsersTable({
       setShowDisableModal(false);
       setSelectedUser(null);
     } catch (error) {
+      console.error('Failed to disable user:', error);
       // Error handling is done in the hook
     }
   };
@@ -50,6 +51,7 @@ function AdminUsersTable({
       setShowEnableModal(false);
       setSelectedUser(null);
     } catch (error) {
+      console.error('Failed to enable user:', error);
       // Error handling is done in the hook
     }
   };

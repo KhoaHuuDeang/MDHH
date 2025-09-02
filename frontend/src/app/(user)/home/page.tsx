@@ -99,7 +99,7 @@ export default function HomePage() {
 
   // Hooks for data fetching (now handles auth internally)
   const { data: homepageData, isLoading, error } = useHomepageData();
-  const { query, setQuery } = useFileSearch();
+  const { setQuery } = useFileSearch();
 
   // Auth check - redirect if not authenticated
   useEffect(() => {
@@ -114,9 +114,6 @@ export default function HomePage() {
     console.log("Searching for:", searchQuery);
   }, [setQuery]);
 
-  const handleCategoryChange = useCallback((category: string) => {
-    console.log("Category changed to:", category);
-  }, []);
 
   const handleFileView = useCallback((fileId: string) => {
     console.log("Viewing file:", fileId);
@@ -160,7 +157,7 @@ export default function HomePage() {
       <div className='min-h-screen bg-gray-50 flex items-center justify-center'>
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Oops! Something went wrong</h2>
-          <p className="text-gray-600 mb-6">We couldn't load the homepage data. Please try refreshing the page.</p>
+          <p className="text-gray-600 mb-6">We couldn&apos;t load the homepage data. Please try refreshing the page.</p>
           <button
             onClick={() => window.location.reload()}
             className="bg-[#386641] text-white px-6 py-3 rounded-lg hover:bg-[#2d4f31] transition-colors"

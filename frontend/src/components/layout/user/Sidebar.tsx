@@ -34,7 +34,7 @@ export default function Sidebar({
   };
 
   // Hàm xử lý các hành động như mở tìm kiếm hoặc tạo mục mới
-  const handleAction = async (action: string, item: string) => {
+  const handleAction = async (action: string) => {
     switch (action) {
       case '/signout':
         await handleSignOut();
@@ -93,7 +93,7 @@ export default function Sidebar({
             {/* Search Button */}
             <div className="px-1">
               <button
-                onClick={() => handleAction('open-search', 'Search')}
+                onClick={() => handleAction('open-search')}
                 className="flex items-center w-full gap-3 text-left outline-none transition-all duration-300
                   text-sm py-3 px-4 rounded-xl
                   bg-gradient-to-r from-[#2d4a2d] to-[#1a3a1a]
@@ -162,7 +162,7 @@ export default function Sidebar({
                   {!isCollapsed && item.action && (
                     <span className="absolute top-1/2 right-3 -translate-y-1/2 opacity-0 group-hover/menu-item:opacity-100 transition-all duration-300">
                       <button
-                        onClick={() => handleAction(item.action ?? '?', item.label)}
+                        onClick={() => handleAction(item.action ?? '?')}
                         className="h-7 w-7 flex items-center justify-center rounded-lg transition-all duration-300
                           hover:bg-[#386641] hover:text-white text-[#6A994E]
                           hover:shadow-lg hover:shadow-[#386641]/50 hover:scale-110
@@ -260,7 +260,7 @@ export default function Sidebar({
                                 border border-transparent hover:border-[#386641]/30 cursor-pointer
                                 ${isSigningOut && item.id === 'signout' ? 'opacity-50 cursor-not-allowed' : ''}
                                 ${item.id === 'signout' ? 'hover:bg-red-500/20 hover:text-red-400' : ''}`}
-                              onClick={() => item.action && handleAction(item.action, item.label)}
+                              onClick={() => item.action && handleAction(item.action)}
                             >
                               {isSigningOut && item.id === 'signout' ?
                                 (<div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />)

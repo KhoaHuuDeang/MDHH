@@ -19,6 +19,7 @@ export interface SidebarFooterProps{
     name: string;
     email: string;
     avatar? : string;
+    role?: string;
 }
 
 export interface SidebarProfileMenuProps {

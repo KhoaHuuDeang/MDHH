@@ -4,7 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { getIcon } from '@/utils/getIcon';
 import { useFilteredResources } from '@/hooks/useFilteredResources';
-import { ResourceListItem } from '@/types/uploads.types';
+// import { ResourceListItem } from '@/types/uploads.types';
 
 interface ResourcesListSectionProps {
   userId: string;

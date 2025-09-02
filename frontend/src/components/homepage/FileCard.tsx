@@ -1,12 +1,10 @@
 'use client';
 
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import Image from 'next/image';
 import * as lucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 import { getMimeTypeIcon, getFileTypeDescription } from '@/utils/mimeTypeIcons';
-import { FileData } from '@/hooks/useHomepageData';
-import { FileWithFolder } from '@/services/homepageService';
+import { FileData } from '@/services/homepageService';
 import useFileActions from '@/hooks/useFileActions';
 import { VoteData } from '@/types/vote.types';
 
@@ -16,7 +14,7 @@ const getIcons = (iconName: string, size: number, className?: string) => {
 };
 
 interface FileCardProps {
-  file: FileData | FileWithFolder;
+  file: FileData;
   onView?: (fileId: string) => void;
   showThumbnail?: boolean;
   className?: string;
@@ -262,7 +260,8 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  handleUpvote(e);
+                  // Create a synthetic mouse event for keyboard interaction
+                  handleUpvote(e as unknown as React.MouseEvent);
                 }
               }}
             >
@@ -287,7 +286,8 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  handleDownvote(e);
+                  // Create a synthetic mouse event for keyboard interaction
+                  handleDownvote(e as unknown as React.MouseEvent);
                 }
               }}
             >

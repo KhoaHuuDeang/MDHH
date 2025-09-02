@@ -1,5 +1,5 @@
 import apiClient from './userService';
-import { VoteType, VoteData, VoteResult, VoteRequest, BulkVoteData } from '@/types/vote.types';
+import { VoteType, VoteData, VoteResult, BulkVoteData } from '@/types/vote.types';
 
 export interface FileData {
   id: string;
@@ -10,6 +10,7 @@ export interface FileData {
   createdAt: string;
   fileType: string;
   downloadCount: number;
+  folderName?: string;
 }
 
 export interface FolderData {

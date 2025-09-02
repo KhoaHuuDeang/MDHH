@@ -190,7 +190,6 @@ export const authOptions: NextAuthOptions = {
                 token.is_disabled = user.is_disabled
                 token.disabled_until = user.disabled_until
                 token.disabled_reason = user.disabled_reason
-                // @ts-ignore
                 //accessToken ở đây là của accessToken, nên ta cần phải 
                 //rạch ròi giữa 2 cái (1 của app 1 của discord)
                 token.accessToken = user.backendToken!
@@ -237,8 +236,8 @@ export const authOptions: NextAuthOptions = {
                 // Add Discord-specific data
                 if (token.provider === "discord") {
                     session.user.discordId = token.discordId as string
-                    session.user.discordGuilds = token.discordGuilds as any[]
-                    session.user.discordRoles = token.discordRoles as string[]
+                    session.user.discordGuilds = (token.discordGuilds as unknown[])?.map(guild => String(guild)) ?? []
+                    session.user.discordRoles = (token.discordRoles as unknown[])?.map(role => String(role)) ?? []
                     session.user.provider = "discord"
                     session.user.avatar = token.image as string
                 } else {
