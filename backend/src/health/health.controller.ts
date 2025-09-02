@@ -27,55 +27,17 @@ export class HealthController {
   }
 
   @Get('detailed')
-  @ApiOperation({ summary: 'Detailed health check with dependencies' })
+  @ApiOperation({ summary: 'Detailed health check' })
   @ApiResponse({ 
     status: 200, 
-    description: 'Detailed health status including dependencies',
+    description: 'Basic health status (same as /health for simplicity)',
     schema: {
       type: 'object',
       properties: {
         status: { type: 'string', example: 'ok' },
-        timestamp: { type: 'string' },
-        uptime: { type: 'number' },
-        version: { type: 'string' },
-        dependencies: {
-          type: 'object',
-          properties: {
-            database: {
-              type: 'object',
-              properties: {
-                status: { type: 'string', example: 'ok' },
-                responseTime: { type: 'number', example: 15.5 }
-              }
-            },
-            storage: {
-              type: 'object',
-              properties: {
-                status: { type: 'string', example: 'ok' },
-                region: { type: 'string', example: 'ap-southeast-1' }
-              }
-            }
-          }
-        },
-        system: {
-          type: 'object',
-          properties: {
-            memory: {
-              type: 'object',
-              properties: {
-                used: { type: 'number' },
-                total: { type: 'number' },
-                percentage: { type: 'number' }
-              }
-            },
-            cpu: {
-              type: 'object',
-              properties: {
-                usage: { type: 'number' }
-              }
-            }
-          }
-        }
+        timestamp: { type: 'string', example: '2024-01-01T00:00:00.000Z' },
+        uptime: { type: 'number', example: 12345.67 },
+        service: { type: 'string', example: 'mdhh-backend' }
       }
     }
   })
