@@ -47,7 +47,7 @@ COPY --from=deps /app/package*.json ./
 
 # Copy build output + prisma schema
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Environment
 ENV NODE_ENV=development 
