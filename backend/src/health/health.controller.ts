@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, HttpException, HttpStatus } from '@nestjs/common';
 import { HealthService } from './health.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
@@ -58,7 +58,11 @@ export class HealthController {
     description: 'Application is not ready'
   })
   async readiness() {
-    return this.healthService.readiness();
+    try {
+      return await this.healthService.readiness();
+    } catch (error) {
+      throw new HttpException('Service not ready', HttpStatus.SERVICE_UNAVAILABLE);
+    }
   }
 
   @Get('live')
@@ -72,6 +76,10 @@ export class HealthController {
     description: 'Application is not responding'
   })
   async liveness() {
-    return this.healthService.liveness();
+    try {
+      return await this.healthService.liveness();
+    } catch (error) {
+      throw new HttpException('Service not responding', HttpStatus.SERVICE_UNAVAILABLE);
+    }
   }
 }

@@ -21,10 +21,22 @@ export class HealthService {
   }
 
   async readiness() {
-    return { status: 'ready' };
+    try {
+      // Check if application is ready to serve traffic
+      // Could check database connection, external services, etc.
+      return { status: 'ready', timestamp: new Date().toISOString() };
+    } catch (error) {
+      throw new Error('Service not ready');
+    }
   }
 
   async liveness() {
-    return { status: 'alive' };
+    try {
+      // Check if application is alive
+      // Basic health indicators
+      return { status: 'alive', timestamp: new Date().toISOString() };
+    } catch (error) {
+      throw new Error('Service not responding');
+    }
   }
 }
