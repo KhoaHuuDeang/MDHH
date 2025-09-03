@@ -49,15 +49,14 @@ COPY --from=deps /app/package*.json ./
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Environment
-ENV NODE_ENV=production 
+# Environment - Let Render set NODE_ENV automatically 
 
 EXPOSE 10000
 USER nestjs
 
-# Healthcheck (optional)
-HEALTHCHECK --interval=10s  --timeout=2s --start-period=3s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:${PORT}/health || exit 1
+# Healthcheck - Use PORT with fallback to 10000
+HEALTHCHECK --interval=10s --timeout=2s --start-period=3s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:${PORT:-10000}/health || exit 1
 
 # Start
 ENTRYPOINT ["dumb-init", "--"]
