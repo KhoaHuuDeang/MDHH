@@ -57,7 +57,7 @@ USER nestjs
 
 # Healthcheck (optional)
 HEALTHCHECK --interval=10s  --timeout=2s --start-period=3s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:${PORT || 3001}/health || exit 1
+  CMD wget --quiet --tries=1 --spider http://localhost:${PORT:-3001}/health || exit 1
 
 # Start
 ENTRYPOINT ["dumb-init", "--"]
