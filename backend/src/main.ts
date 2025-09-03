@@ -4,13 +4,19 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
+
+  console.log('🚀 Starting MDHH Backend...');
+  console.log('📍 NODE_ENV:', process.env.NODE_ENV);
+  console.log('📍 PORT:', process.env.PORT);
+  console.log('📍 DATABASE_URL:', process.env.DATABASE_URL ? '✅ Set' :
+    '❌ Missing');
+  console.log('📍 FRONTEND_URL:', process.env.FRONTEND_URL);
   const app = await NestFactory.create(AppModule);
-  
   // Enable CORS for frontend - environment based
-  const allowedOrigins = process.env.NODE_ENV === 'production' 
+  const allowedOrigins = process.env.NODE_ENV === 'production'
     ? [process.env.FRONTEND_URL]
     : ['http://localhost:3000'];
-  
+  console.log('📍 CORS Origins:', allowedOrigins);
   app.enableCors({
     origin: allowedOrigins,
     credentials: true,
@@ -31,12 +37,13 @@ async function bootstrap() {
     .setVersion('1.0')
     .addBearerAuth()
     .build();
-  
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  await app.listen(process.env.PORT!);
-  console.log(`🚀 Server running on http://localhost:${process.env.PORT || 3001}`);
-  console.log(`📚 API Docs: http://localhost:${process.env.PORT || 3001}/api/docs`);
+  const port = process.env.PORT || 3001;
+  await app.listen(port);
+  console.log(`🚀 Server running on http://localhost:${port}`);
+  console.log(`📚 API Docs: http://localhost:${port}/api/docs`);
 }
 bootstrap();
