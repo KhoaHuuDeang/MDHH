@@ -50,7 +50,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 
 # Environment
-ENV NODE_ENV=production
+ENV NODE_ENV=development 
 ENV PORT=3001
 
 EXPOSE 3001
@@ -62,4 +62,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Start
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+
