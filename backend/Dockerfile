@@ -51,13 +51,12 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Environment
 ENV NODE_ENV=development 
-ENV PORT=3001
 
 EXPOSE 3001
 USER nestjs
 
 # Healthcheck (optional)
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=10s  --timeout=2s --start-period=3s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://localhost:3001/health || exit 1
 
 # Start
