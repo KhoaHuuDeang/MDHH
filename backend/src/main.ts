@@ -19,14 +19,26 @@ async function bootstrap() {
 
   console.log('📍 CORS Origins:', allowedOrigins);
 
+  // Add request logging middleware BEFORE CORS
+  app.use((req, res, next) => {
+    console.log(`🌐 ${req.method} ${req.path} - Origin: ${req.headers.origin || 'NO_ORIGIN'} - User-Agent: ${req.headers['user-agent'] || 'NO_UA'}`);
+    next();
+  });
+
   app.enableCors({
     origin: (origin, callback) => {
+      console.log('🔍 CORS Check - Origin:', origin || 'NO_ORIGIN');
       // Allow requests with no origin (health checks, curl, etc.)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
+      if (!origin) {
+        console.log('✅ CORS: Allowing request with no origin');
         return callback(null, true);
       }
+
+      if (allowedOrigins.includes(origin)) {
+        console.log('✅ CORS: Allowing whitelisted origin:', origin);
+        return callback(null, true);
+      }
+      console.log('❌ CORS: Blocking origin:', origin);
       callback(new Error('Not allowed by CORS'));
     },
     credentials: true,

@@ -25,6 +25,7 @@ export class HealthController {
     }
   })
   async check() {
+    console.log('🩺 Health Controller: /health called');
     return this.healthService.check();
   }
 

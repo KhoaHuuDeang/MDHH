@@ -51,6 +51,9 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Environment - Let Render set NODE_ENV automatically 
 
+# Expose port dynamically (Render sets PORT env var)
+EXPOSE $PORT
+# Fallback expose for local development  
 EXPOSE 10000
 USER nestjs
 
