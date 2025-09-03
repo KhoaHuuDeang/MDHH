@@ -50,7 +50,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Environment
-ENV NODE_ENV=development 
+ENV NODE_ENV=production 
 
 EXPOSE 3001
 USER nestjs
