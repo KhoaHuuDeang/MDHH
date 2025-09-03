@@ -62,4 +62,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Start
 ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "dist/main"]
 
