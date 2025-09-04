@@ -12,16 +12,20 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
-  // CORS configuration - Allow both custom domain and Vercel-generated URLs
-  const allowedOrigins = process.env.NODE_ENV === 'production'
-    ? [
-      process.env.FRONTEND_URL,
-      'https://mdhh-iwdk0o3sa-dkerens-projects.vercel.app', // Vercel generated URL
-      'https://mdhh.vercel.app' // Custom domain
-    ].filter(Boolean) // Remove any undefined values
-    : ['http://localhost:3000',
-      'https://mdhh-iwdk0o3sa-dkerens-projects.vercel.app'
-    ];
+  // CORS configuration based on NODE_ENV
+  let allowedOrigins;
+  switch (process.env.NODE_ENV) {
+    case 'production':
+      allowedOrigins = ['https://mdhh.vercel.app'];
+      break;
+    case 'preview':
+    case 'development':
+      allowedOrigins = ['https://mdhh-iwdk0o3sa-dkerens-projects.vercel.app'];
+      break;
+    default:
+      allowedOrigins = ['http://localhost:3000'];
+      break;
+  }
 
   console.log('📍 CORS Origins:', allowedOrigins);
 
