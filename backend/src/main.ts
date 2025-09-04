@@ -16,7 +16,10 @@ async function bootstrap() {
   let allowedOrigins;
   switch (process.env.NODE_ENV) {
     case 'production':
-      allowedOrigins = ['https://mdhh.vercel.app'];
+      allowedOrigins = ['https://mdhh.vercel.app',
+        'https://mdhh-iwdk0o3sa-dkerens-projects.vercel.app', // Main project URL
+        'https://mdhh-git-develope-dkerens-projects.vercel.app' // Branch-specific URL
+      ];
       break;
     case 'preview':
     case 'development':
