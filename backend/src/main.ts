@@ -20,7 +20,10 @@ async function bootstrap() {
       break;
     case 'preview':
     case 'development':
-      allowedOrigins = ['https://mdhh-iwdk0o3sa-dkerens-projects.vercel.app'];
+      allowedOrigins = [
+        'https://mdhh-iwdk0o3sa-dkerens-projects.vercel.app', // Main project URL
+        'https://mdhh-git-develope-dkerens-projects.vercel.app' // Branch-specific URL
+      ];
       break;
     default:
       allowedOrigins = ['http://localhost:3000'];
