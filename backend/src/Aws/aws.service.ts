@@ -123,7 +123,6 @@ export class S3Service {
             Bucket: this.bucketName,
             Key: s3Key,
             ContentType: mimetype,
-            ACL: 'private',
         });
         try {
             const url = await getSignedUrl(this.s3, command, { expiresIn: 3600 }); // 1 hour

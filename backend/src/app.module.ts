@@ -14,20 +14,29 @@ import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
 
 @Module({
+
+
   imports: [
-    AuthModule, 
-    UsersModule, 
-    ConfigModule.forRoot(), 
-    UploadsModule, 
-    FoldersModule, 
-    TagsModule, 
-    ClassificationLevelsModule, 
-    HomepageModule, 
-    VotesModule, 
+    //------ config for env ------
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: `.env.${process.env.NODE_ENV|| "local"}`
+    }),
+    //------ module inject ------
+    AuthModule,
+    UsersModule,
+    UploadsModule,
+    FoldersModule,
+    TagsModule,
+    ClassificationLevelsModule,
+    HomepageModule,
+    VotesModule,
     PrismaModule,
     HealthModule
   ],
   controllers: [AppController],
   providers: [AppService],
-})
-export class AppModule {}
+
+},
+)
+export class AppModule { }

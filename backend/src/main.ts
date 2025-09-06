@@ -8,25 +8,16 @@ async function bootstrap() {
   console.log('📍 NODE_ENV:', process.env.NODE_ENV);
   console.log('📍 PORT:', process.env.PORT);
   console.log('📍 DATABASE_URL:', process.env.DATABASE_URL ? '✅ Set' : '❌ Missing');
-  console.log('📍 FRONTEND_URL:', process.env.FRONTEND_URL);
+  console.log('📍 FRONTEND_URL:', process.env.NEXTAUTH_URL);
 
   const app = await NestFactory.create(AppModule);
 
   // CORS configuration based on NODE_ENV
   let allowedOrigins;
   switch (process.env.NODE_ENV) {
-    case 'production':
-      allowedOrigins = ['https://mdhh.vercel.app',
-        'https://mdhh-iwdk0o3sa-dkerens-projects.vercel.app', // Main project URL
-        'https://mdhh-git-develope-dkerens-projects.vercel.app' // Branch-specific URL
-      ];
-      break;
     case 'preview':
-    case 'development':
-      allowedOrigins = [
-        'https://mdhh-iwdk0o3sa-dkerens-projects.vercel.app', // Main project URL
-        'https://mdhh-git-develope-dkerens-projects.vercel.app' // Branch-specific URL
-      ];
+    case 'production':
+      allowedOrigins = [/\.vercel\.app$/]
       break;
     default:
       allowedOrigins = ['http://localhost:3000'];

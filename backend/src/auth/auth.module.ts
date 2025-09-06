@@ -15,7 +15,7 @@ import { UsersService } from 'src/users/users.service';
     ConfigModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '7d' },
+      signOptions: { expiresIn: process.env.NEXTAUTH_EXPIRES_IN },
     }),
   ],  controllers: [AuthController, NextAuthController],
   providers: [AuthService, SessionService, DiscordService, JwtStrategy, UsersService],
