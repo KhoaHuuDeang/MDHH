@@ -15,7 +15,7 @@ async function bootstrap() {
   let allowedOrigins;
   switch (process.env.NODE_ENV) {
     case 'production':
-      allowedOrigins = ["https://mdhh-git-develope-dkerens-projects.vercel.app","https://mdhh.vercel.app"]
+      allowedOrigins = ["https://mdhh-git-develope-dkerens-projects.vercel.app", "https://mdhh.vercel.app"]
       break;
     default:
       allowedOrigins = ['http://localhost:3000'];
@@ -24,36 +24,23 @@ async function bootstrap() {
 
   console.log('📍 CORS Origins:', allowedOrigins);
 
-  // Add request logging middleware BEFORE CORS
-  app.use((req, res, next) => {
-    console.log(`🌐 ${req.method} ${req.path} - Origin: ${req.headers.origin || 'NO_ORIGIN'} - User-Agent: ${req.headers['user-agent'] || 'NO_UA'}`);
-    next();
-  });
-
   app.enableCors({
     origin: (origin, callback) => {
       console.log('🔍 CORS Check - Origin:', origin || 'NO_ORIGIN');
-      // Allow requests with no origin (health checks, curl, etc.)
+
+      // Healthcheck, curl, Postman (no origin)
       if (!origin) {
         console.log('✅ CORS: Allowing request with no origin');
         return callback(null, true);
       }
 
-      // Check if origin is allowed (handle both string and regex patterns)
-      const isAllowed = allowedOrigins.some(allowed => {
-        if (typeof allowed === 'string') {
-          return allowed === origin;
-        }
-        // Handle regex patterns
-        return allowed.test && allowed.test(origin);
-      });
-
-      if (isAllowed) {
-        console.log('✅ CORS: Allowing whitelisted origin:', origin);
+      if (allowedOrigins.includes(origin)) {
+        console.log('✅ CORS: Allowed origin', origin);
         return callback(null, true);
       }
-      console.log('❌ CORS: Blocking origin:', origin);
-      callback(new Error('Not allowed by CORS'));
+
+      console.log('❌ CORS: Blocked origin', origin);
+      return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
   });
