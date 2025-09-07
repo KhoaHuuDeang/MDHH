@@ -15,7 +15,7 @@ async function bootstrap() {
   let allowedOrigins;
   switch (process.env.NODE_ENV) {
     case 'production':
-      allowedOrigins = [/\.vercel\.app$/]
+      allowedOrigins = ["https://mdhh-git-develope-dkerens-projects.vercel.app","https://mdhh.vercel.app"]
       break;
     default:
       allowedOrigins = ['http://localhost:3000'];
