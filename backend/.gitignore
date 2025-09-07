@@ -15,11 +15,10 @@ coverage/
 *.coverage
 
 node_modules
-.env
+.env.*
 /generated/prisma
 dist 
 dist/ 
-package-lock.json
 
 # Source maps
 *.map

@@ -1,75 +1,67 @@
-# Backend Dockerfile - Multi-stage build for NestJS + Prisma
-FROM node:18-alpine AS dependencies
+# Backend Dockerfile - Optimized Multi-stage build for NestJS + Prisma
 
-# Install system dependencies for Prisma
+# --------------------------
+# Base image for deps
+# --------------------------
+FROM node:18-alpine AS base
 RUN apk add --no-cache openssl libc6-compat
-
 WORKDIR /app
 
-# Copy package files
+# --------------------------
+# Dependencies (only once)
+# --------------------------
+FROM base AS deps
+# Copy only package files for cache
 COPY package*.json ./
-COPY prisma/schema.prisma ./prisma/
-
-# Install dependencies
-RUN npm ci --only=production --frozen-lockfile
-
-# Generate Prisma Client
-RUN npx prisma generate
-
-# Build stage
-FROM node:18-alpine AS builder
-
-RUN apk add --no-cache openssl libc6-compat
-
-WORKDIR /app
-
-# Copy package files and install all dependencies (including dev)
-COPY package*.json ./
+# Install all deps (prod+dev) for build
 RUN npm ci --frozen-lockfile
 
-# Copy source code and prisma schema
+# --------------------------
+# Builder
+# --------------------------
+FROM deps AS builder
+# Copy source code
 COPY . .
-COPY prisma/ ./prisma/
-
-# Generate Prisma Client
+# Generate Prisma client
 RUN npx prisma generate
-
-# Build the application
+# Build the app
 RUN npm run build
 
-# Production stage
-FROM node:18-alpine AS runner
+# --------------------------
+# Production
+# --------------------------
+FROM base AS runner
 
-RUN apk add --no-cache openssl libc6-compat dumb-init
+# Add dumb-init to handle signals properly
+RUN apk add --no-cache dumb-init
 
-# Create app user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nestjs
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nestjs
 
 WORKDIR /app
 
-# Copy production dependencies
-COPY --from=dependencies --chown=nestjs:nodejs /app/node_modules ./node_modules
-COPY --from=dependencies --chown=nestjs:nodejs /app/package*.json ./
+# Copy only production deps
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package*.json ./
 
-# Copy built application and prisma files
-COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
-COPY --from=builder --chown=nestjs:nodejs /app/prisma ./prisma
+# Copy build output + prisma schema
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Set environment variables
-ENV NODE_ENV=development
-ENV PORT=3001
+# Environment - Let Render set NODE_ENV automatically 
 
-# Expose port
-EXPOSE 3001
-
-# Switch to app user
+# Expose port dynamically (Render sets PORT env var)
+EXPOSE $PORT
+# Fallback expose for local development  
+EXPOSE 10000
 USER nestjs
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:3001/health || exit 1
+# Healthcheck - Use PORT with fallback to 10000
+HEALTHCHECK --interval=10s --timeout=2s --start-period=3s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:${PORT:-10000}/health || exit 1
 
-# Start application with dumb-init
+# Start
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+CMD ["node", "dist/main"]
+

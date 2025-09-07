@@ -7,15 +7,20 @@ import { NextAuthController } from './nextauth.controller';
 import { SessionService } from './session.service';
 import { DiscordService } from './discord.service';
 import { JwtStrategy } from './jwt.strategy';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersService } from 'src/users/users.service';
 @Module({
   imports: [
     PassportModule,
     ConfigModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '7d' },
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get('JWT_SECRET'),
+        signOptions: { 
+          expiresIn: configService.get('JWT_EXPIRES_IN') 
+        },
+      }),
     }),
   ],  controllers: [AuthController, NextAuthController],
   providers: [AuthService, SessionService, DiscordService, JwtStrategy, UsersService],
