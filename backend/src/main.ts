@@ -6,16 +6,14 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   console.log('🚀 Starting MDHH Backend...');
   console.log('📍 NODE_ENV:', process.env.NODE_ENV);
-  console.log('📍 PORT:', process.env.PORT);
   console.log('📍 DATABASE_URL:', process.env.DATABASE_URL ? '✅ Set' : '❌ Missing');
-  console.log('📍 FRONTEND_URL:', process.env.NEXTAUTH_URL);
+  console.log('📍 FRONTEND_URL:', process.env.url);
 
   const app = await NestFactory.create(AppModule);
 
   // CORS configuration based on NODE_ENV
   let allowedOrigins;
   switch (process.env.NODE_ENV) {
-    case 'preview':
     case 'production':
       allowedOrigins = [/\.vercel\.app$/]
       break;
@@ -41,7 +39,16 @@ async function bootstrap() {
         return callback(null, true);
       }
 
-      if (allowedOrigins.includes(origin)) {
+      // Check if origin is allowed (handle both string and regex patterns)
+      const isAllowed = allowedOrigins.some(allowed => {
+        if (typeof allowed === 'string') {
+          return allowed === origin;
+        }
+        // Handle regex patterns
+        return allowed.test && allowed.test(origin);
+      });
+
+      if (isAllowed) {
         console.log('✅ CORS: Allowing whitelisted origin:', origin);
         return callback(null, true);
       }
