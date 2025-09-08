@@ -18,7 +18,7 @@ export const useAuth = (mode: 'login' | 'register', setMode: (mode: 'login' | 'r
                 console.log("result tu frontend gui xuong", result)
                 if (result?.error) throw new Error(result.error);
                 success("Login successful");
-                router.push("/profile");
+                router.push("/home");
             } else {
                 const rawPayload = data as RegisterFormData
                 // eliminate confirmpassword

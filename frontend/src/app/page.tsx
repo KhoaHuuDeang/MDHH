@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { getIcon } from "@/utils/getIcon";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 /**
  * MDHH Landing Page - Educational Document Management Platform
@@ -15,6 +17,8 @@ import Link from "next/link";
  */
 
 export default function MDHHLandingPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [scrollY, setScrollY] = useState(0);
   const [activeCategory, setActiveCategory] = useState('all');
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
@@ -24,6 +28,13 @@ export default function MDHHLandingPage() {
     downloads: 0,
     discussions: 0
   });
+
+  // Redirect authenticated users to /home
+  useEffect(() => {
+    if (status === "authenticated" && session?.accessToken) {
+      router.push("/home");
+    }
+  }, [status, session?.accessToken, router]);
 
   // Animated counter effect with easing
   useEffect(() => {
@@ -199,8 +210,8 @@ export default function MDHHLandingPage() {
         {/* Animated Background */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-br from-[#6A994E]/10 via-[#386641]/5 to-[#6A994E]/10"></div>
-          <div 
-            className="absolute inset-0" 
+          <div
+            className="absolute inset-0"
             style={{ transform: `translateY(${scrollY * 0.3}px)` }}
           >
             {[...Array(15)].map((_, i) => (
@@ -240,20 +251,21 @@ export default function MDHHLandingPage() {
 
             {/* Description */}
             <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed px-4">
-              Nơi hội tụ hàng nghìn tài liệu học tập chất lượng cao từ THCS đến Đại học. 
+              Nơi hội tụ hàng nghìn tài liệu học tập chất lượng cao từ THCS đến Đại học.
               Cộng đồng học tập sôi động với hệ thống đánh giá và thảo luận tương tác.
             </p>
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center px-4">
-              <button className="group min-h-[44px] min-w-[44px] px-8 py-4 bg-[#386641] text-white font-semibold rounded-xl shadow-lg hover:bg-[#2d4f31] hover:shadow-xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50">
-                <span className="flex items-center justify-center">
-                  Khám phá ngay
-                  {getIcon('ArrowRight', 20, 'ml-2 group-hover:translate-x-1 transition-transform')}
-                </span>
-              </button>
-
-              <button className="group min-h-[44px] min-w-[44px] px-8 py-4 bg-white/80 backdrop-blur-sm text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl border border-gray-200 hover:border-[#6A994E]/30 transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
+              <Link href={'/auth'}>
+                <button className=" min-h-[44px] min-w-[44px] px-8 py-4 bg-[#386641] text-white font-semibold rounded-xl shadow-lg hover:bg-[#2d4f31] hover:shadow-xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50">
+                  <span className="flex items-center justify-center">
+                    Khám phá ngay
+                    {getIcon('ArrowRight', 20, 'ml-2 group-hover:translate-x-1 transition-transform')}
+                  </span>
+                </button>
+              </Link>
+              <button className="flex min-h-[44px] min-w-[44px] px-8 py-4 bg-white/80 backdrop-blur-sm text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl border border-gray-200 hover:border-[#6A994E]/30 transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
                 {getIcon('Play', 20, 'w-5 h-5 mr-2 text-[#6A994E] group-hover:scale-110 transition-transform')}
                 Xem Demo
               </button>
@@ -268,7 +280,7 @@ export default function MDHHLandingPage() {
               { label: 'Lượt tải', value: counter.downloads, icon: 'Download', color: 'from-[#386641] to-[#6A994E]' },
               { label: 'Thảo luận', value: counter.discussions, icon: 'MessageSquare', color: 'from-[#6A994E] to-[#386641]' }
             ].map((stat, index) => (
-              <div 
+              <div
                 key={index}
                 className="group relative bg-white/90 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border border-gray-100 hover:border-[#6A994E]/30"
               >
@@ -314,15 +326,13 @@ export default function MDHHLandingPage() {
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`group flex items-center min-h-[44px] px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-medium transition-all duration-300 ${
-                  activeCategory === cat.id
+                className={`group flex items-center min-h-[44px] px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-medium transition-all duration-300 ${activeCategory === cat.id
                     ? 'bg-[#386641] text-white shadow-lg scale-105'
                     : 'bg-white text-gray-600 hover:text-gray-800 hover:shadow-md hover:scale-105 border border-gray-200 hover:border-[#6A994E]/30'
-                }`}
+                  }`}
               >
-                {getIcon(cat.icon, 18, `mr-2 ${
-                  activeCategory === cat.id ? 'text-white' : 'text-gray-400 group-hover:text-[#6A994E]'
-                }`)}
+                {getIcon(cat.icon, 18, `mr-2 ${activeCategory === cat.id ? 'text-white' : 'text-gray-400 group-hover:text-[#6A994E]'
+                  }`)}
                 <span className="text-sm sm:text-base">{cat.name}</span>
               </button>
             ))}
@@ -341,13 +351,13 @@ export default function MDHHLandingPage() {
                 >
                   {/* Image with Overlay */}
                   <div className="relative h-44 sm:h-48 overflow-hidden bg-gray-100">
-                    <img 
-                      src={doc.image} 
+                    <img
+                      src={doc.image}
                       alt={doc.title}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    
+
                     {/* Category Badge */}
                     <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-semibold text-[#6A994E] shadow-md">
                       {doc.category}
@@ -374,7 +384,7 @@ export default function MDHHLandingPage() {
                     <h3 className="font-bold text-base sm:text-lg text-gray-800 mb-2 line-clamp-2 group-hover:text-[#6A994E] transition-colors">
                       {doc.title}
                     </h3>
-                    
+
                     <p className="text-xs sm:text-sm text-gray-500 mb-4">
                       Bởi {doc.author}
                     </p>
@@ -428,21 +438,21 @@ export default function MDHHLandingPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
             {features.map((feature, index) => (
-              <div 
+              <div
                 key={index}
                 className="group relative bg-white rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 border border-gray-100 hover:border-[#6A994E]/30"
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity duration-300`}></div>
-                
+
                 <div className="relative">
                   <div className={`inline-flex p-4 bg-gradient-to-br ${feature.color} rounded-xl mb-6 shadow-lg group-hover:scale-110 transition-all duration-300`}>
                     {getIcon(feature.icon, 32, 'text-white')}
                   </div>
-                  
+
                   <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3 group-hover:text-[#6A994E] transition-colors duration-300">
                     {feature.title}
                   </h3>
-                  
+
                   <p className="text-gray-600 leading-relaxed text-sm sm:text-base mb-6">
                     {feature.description}
                   </p>
@@ -482,13 +492,13 @@ export default function MDHHLandingPage() {
                 {index < 3 && (
                   <div className="hidden lg:block absolute top-12 left-1/2 w-full h-0.5 bg-gradient-to-r from-[#6A994E] to-[#386641] opacity-30"></div>
                 )}
-                
+
                 <div className="relative group">
                   {/* Step Number */}
                   <div className="absolute -top-4 -left-4 w-8 h-8 bg-gradient-to-r from-[#386641] to-[#6A994E] text-white rounded-full flex items-center justify-center font-bold text-sm shadow-lg group-hover:scale-110 transition-transform z-10">
                     {item.step}
                   </div>
-                  
+
                   {/* Card */}
                   <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 text-center border border-gray-100 hover:border-[#6A994E]/30">
                     <div className="inline-flex p-4 bg-[#6A994E]/10 rounded-xl mb-4 group-hover:rotate-6 transition-transform">

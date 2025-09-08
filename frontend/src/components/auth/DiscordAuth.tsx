@@ -2,16 +2,6 @@
 
 import React from "react";
 import { signIn, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-
-/**
- * DiscordAuth (UI Pass)
- * - DesignUI Convention: rounded-2xl, soft borders, brand greens accents
- * - Animations: Tailwind-only (transition, focus ring, subtle hover scale)
- * - Two variants:
- *    1) inline (default): divider + button, no extra card (use inside forms)
- *    2) standalone: self-contained card for separate page usage
- */
 
 interface DiscordAuthProps {
   variant?: "inline" | "standalone";
@@ -19,15 +9,8 @@ interface DiscordAuthProps {
 }
 
 export default function DiscordAuth({ variant = "inline", redirectUrl = "/" }: DiscordAuthProps) {
-  const router = useRouter();
   const { status } = useSession();
   const isLoading = status === "loading";
-  const isAuthed = status === "authenticated";
-
-  React.useEffect(() => {
-    if (isAuthed) router.push(redirectUrl);
-  }, [isAuthed, redirectUrl, router]);
-
   const handleSignIn = async () => {
     // Let next-auth handle redirect to provider; avoids manual router push
     await signIn("discord", { callbackUrl: redirectUrl });

@@ -247,6 +247,10 @@ export const authOptions: NextAuthOptions = {
             session.accessToken = token.accessToken!;
             return session
         },
+        async redirect({ url, baseUrl }) {
+            // Always redirect to /home after successful login
+            return `${baseUrl}/home`;
+        },
     },
     pages: {
         signIn: '/auth',
