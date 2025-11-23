@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import useNotifications from "@/hooks/useNotifications";
+// Giả định utility này nhập các icon từ thư viện như lucide-react hoặc feather-icons
 import { getIcon } from "@/utils/getIcon";
 import Link from "next/link";
 
@@ -15,9 +18,13 @@ import Link from "next/link";
  */
 
 export default function MDHHLandingPage() {
+  const searchParams = useSearchParams();
+  const toast = useNotifications();
   const [scrollY, setScrollY] = useState(0);
   const [activeCategory, setActiveCategory] = useState('all');
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  
+  // State cho hiệu ứng đếm số
   const [counter, setCounter] = useState({
     documents: 0,
     users: 0,
@@ -25,7 +32,61 @@ export default function MDHHLandingPage() {
     discussions: 0
   });
 
-  // Animated counter effect with easing
+  // State rỗng để lưu vị trí ngẫu nhiên của các trang trí sau khi mount
+  const [heroDecorations, setHeroDecorations] = useState<Array<{
+    left: number;
+    top: number;
+    delay: number;
+    duration: number;
+  }>>([]);
+
+  const [ctaDecorations, setCtaDecorations] = useState<Array<{
+    left: number;
+    top: number;
+    delay: number;
+    duration: number;
+  }>>([]);
+
+  // --- EFFECTs CHẠY MỘT LẦN SAU KHI COMPONENT MOUNT (CLIENT-SIDE) ---
+
+  // Check for unauthorized error
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error === 'unauthorized') {
+      toast.error('Access denied. Admin privileges required.');
+    }
+  }, [searchParams, toast]);
+
+  // Logic Parallax Scroll & Khởi tạo Decorations (chỉ chạy 1 lần)
+  useEffect(() => {
+    // Khởi tạo Parallax Scroll Listener
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // Khởi tạo các vị trí ngẫu nhiên cho Decorative elements
+    setHeroDecorations(
+      Array.from({ length: 15 }, () => ({
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        delay: Math.random() * 3,
+        duration: 2 + Math.random() * 3
+      }))
+    );
+
+    setCtaDecorations(
+      Array.from({ length: 20 }, () => ({
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        delay: Math.random() * 5,
+        duration: 5 + Math.random() * 10
+      }))
+    );
+    
+    // Cleanup function để loại bỏ listener khi component unmount
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []); // Dependency array rỗng đảm bảo chỉ chạy MỘT LẦN
+
+  // Animated counter effect với easing (chỉ chạy 1 lần)
   useEffect(() => {
     const targets = {
       documents: 15234,
@@ -42,6 +103,7 @@ export default function MDHHLandingPage() {
     const timer = setInterval(() => {
       currentStep++;
       const progress = currentStep / steps;
+      // Hàm easing (Ease Out Quart)
       const easeOutQuart = 1 - Math.pow(1 - progress, 4);
 
       setCounter({
@@ -51,18 +113,17 @@ export default function MDHHLandingPage() {
         discussions: Math.floor(targets.discussions * easeOutQuart)
       });
 
-      if (currentStep >= steps) clearInterval(timer);
+      if (currentStep >= steps) {
+        clearInterval(timer);
+        // Đảm bảo dừng ở giá trị cuối cùng
+        setCounter(targets);
+      }
     }, interval);
 
     return () => clearInterval(timer);
-  }, []);
+  }, []); // Dependency array rỗng đảm bảo chỉ chạy MỘT LẦN
 
-  // Parallax scroll effect (optimized)
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  // --- DATA MOCKUP ---
 
   const categories = [
     { id: 'all', name: 'Tất cả', icon: 'Globe' },
@@ -147,7 +208,7 @@ export default function MDHHLandingPage() {
     {
       id: 5,
       title: 'TOEIC 990 - Strategies & Practice Tests',
-      category: 'TOEIC',
+      category: 'english', // Đổi category để khớp với filter
       level: 'Expert',
       downloads: 2678,
       rating: 4.9,
@@ -192,32 +253,37 @@ export default function MDHHLandingPage() {
     }
   ];
 
+  // --- JSX RENDER ---
+
   return (
     <main className="min-h-screen bg-[#F8F9FA] overflow-hidden">
-      {/* Hero Section with Parallax */}
+      
+      {/* 1. Hero Section with Parallax */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#F8F9FA] to-white">
         {/* Animated Background */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-br from-[#6A994E]/10 via-[#386641]/5 to-[#6A994E]/10"></div>
-          <div 
-            className="absolute inset-0" 
-            style={{ transform: `translateY(${scrollY * 0.3}px)` }}
-          >
-            {[...Array(15)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute animate-pulse"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 3}s`,
-                  animationDuration: `${2 + Math.random() * 3}s`
-                }}
-              >
-                <div className="w-2 h-2 bg-[#6A994E] rounded-full opacity-40"></div>
-              </div>
-            ))}
-          </div>
+          {heroDecorations.length > 0 && (
+            <div
+              className="absolute inset-0"
+              style={{ transform: `translateY(${scrollY * 0.3}px)` }}
+            >
+              {heroDecorations.map((decoration, i) => (
+                <div
+                  key={i}
+                  className="absolute animate-pulse"
+                  style={{
+                    left: `${decoration.left}%`,
+                    top: `${decoration.top}%`,
+                    animationDelay: `${decoration.delay}s`,
+                    animationDuration: `${decoration.duration}s`
+                  }}
+                >
+                  <div className="w-2 h-2 bg-[#6A994E] rounded-full opacity-40"></div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Hero Content */}
@@ -296,7 +362,7 @@ export default function MDHHLandingPage() {
         </div>
       </section>
 
-      {/* Categories Section */}
+      {/* 2. Categories Section */}
       <section className="py-12 sm:py-20 bg-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-8 sm:mb-12">
@@ -331,7 +397,7 @@ export default function MDHHLandingPage() {
           {/* Document Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {popularDocuments
-              .filter(doc => activeCategory === 'all' || doc.category.toLowerCase().includes(activeCategory))
+              .filter(doc => activeCategory === 'all' || doc.category.toLowerCase().includes(activeCategory.toLowerCase()))
               .map((doc) => (
                 <div
                   key={doc.id}
@@ -414,7 +480,7 @@ export default function MDHHLandingPage() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* 3. Features Section */}
       <section className="py-12 sm:py-20 bg-[#F8F9FA]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-8 sm:mb-12">
@@ -458,7 +524,7 @@ export default function MDHHLandingPage() {
         </div>
       </section>
 
-      {/* How It Works Section */}
+      {/* 4. How It Works Section */}
       <section className="py-12 sm:py-20 bg-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-8 sm:mb-12">
@@ -480,7 +546,7 @@ export default function MDHHLandingPage() {
               <div key={index} className="relative">
                 {/* Connection Line - Hidden on mobile */}
                 {index < 3 && (
-                  <div className="hidden lg:block absolute top-12 left-1/2 w-full h-0.5 bg-gradient-to-r from-[#6A994E] to-[#386641] opacity-30"></div>
+                  <div className="hidden lg:block absolute top-12 left-[calc(50%+1rem)] w-[calc(100%-2rem)] h-0.5 bg-gradient-to-r from-[#6A994E] to-[#386641] opacity-30 -translate-x-1/2 -z-10"></div>
                 )}
                 
                 <div className="relative group">
@@ -504,7 +570,7 @@ export default function MDHHLandingPage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
+      {/* 5. Testimonials Section */}
       <section className="py-12 sm:py-20 bg-[#F8F9FA]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-8 sm:mb-12">
@@ -561,31 +627,33 @@ export default function MDHHLandingPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* 6. CTA Section */}
       <section className="py-12 sm:py-20 bg-gradient-to-r from-[#386641] via-[#6A994E] to-[#386641] relative overflow-hidden">
         {/* Animated Background Elements */}
-        <div className="absolute inset-0">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute animate-pulse"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 5}s`,
-                animationDuration: `${5 + Math.random() * 10}s`
-              }}
-            >
-              <div className="w-1 h-1 bg-white/20 rounded-full"></div>
-            </div>
-          ))}
-        </div>
+        {ctaDecorations.length > 0 && (
+          <div className="absolute inset-0">
+            {ctaDecorations.map((decoration, i) => (
+              <div
+                key={i}
+                className="absolute animate-pulse"
+                style={{
+                  left: `${decoration.left}%`,
+                  top: `${decoration.top}%`,
+                  animationDelay: `${decoration.delay}s`,
+                  animationDuration: `${decoration.duration}s`
+                }}
+              >
+                <div className="w-1 h-1 bg-white/20 rounded-full"></div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 relative z-10 text-center">
           <div className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full mb-6">
             {getIcon('Rocket', 16, 'text-white mr-2')}
             <span className="text-sm font-medium text-white">
-              Tham gia cùng 8,500+ người dùng
+              Tham gia cùng {counter.users.toLocaleString()}+ người dùng
             </span>
           </div>
 
@@ -633,7 +701,7 @@ export default function MDHHLandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
+      {/* 7. Footer */}
       <footer className="bg-gray-900 text-white py-12 sm:py-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -648,11 +716,12 @@ export default function MDHHLandingPage() {
               </p>
               <div className="flex space-x-4">
                 {['facebook', 'twitter', 'linkedin', 'youtube'].map((social) => (
+                  // Giả định getIcon có thể nhận tên social hoặc bạn cần thay thế bằng icon thực tế
                   <button
                     key={social}
                     className="min-h-[44px] min-w-[44px] w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-[#6A994E] transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-white/40"
                   >
-                    {getIcon('Globe', 20)}
+                    {getIcon('Globe', 20)} 
                   </button>
                 ))}
               </div>

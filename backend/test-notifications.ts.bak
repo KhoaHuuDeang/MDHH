@@ -1,0 +1,45 @@
+import axios from 'axios';
+
+const API_URL = 'http://localhost:3001';
+
+async function testNotificationsAPI() {
+  try {
+    console.log('🔐 Logging in...');
+
+    // Login to get JWT token
+    const loginResponse = await axios.post(`${API_URL}/auth/login`, {
+      email: 'test@example.com',
+      password: 'password123'
+    });
+
+    const token = loginResponse.data.access_token;
+    console.log('✅ Login successful');
+
+    // Test 1: Get all notifications
+    console.log('\n📬 Testing GET /logs/notifications (all)...');
+    const allNotificationsResponse = await axios.get(`${API_URL}/logs/notifications`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    console.log('Response:', JSON.stringify(allNotificationsResponse.data, null, 2));
+
+    // Test 2: Get unread notifications only
+    console.log('\n📭 Testing GET /logs/notifications?unread=true...');
+    const unreadNotificationsResponse = await axios.get(`${API_URL}/logs/notifications?unread=true`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    console.log('Response:', JSON.stringify(unreadNotificationsResponse.data, null, 2));
+
+    // Test 3: Pagination
+    console.log('\n📄 Testing GET /logs/notifications?page=1&limit=5...');
+    const paginatedResponse = await axios.get(`${API_URL}/logs/notifications?page=1&limit=5`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    console.log('Response:', JSON.stringify(paginatedResponse.data, null, 2));
+
+    console.log('\n✅ All tests passed!');
+  } catch (error: any) {
+    console.error('❌ Error:', error.response?.data || error.message);
+  }
+}
+
+testNotificationsAPI();

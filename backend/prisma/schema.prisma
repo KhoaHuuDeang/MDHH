@@ -8,7 +8,7 @@ datasource db {
 }
 
 model accounts {
-  id                  String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                  String  @id @default(uuid()) @db.Uuid
   user_id             String? @db.Uuid
   type                String? @db.VarChar
   provider            String? @db.VarChar
@@ -27,7 +27,7 @@ model accounts {
 }
 
 model classification_levels {
-  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id          String    @id @default(uuid()) @db.Uuid
   name        String?   @unique @db.VarChar
   description String?
   created_at  DateTime? @default(now()) @db.Timestamptz(6)
@@ -36,7 +36,7 @@ model classification_levels {
 }
 
 model comments {
-  id                   String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                   String                 @id @default(uuid()) @db.Uuid
   user_id              String?                @db.Uuid
   resource_id          String?                @db.Uuid
   folder_id            String?                @db.Uuid
@@ -55,7 +55,7 @@ model comments {
 }
 
 model downloads {
-  id            String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id            String     @id @default(uuid()) @db.Uuid
   user_id       String?    @db.Uuid
   resource_id   String?    @db.Uuid
   downloaded_at DateTime?  @default(now()) @db.Timestamptz(6)
@@ -84,7 +84,7 @@ model folder_tags {
 }
 
 model folders {
-  id                      String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                      String                 @id @default(uuid()) @db.Uuid
   name                    String?                @db.VarChar
   visibility              Visibility?            @default(PUBLIC)
   created_at              DateTime?              @default(now()) @db.Timestamptz(6)
@@ -114,7 +114,7 @@ model follows {
 }
 
 model notification_targets {
-  id              String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id              String        @id @default(uuid()) @db.Uuid
   notification_id String        @db.Uuid
   resource_id     String?       @db.Uuid
   folder_id       String?       @db.Uuid
@@ -128,7 +128,7 @@ model notification_targets {
 }
 
 model notifications {
-  id                   String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                   String                 @id @default(uuid()) @db.Uuid
   actor_id             String?                @db.Uuid
   type                 NotificationType?
   message              String?
@@ -140,7 +140,7 @@ model notifications {
 }
 
 model ratings {
-  id                String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                String              @id @default(uuid()) @db.Uuid
   user_id           String?             @db.Uuid
   value             Int?
   rated_at          DateTime?           @default(now()) @db.Timestamptz(6)
@@ -148,10 +148,12 @@ model ratings {
   ratings_comments  ratings_comments[]
   ratings_folders   ratings_folders[]
   ratings_resources ratings_resources[]
+
+  @@index([user_id, rated_at(sort: Desc)], map: "idx_ratings_user_rated_at")
 }
 
 model ratings_comments {
-  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id         String   @id @default(uuid()) @db.Uuid
   rating_id  String   @db.Uuid
   comment_id String   @db.Uuid
   comments   comments @relation(fields: [comment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -161,23 +163,25 @@ model ratings_comments {
 }
 
 model ratings_folders {
-  id        String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id        String  @id @default(uuid()) @db.Uuid
   rating_id String  @db.Uuid
   folder_id String  @db.Uuid
   folders   folders @relation(fields: [folder_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   ratings   ratings @relation(fields: [rating_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([rating_id, folder_id])
+  @@index([folder_id], map: "idx_ratings_folders_folder_id")
 }
 
 model ratings_resources {
-  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id          String    @id @default(uuid()) @db.Uuid
   rating_id   String    @db.Uuid
   resource_id String    @db.Uuid
   ratings     ratings   @relation(fields: [rating_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   resources   resources @relation(fields: [resource_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([rating_id, resource_id])
+  @@index([resource_id], map: "idx_ratings_resources_resource_id")
 }
 
 model resource_tags {
@@ -190,7 +194,7 @@ model resource_tags {
 }
 
 model resources {
-  id                   String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                   String                 @id @default(uuid()) @db.Uuid
   title                String?                @db.VarChar
   description          String?
   category             String?                @db.VarChar
@@ -206,7 +210,7 @@ model resources {
 }
 
 model roles {
-  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id          String    @id @default(uuid()) @db.Uuid
   name        RoleType  @unique
   description String?
   created_at  DateTime? @default(now()) @db.Timestamptz(6)
@@ -215,7 +219,7 @@ model roles {
 }
 
 model sessions {
-  id            String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id            String    @id @default(uuid()) @db.Uuid
   session_token String?   @unique @db.VarChar
   user_id       String?   @db.Uuid
   expires       DateTime? @db.Timestamptz(6)
@@ -225,7 +229,7 @@ model sessions {
 }
 
 model tags {
-  id                    String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                    String                @id @default(uuid()) @db.Uuid
   level_id              String                @db.Uuid
   name                  String?               @db.VarChar
   description           String?
@@ -238,7 +242,7 @@ model tags {
 }
 
 model uploads {
-  id          String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id          String        @id @default(uuid()) @db.Uuid
   user_id     String?       @db.Uuid
   resource_id String?       @db.Uuid
   file_name   String?       @db.VarChar
@@ -250,10 +254,13 @@ model uploads {
   uploaded_at DateTime?     @db.Timestamptz(6)
   resources   resources?    @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users       users?        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([user_id, created_at(sort: Desc)], map: "idx_uploads_user_created_at")
+  @@index([status, created_at(sort: Desc)], map: "idx_uploads_status_created_at")
 }
 
 model user_guild_roles {
-  id        String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id        String    @id @default(uuid()) @db.Uuid
   user_id   String?   @db.Uuid
   guild_id  String?   @db.Uuid
   role_name RoleType?
@@ -264,7 +271,7 @@ model user_guild_roles {
 
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model users {
-  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id               String             @id @default(uuid()) @db.Uuid
   email            String?            @unique @db.VarChar
   username         String?            @unique @db.VarChar
   displayname      String?            @db.VarChar
@@ -294,6 +301,8 @@ model users {
   users            users?             @relation("usersTousers", fields: [disabled_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "disabled_by_user_fkey")
   other_users      users[]            @relation("usersTousers")
   roles            roles              @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  logs_received    logs[]             @relation("logs_user")
+  logs_triggered   logs[]             @relation("logs_actor")
 
   @@index([created_at(sort: Desc), id(sort: Desc)], map: "idx_users_created_at_id")
 }
@@ -316,6 +325,34 @@ enum NotificationType {
   RATING
   FOLLOW
   SYSTEM
+}
+
+enum LogType {
+  COMMENT
+  UPVOTE
+  DOWNVOTE
+  APPROVED
+  DECLINED
+  UPLOAD_SUCCESS
+  UPLOAD_FAILED
+}
+
+model logs {
+  id          String   @id @default(uuid()) @db.Uuid
+  user_id     String   @db.Uuid
+  actor_id    String?  @db.Uuid
+  type        LogType
+  entity_type String?  @db.VarChar
+  entity_id   String?  @db.Uuid
+  message     String?
+  is_read     Boolean  @default(false)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  user  users  @relation("logs_user", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  actor users? @relation("logs_actor", fields: [actor_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([user_id, created_at(sort: Desc)], map: "idx_logs_user_created_at")
+  @@index([user_id, is_read], map: "idx_logs_user_is_read")
 }
 
 enum ResourceStatus {

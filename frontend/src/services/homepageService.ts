@@ -29,15 +29,22 @@ export interface HomepageData {
 
 export interface SearchFilesParams {
   query?: string;
-  category?: string;
+  classificationLevelId?: string;
+  tags?: string; // Comma-separated tag IDs
+  page?: number;
   limit?: number;
-  offset?: number;
 }
 
 export interface SearchFilesResponse {
-  files: FileData[];
-  total: number;
-  hasMore: boolean;
+  message: string;
+  status: number;
+  result: {
+    files: FileData[];
+    total: number;
+    hasMore: boolean;
+    page: number;
+    limit: number;
+  };
 }
 
 // Homepage services
@@ -48,7 +55,7 @@ export const homepageService = {
   },
 
   searchFiles: async (params: SearchFilesParams): Promise<SearchFilesResponse> => {
-    const response = await apiClient.get('/files/search', { params });
+    const response = await apiClient.get('/homepage/search', { params });
     return response.data;
   },
 

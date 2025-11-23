@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Body,
   Param,
   Query,
@@ -14,13 +15,18 @@ import {
   AdminUsersQueryDto,
   AdminUsersResponseDto,
   DisableUserDto,
-  EnableUserDto
+  EnableUserDto,
+  UpdateUserRoleDto
 } from './admin-users.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
+
 @ApiTags('Admin - User Management')
 @Controller('admin/users')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN')
 @ApiBearerAuth()
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
@@ -46,7 +52,7 @@ export class AdminController {
     @Body() disableUserDto: DisableUserDto,
     @Request() req: any
   ) {
-    const adminId = req.user.userId; // Extract admin ID from JWT
+    const adminId = req.user.userId;
     return this.adminService.disableUser(userId, adminId, disableUserDto);
   }
 
@@ -62,5 +68,20 @@ export class AdminController {
   ) {
     const adminId = req.user.userId;
     return this.adminService.enableUser(userId, adminId);
+  }
+
+
+  @Patch(':id/role')
+  @ApiOperation({ summary: 'Update user role' })
+  @ApiResponse({ status: 200, description: 'User role updated successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 400, description: 'Cannot change own role' })
+  async updateUserRole(
+    @Param('id') userId: string,
+    @Body() updateUserRoleDto: UpdateUserRoleDto,
+    @Request() req: any
+  ) {
+    const adminId = req.user.userId;
+    return this.adminService.updateUserRole(userId, updateUserRoleDto.role, adminId);
   }
 }

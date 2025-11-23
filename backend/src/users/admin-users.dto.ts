@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNumber, IsBoolean, IsDateString } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsBoolean, IsDateString, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -100,4 +100,14 @@ export class EnableUserDto {
   @IsOptional()
   @IsString()
   note?: string;
+}
+
+
+export class UpdateUserRoleDto {
+  @ApiProperty({ 
+    description: 'New role for the user',
+    enum: ['USER', 'ADMIN']
+  })
+  @IsEnum(['USER', 'ADMIN'])
+  role: 'USER' | 'ADMIN';
 }

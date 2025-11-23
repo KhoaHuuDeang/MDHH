@@ -146,3 +146,81 @@ export class HomepageResponseDto {
   @Type(() => FolderDataDto)
   folders: FolderDataDto[];
 }
+
+export class SearchFilesQueryDto {
+  @ApiProperty({
+    description: 'Search query for file title or description',
+    example: 'react tutorial',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  query?: string;
+
+  @ApiProperty({
+    description: 'Classification level ID to filter by',
+    example: 'uuid-classification-123',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  classificationLevelId?: string;
+
+  @ApiProperty({
+    description: 'Comma-separated tag IDs to filter by',
+    example: 'uuid-tag-1,uuid-tag-2',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  tags?: string;
+
+  @ApiProperty({
+    description: 'Page number for pagination',
+    example: 1,
+    default: 1,
+    required: false
+  })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  page?: number;
+
+  @ApiProperty({
+    description: 'Number of items per page',
+    example: 20,
+    default: 20,
+    required: false
+  })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  limit?: number;
+}
+
+export class SearchFilesResponseDto {
+  @ApiProperty({
+    description: 'Search result message',
+    example: 'Search completed successfully'
+  })
+  @IsString()
+  message: string;
+
+  @ApiProperty({
+    description: 'HTTP status code',
+    example: 200
+  })
+  @IsNumber()
+  status: number;
+
+  @ApiProperty({
+    description: 'Search results data'
+  })
+  result: {
+    files: FileDataDto[];
+    total: number;
+    hasMore: boolean;
+    page: number;
+    limit: number;
+  };
+}

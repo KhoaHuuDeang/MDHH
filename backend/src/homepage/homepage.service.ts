@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { HomepageResponseDto, FileDataDto, FolderDataDto } from './dto/homepage.dto';
+import { HomepageResponseDto, FileDataDto, FolderDataDto, SearchFilesQueryDto, SearchFilesResponseDto } from './dto/homepage.dto';
 
 @Injectable()
 export class HomepageService {
@@ -113,7 +113,7 @@ export class HomepageService {
 
   private async getPopularFolders(): Promise<FolderDataDto[]> {
     const result = await this.prisma.$queryRaw<any[]>`
-      SELECT 
+      SELECT
         f.id,
         f.name,
         f.description,
@@ -124,7 +124,7 @@ export class HomepageService {
       INNER JOIN (
         SELECT folder_id, COUNT(*)::integer as follow_count
         FROM follows
-        GROUP BY folder_id  
+        GROUP BY folder_id
         HAVING COUNT(*) > 0
       ) fc ON f.id = fc.folder_id
       WHERE f.visibility = 'PUBLIC'
@@ -141,5 +141,133 @@ export class HomepageService {
       dto.followCount = Math.max(0, row.followCount || 0);
       return dto;
     });
+  }
+
+  async searchFiles(queryDto: SearchFilesQueryDto): Promise<SearchFilesResponseDto> {
+    try {
+      const page = queryDto.page || 1;
+      const limit = queryDto.limit || 20;
+      const offset = (page - 1) * limit;
+
+      // Parse tag IDs from comma-separated string
+      const tagIds = queryDto.tags ? queryDto.tags.split(',').filter(Boolean) : [];
+
+      // Build dynamic WHERE conditions
+      let whereConditions: string[] = [`r.visibility = 'PUBLIC'`];
+      let joinConditions: string[] = [];
+
+      // Add search query condition
+      if (queryDto.query?.trim()) {
+        whereConditions.push(`(
+          r.title ILIKE '%' || $1 || '%' OR
+          r.description ILIKE '%' || $1 || '%' OR
+          r.category ILIKE '%' || $1 || '%'
+        )`);
+      }
+
+      // Add classification level filter via folder
+      if (queryDto.classificationLevelId) {
+        whereConditions.push(`f.classification_level_id = $${queryDto.query ? 2 : 1}::uuid`);
+      }
+
+      // Add tag filter
+      if (tagIds.length > 0) {
+        joinConditions.push(`
+          INNER JOIN resource_tags rt ON r.id = rt.resource_id
+        `);
+        const tagParamIndex = (queryDto.query ? 1 : 0) + (queryDto.classificationLevelId ? 1 : 0) + 1;
+        whereConditions.push(`rt.tag_id = ANY($${tagParamIndex}::uuid[])`);
+      }
+
+      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+      const joinClause = joinConditions.join(' ');
+
+      // Count total matching files
+      const countQuery = `
+        SELECT COUNT(DISTINCT r.id)::integer as total
+        FROM resources r
+        LEFT JOIN folder_files ff ON r.id = ff.resource_id
+        LEFT JOIN folders f ON ff.folder_id = f.id
+        ${joinClause}
+        ${whereClause}
+      `;
+
+      // Build params array dynamically
+      const params: any[] = [];
+      if (queryDto.query?.trim()) params.push(queryDto.query.trim());
+      if (queryDto.classificationLevelId) params.push(queryDto.classificationLevelId);
+      if (tagIds.length > 0) params.push(tagIds);
+
+      const countResult = await this.prisma.$queryRawUnsafe<Array<{ total: number }>>(
+        countQuery,
+        ...params
+      );
+      const total = countResult[0]?.total || 0;
+
+      // Fetch paginated results
+      const searchQuery = `
+        SELECT DISTINCT ON (r.id)
+          r.id,
+          r.title,
+          r.description,
+          r.category,
+          r.created_at as "createdAt",
+          u.displayname as author,
+          up.mime_type as "fileType",
+          COALESCE(dc.download_count, 0)::integer as "downloadCount",
+          f.name as "folderName"
+        FROM resources r
+        LEFT JOIN folder_files ff ON r.id = ff.resource_id
+        LEFT JOIN folders f ON ff.folder_id = f.id
+        LEFT JOIN users u ON f.user_id = u.id
+        LEFT JOIN uploads up ON r.id = up.resource_id AND up.status = 'COMPLETED'
+        LEFT JOIN (
+          SELECT resource_id, COUNT(*)::integer as download_count
+          FROM downloads
+          GROUP BY resource_id
+        ) dc ON r.id = dc.resource_id
+        ${joinClause}
+        ${whereClause}
+        ORDER BY r.id, r.created_at DESC
+        LIMIT ${limit}
+        OFFSET ${offset}
+      `;
+
+      const result = await this.prisma.$queryRawUnsafe<any[]>(
+        searchQuery,
+        ...params
+      );
+
+      const files = result.map(row => {
+        const dto = new FileDataDto();
+        dto.id = row.id;
+        dto.title = row.title || '';
+        dto.description = row.description || '';
+        dto.category = row.category || '';
+        dto.author = row.author || 'Unknown';
+        dto.createdAt = row.createdAt;
+        dto.fileType = row.fileType || 'application/octet-stream';
+        dto.downloadCount = Math.max(0, row.downloadCount || 0);
+        dto.folderName = row.folderName || undefined;
+        return dto;
+      });
+
+      const hasMore = offset + files.length < total;
+
+      return {
+        message: 'Search completed successfully',
+        status: 200,
+        result: {
+          files,
+          total,
+          hasMore,
+          page,
+          limit
+        }
+      };
+    } catch (error) {
+      console.error('Error searching files:', error);
+      throw new InternalServerErrorException('Failed to search files');
+    }
   }
 }

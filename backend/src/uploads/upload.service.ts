@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { S3Service } from 'src/Aws/aws.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -31,6 +36,8 @@ interface ResourceWithMetrics {
   upvotes_count: number;
 }
 
+import { LogsService } from '../logs/logs.service';
+
 @Injectable()
 export class UploadsService {
   private readonly logger = new Logger(UploadsService.name);
@@ -45,7 +52,8 @@ export class UploadsService {
   constructor(
     private prisma: PrismaService,
     private s3Service: S3Service,
-  ) { }
+    private logsService: LogsService,
+  ) {}
 
   /**
    * Exponential backoff delay calculation
@@ -62,8 +70,11 @@ export class UploadsService {
       throw new BadRequestException('No files provided for upload');
     }
 
-    if (files.length > 10) { // Max 10 files per upload
-      throw new BadRequestException(`Too many files: ${files.length}. Maximum allowed: 10`);
+    if (files.length > 10) {
+      // Max 10 files per upload
+      throw new BadRequestException(
+        `Too many files: ${files.length}. Maximum allowed: 10`,
+      );
     }
 
     if (!userId || typeof userId !== 'string') {
@@ -80,13 +91,15 @@ export class UploadsService {
         throw new BadRequestException(`File ${index + 1}: Invalid MIME type`);
       }
 
-      if (!file.fileSize || typeof file.fileSize !== 'number' || file.fileSize <= 0) {
+      if (
+        !file.fileSize ||
+        typeof file.fileSize !== 'number' ||
+        file.fileSize <= 0
+      ) {
         throw new BadRequestException(`File ${index + 1}: Invalid file size`);
       }
     });
   }
-
-
 
   /**
    * Database health check and connection verification
@@ -96,14 +109,20 @@ export class UploadsService {
       await this.prisma.$queryRaw`SELECT 1`;
     } catch (error) {
       this.logger.error('Database connection failed:', error);
-      throw new BadRequestException('Service temporarily unavailable. Please try again later.');
+      throw new BadRequestException(
+        'Service temporarily unavailable. Please try again later.',
+      );
     }
   }
 
   /**
    * Health check endpoint for monitoring
    */
-  async healthCheck(): Promise<{ status: string; timestamp: Date; details: any }> {
+  async healthCheck(): Promise<{
+    status: string;
+    timestamp: Date;
+    details: any;
+  }> {
     const startTime = Date.now();
     const details = {
       database: 'unknown',
@@ -140,18 +159,18 @@ export class UploadsService {
    */
   async requestPreSignedUrls(
     requestDto: RequestPreSignedUrlsDto,
-    userId: string
+    userId: string,
   ): Promise<PreSignedUrlResponseDto> {
     // Comprehensive input validation
     this.validateUploadRequest(requestDto.files, userId);
 
-    // Database health check - bằng 1 truy vấn nhỏ tí tí 
+    // Database health check - bằng 1 truy vấn nhỏ tí tí
     await this.verifyDatabaseConnection();
 
-    // Validate user exists (security check) - Tìm user với id được chỉ định, chỉ chọn mỗi id 
+    // Validate user exists (security check) - Tìm user với id được chỉ định, chỉ chọn mỗi id
     const userExists = await this.prisma.users.findUnique({
       where: { id: userId },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (!userExists) {
@@ -159,18 +178,20 @@ export class UploadsService {
     }
 
     // Rate limiting check - prevent abuse
-    // Check và đếm trong bản upload lần tải xuống gần nhất 
+    // Check và đếm trong bản upload lần tải xuống gần nhất
     const recentRequests = await this.prisma.uploads.count({
       where: {
         user_id: userId,
         created_at: {
-          gte: new Date(Date.now() - this.RATE_LIMIT_WINDOW) // khoảng thời gian vd : 13h, -> 13-1 = 12
-        }
-      }
+          gte: new Date(Date.now() - this.RATE_LIMIT_WINDOW), // khoảng thời gian vd : 13h, -> 13-1 = 12
+        },
+      },
     });
-    // nếu user có lần request nhiều hơn quy định theo quy ước RATE_LIMIT_REQUESTS, thì ngừng user lại 
+    // nếu user có lần request nhiều hơn quy định theo quy ước RATE_LIMIT_REQUESTS, thì ngừng user lại
     if (recentRequests > this.RATE_LIMIT_REQUESTS) {
-      throw new BadRequestException('Rate limit exceeded. Please wait before making more requests.');
+      throw new BadRequestException(
+        'Rate limit exceeded. Please wait before making more requests.',
+      );
     }
 
     // Retry logic for S3 operations
@@ -178,13 +199,16 @@ export class UploadsService {
 
     for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
       try {
-        this.logger.log(`Requesting pre-signed URLs for ${requestDto.files.length} files for user ${userId} (attempt ${attempt})`);
+        this.logger.log(
+          `Requesting pre-signed URLs for ${requestDto.files.length} files for user ${userId} (attempt ${attempt})`,
+        );
 
         // Generate pre-signed URLs through S3 service with enhanced validation
-        const preSignedData = await this.s3Service.generateMultiplePreSignedUrls(
-          requestDto.files,
-          userId
-        );
+        const preSignedData =
+          await this.s3Service.generateMultiplePreSignedUrls(
+            requestDto.files,
+            userId,
+          );
 
         // Return temporary session data (no DB commit)
         return {
@@ -192,12 +216,17 @@ export class UploadsService {
           preSignedData,
           expiresIn: 3600, // 1 hour expiry
         };
-      } catch (error) {             // error
+      } catch (error) {
+        // error
         lastError = error as Error; // => Ép kiểu cho error
-        this.logger.warn(`Pre-signed URL generation attempt ${attempt} failed:`, error);
+        this.logger.warn(
+          `Pre-signed URL generation attempt ${attempt} failed:`,
+          error,
+        );
 
         // Don't retry on validation errors
-        if (error instanceof BadRequestException) { // Kiểu lỗi là BadRequestException => cook
+        if (error instanceof BadRequestException) {
+          // Kiểu lỗi là BadRequestException => cook
           throw error;
         }
 
@@ -205,13 +234,20 @@ export class UploadsService {
         if (attempt < this.MAX_RETRIES) {
           // so sánh lần thử hiện tại(current) và lần thử tối đa(3)
           // => Đợi x ms, rồi thử lại
-          await new Promise(resolve => setTimeout(resolve, this.calculateRetryDelay(attempt)));
+          await new Promise((resolve) =>
+            setTimeout(resolve, this.calculateRetryDelay(attempt)),
+          );
         }
       }
     }
 
-    this.logger.error('All pre-signed URL generation attempts failed:', lastError);
-    throw new BadRequestException('Failed to generate upload URLs after multiple attempts. Please try again later.');
+    this.logger.error(
+      'All pre-signed URL generation attempts failed:',
+      lastError,
+    );
+    throw new BadRequestException(
+      'Failed to generate upload URLs after multiple attempts. Please try again later.',
+    );
   }
 
   /**
@@ -223,132 +259,150 @@ export class UploadsService {
   // Update method to handle nested folderManagement
   async createResourceWithUploads(
     createResourceDto: CreateResourceWithUploadsDto,
-    userId: string 
+    userId: string,
   ): Promise<ResourceResponseDto> {
-    console.log('BACKENDDDD', createResourceDto)
-    this.logger.log(`Creating resource with folder association and ${createResourceDto.files.length} uploads`);
+    console.log('BACKENDDDD', createResourceDto);
+    this.logger.log(
+      `Creating resource with folder association and ${createResourceDto.files.length} uploads`,
+    );
 
     try {
-      return await this.prisma.$transaction(async (tx) => {
-        // 1. Create resource record
-        const resource = await tx.resources.create({
-          data: {
-            title: createResourceDto.title,
-            description: createResourceDto.description,
-            visibility: createResourceDto.visibility || 'PUBLIC',
-          },
-        });
-
-        this.logger.log(`Created resource with ID: ${resource.id}`);
-
-        // Handle nested folderManagement structure
-        let folderId = createResourceDto.folderManagement.selectedFolderId;
-
-        if (!folderId && createResourceDto.folderManagement.newFolderData) {
-          const newFolderData = createResourceDto.folderManagement.newFolderData;
-
-          // Create new folder with classification level
-          const folder = await tx.folders.create({
+      return await this.prisma.$transaction(
+        async (tx) => {
+          // 1. Create resource record
+          const resource = await tx.resources.create({
             data: {
-              name: newFolderData.name,
-              description: newFolderData.description || `Folder for ${createResourceDto.title}`,
+              title: createResourceDto.title,
+              description: createResourceDto.description,
               visibility: createResourceDto.visibility || 'PUBLIC',
-              user_id: userId,
-              classification_level_id: newFolderData.folderClassificationId,
             },
           });
 
-          folderId = folder.id;
-          this.logger.log(`Created new folder with ID: ${folder.id}`);
+          this.logger.log(`Created resource with ID: ${resource.id}`);
 
-          //  Handle folder tags
-          if (newFolderData.folderTagIds && newFolderData.folderTagIds.length > 0) {
-            await tx.folder_tags.createMany({
-              data: newFolderData.folderTagIds.map(tagId => ({
-                folder_id: folder.id,
-                tag_id: tagId
-              })),
-              skipDuplicates: true,
+          // Handle nested folderManagement structure
+          let folderId = createResourceDto.folderManagement.selectedFolderId;
+
+          if (!folderId && createResourceDto.folderManagement.newFolderData) {
+            const newFolderData =
+              createResourceDto.folderManagement.newFolderData;
+
+            // Create new folder with classification level
+            const folder = await tx.folders.create({
+              data: {
+                name: newFolderData.name,
+                description:
+                  newFolderData.description ||
+                  `Folder for ${createResourceDto.title}`,
+                visibility: createResourceDto.visibility || 'PUBLIC',
+                user_id: userId,
+                classification_level_id: newFolderData.folderClassificationId,
+              },
             });
-            this.logger.log(`Linked folder to ${newFolderData.folderTagIds.length} tags`);
-          }
-        } else if (folderId) {
-          // Verify folder ownership
-          const existingFolder = await tx.folders.findFirst({
-            where: {
-              id: folderId,
-              user_id: userId
+
+            folderId = folder.id;
+            this.logger.log(`Created new folder with ID: ${folder.id}`);
+
+            //  Handle folder tags
+            if (
+              newFolderData.folderTagIds &&
+              newFolderData.folderTagIds.length > 0
+            ) {
+              await tx.folder_tags.createMany({
+                data: newFolderData.folderTagIds.map((tagId) => ({
+                  folder_id: folder.id,
+                  tag_id: tagId,
+                })),
+                skipDuplicates: true,
+              });
+              this.logger.log(
+                `Linked folder to ${newFolderData.folderTagIds.length} tags`,
+              );
             }
-          });
+          } else if (folderId) {
+            // Verify folder ownership
+            const existingFolder = await tx.folders.findFirst({
+              where: {
+                id: folderId,
+                user_id: userId,
+              },
+            });
 
-          if (!existingFolder) {
-            throw new BadRequestException('Folder not found or not owned by user');
+            if (!existingFolder) {
+              throw new BadRequestException(
+                'Folder not found or not owned by user',
+              );
+            }
           }
-        }
 
-        // Link resource to folder
-        if (folderId) {
-          await tx.folder_files.create({
-            data: {
-              folder_id: folderId,
-              resource_id: resource.id,
-            },
+          // Link resource to folder
+          if (folderId) {
+            await tx.folder_files.create({
+              data: {
+                folder_id: folderId,
+                resource_id: resource.id,
+              },
+            });
+            this.logger.log(
+              `Linked resource ${resource.id} to folder ${folderId} via folder_files`,
+            );
+          }
+
+          const uploadData = createResourceDto.files.map((file) => ({
+            //bao nhiêu file bấy nhiêu uploads diễn ra tương ứng
+            // Uploads fields
+            user_id: userId,
+            resource_id: resource.id,
+            file_name: file.originalFilename,
+            mime_type: file.mimetype,
+            file_size: file.fileSize,
+            s3_key: file.s3Key,
+            status: 'COMPLETED' as const,
+          }));
+
+          await tx.uploads.createMany({
+            data: uploadData,
+            skipDuplicates: true,
           });
-          this.logger.log(`Linked resource ${resource.id} to folder ${folderId} via folder_files`);
-        }
 
+          const uploads = await tx.uploads.findMany({
+            where: { resource_id: resource.id },
+            orderBy: { created_at: 'asc' },
+          });
 
-        const uploadData = createResourceDto.files.map((file) => ({
-          //bao nhiêu file bấy nhiêu uploads diễn ra tương ứng 
-          // Uploads fields
-          user_id: userId,
-          resource_id: resource.id,
-          file_name: file.originalFilename,
-          mime_type: file.mimetype,
-          file_size: file.fileSize,
-          s3_key: file.s3Key,
-          status: 'COMPLETED' as const,
-        }));
+          this.logger.log(
+            `Created ${uploads.length} upload records with S3 keys`,
+          );
 
-        await tx.uploads.createMany({
-          data: uploadData,
-          skipDuplicates: true,
-        });
-
-        const uploads = await tx.uploads.findMany({
-          where: { resource_id: resource.id },
-          orderBy: { created_at: 'asc' },
-        });
-
-        this.logger.log(`Created ${uploads.length} upload records with S3 keys`);
-
-        return {
-          resource: {
-            id: resource.id,
-            title: resource.title || '',
-            description: resource.description || '',
-            category: resource.category || '',
-            visibility: resource.visibility as any,
-            status: 'PENDING_APPROVAL',
-            created_at: resource.created_at || new Date(),
-          },
-          uploads: uploads.map(upload => ({
-            id: upload.id,
-            user_id: upload.user_id || '',
-            resource_id: upload.resource_id || '',
-            file_name: upload.file_name || '',
-            mime_type: upload.mime_type || '',
-            file_size: upload.file_size || 0,
-            s3_key: upload.s3_key || '',
-            status: 'completed',
-            created_at: upload.created_at || new Date(),
-          })),
-          folderId: folderId,
-        };
-      }, {
-        timeout: this.TRANSACTION_TIMEOUT,
-        maxWait: 5000,
-      });
+          return {
+            resource: {
+              id: resource.id,
+              title: resource.title || '',
+              description: resource.description || '',
+              category: resource.category || '',
+              visibility: resource.visibility as any,
+              status: 'PENDING_APPROVAL',
+              created_at: resource.created_at || new Date(),
+            },
+            uploads: uploads.map((upload) => ({
+              id: upload.id,
+              user_id: upload.user_id || '',
+              resource_id: upload.resource_id || '',
+              file_name: upload.file_name || '',
+              mime_type: upload.mime_type || '',
+              file_size: upload.file_size || 0,
+              s3_key: upload.s3_key || '',
+              status: 'completed',
+              created_at: upload.created_at || new Date(),
+            })),
+            folderId: folderId,
+          };
+        },
+        {
+          timeout: this.TRANSACTION_TIMEOUT,
+          maxWait: 5000,
+        },
+      );
     } catch (error) {
       this.logger.error('Failed to create resource with uploads:', error);
       throw new BadRequestException('Failed to create resource with uploads');
@@ -361,35 +415,55 @@ export class UploadsService {
    * Optimized with retry logic and batch operations
    */
   async completeUpload(completeDto: CompleteUploadDto): Promise<void> {
-    this.logger.log(`Completing upload for resource: ${completeDto.resourceId}`);
+    this.logger.log(
+      `Completing upload for resource: ${completeDto.resourceId}`,
+    );
 
     try {
-      await this.prisma.$transaction(async (tx) => {
-        // 1. Verify resource exists
-        const resource = await tx.resources.findUnique({
-          where: { id: completeDto.resourceId },
-          include: { uploads: true },
-        });
+      await this.prisma.$transaction(
+        async (tx) => {
+          // 1. Verify resource exists
+          const resource = await tx.resources.findUnique({
+            where: { id: completeDto.resourceId },
+            include: { uploads: { select: { user_id: true } } },
+          });
 
-        if (!resource) {
-          throw new NotFoundException(`Resource with ID ${completeDto.resourceId} not found`);
-        }
+          if (!resource) {
+            throw new NotFoundException(
+              `Resource with ID ${completeDto.resourceId} not found`,
+            );
+          }
 
-        // 2. Update upload records to mark as completed
-        const updateResult = await tx.uploads.updateMany({
-          where: {
-            resource_id: completeDto.resourceId,
-          },
-          data: {
-            uploaded_at: new Date(),
-          },
-        });
+          // 2. Update upload records to mark as completed
+          const updateResult = await tx.uploads.updateMany({
+            where: {
+              resource_id: completeDto.resourceId,
+            },
+            data: {
+              uploaded_at: new Date(),
+            },
+          });
 
-        this.logger.log(`Successfully completed upload for resource: ${completeDto.resourceId}`);
-      }, {
-        timeout: this.TRANSACTION_TIMEOUT,
-        maxWait: 5000,
-      });
+          this.logger.log(
+            `Successfully completed upload for resource: ${completeDto.resourceId}`,
+          );
+          
+          // 3. Create success log
+          const userId = resource.uploads[0]?.user_id;
+          if (userId) {
+            await this.logsService.createLog({
+              userId,
+              type: 'UPLOAD_SUCCESS',
+              entityType: 'resource',
+              entityId: completeDto.resourceId,
+            });
+          }
+        },
+        {
+          timeout: this.TRANSACTION_TIMEOUT,
+          maxWait: 5000,
+        },
+      );
     } catch (error) {
       this.logger.error('Failed to complete upload:', error);
 
@@ -397,7 +471,9 @@ export class UploadsService {
         throw error;
       }
 
-      throw new BadRequestException('Failed to complete upload. Please try again.');
+      throw new BadRequestException(
+        'Failed to complete upload. Please try again.',
+      );
     }
   }
 
@@ -409,7 +485,7 @@ export class UploadsService {
     userId: string,
     page: number = 1,
     limit: number = 10,
-    status?: string
+    status?: string,
   ) {
     const skip = (page - 1) * limit;
 
@@ -449,7 +525,10 @@ export class UploadsService {
         },
       };
     } catch (error) {
-      this.logger.error(`Failed to get user uploads for user ${userId}:`, error);
+      this.logger.error(
+        `Failed to get user uploads for user ${userId}:`,
+        error,
+      );
       throw new BadRequestException('Failed to retrieve uploads');
     }
   }
@@ -460,34 +539,41 @@ export class UploadsService {
    */
   async deleteResource(resourceId: string, userId: string): Promise<void> {
     try {
-      await this.prisma.$transaction(async (tx) => {
-        // Find resource with uploads - verify ownership through uploads
-        const resource = await tx.resources.findFirst({
-          where: {
-            id: resourceId,
-            uploads: { some: { user_id: userId } },
-          },
-          include: { uploads: true },
-        });
+      await this.prisma.$transaction(
+        async (tx) => {
+          // Find resource with uploads - verify ownership through uploads
+          const resource = await tx.resources.findFirst({
+            where: {
+              id: resourceId,
+              uploads: { some: { user_id: userId } },
+            },
+            include: { uploads: true },
+          });
 
-        if (!resource) {
-          throw new NotFoundException('Resource not found or not owned by user');
-        }
+          if (!resource) {
+            throw new NotFoundException(
+              'Resource not found or not owned by user',
+            );
+          }
 
-        // Delete database records (cascade will handle related records)
-        await tx.uploads.deleteMany({
-          where: { resource_id: resourceId },
-        });
+          // Delete database records (cascade will handle related records)
+          await tx.uploads.deleteMany({
+            where: { resource_id: resourceId },
+          });
 
-        await tx.resources.delete({
-          where: { id: resourceId },
-        });
+          await tx.resources.delete({
+            where: { id: resourceId },
+          });
 
-        this.logger.log(`Deleted resource ${resourceId} and associated uploads`);
-      }, {
-        timeout: this.TRANSACTION_TIMEOUT,
-        maxWait: 5000,
-      });
+          this.logger.log(
+            `Deleted resource ${resourceId} and associated uploads`,
+          );
+        },
+        {
+          timeout: this.TRANSACTION_TIMEOUT,
+          maxWait: 5000,
+        },
+      );
     } catch (error) {
       this.logger.error(`Failed to delete resource ${resourceId}:`, error);
 
@@ -495,7 +581,9 @@ export class UploadsService {
         throw error;
       }
 
-      throw new BadRequestException('Failed to delete resource. Please try again.');
+      throw new BadRequestException(
+        'Failed to delete resource. Please try again.',
+      );
     }
   }
 
@@ -518,9 +606,14 @@ export class UploadsService {
 
       // For now, return a placeholder since S3 key is not available
       // In a full implementation, you would store the S3 key and use it here
-      throw new BadRequestException('Download functionality not yet implemented - S3 key not stored');
+      throw new BadRequestException(
+        'Download functionality not yet implemented - S3 key not stored',
+      );
     } catch (error) {
-      this.logger.error(`Failed to generate download URL for upload ${uploadId}:`, error);
+      this.logger.error(
+        `Failed to generate download URL for upload ${uploadId}:`,
+        error,
+      );
 
       if (error instanceof NotFoundException) {
         throw error;
@@ -534,7 +627,10 @@ export class UploadsService {
    * Retry failed upload (with exponential backoff)
    * Optimized for reliability and user experience
    */
-  async retryFailedUpload(uploadId: string, userId: string): Promise<PreSignedUrlResponseDto> {
+  async retryFailedUpload(
+    uploadId: string,
+    userId: string,
+  ): Promise<PreSignedUrlResponseDto> {
     try {
       const upload = await this.prisma.uploads.findFirst({
         where: {
@@ -551,11 +647,13 @@ export class UploadsService {
       }
 
       const retryRequest: RequestPreSignedUrlsDto = {
-        files: [{
-          originalFilename: upload.file_name || 'unknown',
-          mimetype: upload.mime_type || 'application/octet-stream',
-          fileSize: upload.file_size || 0,
-        }],
+        files: [
+          {
+            originalFilename: upload.file_name || 'unknown',
+            mimetype: upload.mime_type || 'application/octet-stream',
+            fileSize: upload.file_size || 0,
+          },
+        ],
       };
 
       // Generate new pre-signed URLs for retry
@@ -567,7 +665,9 @@ export class UploadsService {
         throw error;
       }
 
-      throw new BadRequestException('Failed to retry upload. Please try again.');
+      throw new BadRequestException(
+        'Failed to retry upload. Please try again.',
+      );
     }
   }
 
@@ -575,7 +675,9 @@ export class UploadsService {
     // Security: Verify user owns this file
     let uid = s3Key.split('/')[1];
     if (userId !== uid) {
-      throw new BadRequestException('Unauthorized: Cannot delete file belonging to another user');
+      throw new BadRequestException(
+        'Unauthorized: Cannot delete file belonging to another user',
+      );
     }
     try {
       await this.s3Service.deleteFile(s3Key);
@@ -588,9 +690,13 @@ export class UploadsService {
 
   async deleteMultipleS3Files(s3Keys: string[], userId: string): Promise<void> {
     // Security: Verify all files belong to user
-    const unauthorizedKeys = s3Keys.filter(key => key.split('/')[1] !== userId);
+    const unauthorizedKeys = s3Keys.filter(
+      (key) => key.split('/')[1] !== userId,
+    );
     if (unauthorizedKeys.length > 0) {
-      throw new BadRequestException('Unauthorized: Cannot delete files belonging to another user');
+      throw new BadRequestException(
+        'Unauthorized: Cannot delete files belonging to another user',
+      );
     }
 
     try {
@@ -611,20 +717,60 @@ export class UploadsService {
     page: number = 1,
     limit: number = 10,
     status?: string,
-    search?: string
+    search?: string,
   ): Promise<UserResourcesResponseDto> {
     // Ensure parameters are numbers (defensive programming)
     const pageNum = Number(page);
-    const limitNum = Number(limit) ;
+    const limitNum = Number(limit);
     const offset = (pageNum - 1) * limitNum;
-    
-    this.logger.log(`Type check - page: ${typeof page} (${page}), limit: ${typeof limit} (${limit})`);
+
+    this.logger.log(
+      `Type check - page: ${typeof page} (${page}), limit: ${typeof limit} (${limit})`,
+    );
 
     try {
-      this.logger.log(`Fetching resources for user ${userId}, page ${page}, limit ${limit}`);
+      this.logger.log(
+        `Fetching resources for user ${userId}, page ${page}, limit ${limit}`,
+      );
 
-      // Build Prisma.sql query with proper type handling
-      let baseQuery = Prisma.sql`
+      // Build WHERE conditions dynamically
+      const conditions: string[] = [
+        'u.user_id = $1::uuid',
+        'u.resource_id IS NOT NULL',
+      ];
+      const params: any[] = [userId];
+      let paramIndex = 2;
+
+      // Add search filter if provided
+      if (search && search.trim()) {
+        const searchPattern = `%${search.trim()}%`;
+        conditions.push(
+          `(r.title ILIKE $${paramIndex} OR r.description ILIKE $${paramIndex})`,
+        );
+        params.push(searchPattern);
+        paramIndex++;
+      }
+
+      // Add status filter if provided
+      if (status && status !== 'all') {
+        const visibilityMapping: Record<string, string> = {
+          APPROVED: 'PUBLIC',
+          PENDING: 'PRIVATE',
+          REJECTED: 'PRIVATE',
+        };
+
+        const visibility = visibilityMapping[status];
+        if (visibility) {
+          conditions.push(`r.visibility = $${paramIndex}`);
+          params.push(visibility);
+          paramIndex++;
+        }
+      }
+
+      const whereClause = conditions.join(' AND ');
+
+      // Build the data query
+      const dataQueryString = `
         SELECT 
           u.resource_id,
           u.user_id,
@@ -658,49 +804,40 @@ export class UploadsService {
           WHERE rt.value > 0
           GROUP BY rr.resource_id
         ) rt ON u.resource_id = rt.resource_id
-        WHERE u.user_id = ${userId}::uuid AND u.resource_id IS NOT NULL`;
-      
-      let countQuery = Prisma.sql`
+        WHERE ${whereClause}
+        ORDER BY u.created_at DESC
+        LIMIT $${paramIndex}
+        OFFSET $${paramIndex + 1}`;
+
+      // Build the count query
+      const countQueryString = `
         SELECT COUNT(*) as total
         FROM uploads u
         INNER JOIN resources r ON u.resource_id = r.id
-        WHERE u.user_id = ${userId}::uuid AND u.resource_id IS NOT NULL`;
+        WHERE ${whereClause}`;
 
-      // Add search filter if provided
-      if (search && search.trim()) {
-        const searchPattern = `%${search.trim()}%`;
-        baseQuery = Prisma.sql`${baseQuery} AND (r.title ILIKE ${searchPattern} OR r.description ILIKE ${searchPattern})`;
-        countQuery = Prisma.sql`${countQuery} AND (r.title ILIKE ${searchPattern} OR r.description ILIKE ${searchPattern})`;
-      }
-      console.log("STATUSSS:", status);
-      // Add status filter if provided
-      if (status && status !== 'all') {
-        const visibilityMapping = {
-          'APPROVED': 'PUBLIC',
-          'PENDING': 'PRIVATE',
-          'REJECTED': 'PRIVATE'
-        };
-        if (visibilityMapping[status]) {
-          const visibility = visibilityMapping[status];
-          baseQuery = Prisma.sql`${baseQuery} AND r.visibility = '${visibility}'`;
-          countQuery = Prisma.sql`${countQuery} AND r.visibility = '${visibility}'`;
-        }
-      }
-
-      // Add pagination
-      const finalQuery = Prisma.sql`${baseQuery} ORDER BY u.created_at DESC LIMIT ${limitNum} OFFSET ${offset}`;
+      this.logger.debug(
+        `Executing query with filters - search: ${search}, status: ${status}`,
+      );
 
       // Execute both queries in parallel
       const [rawResults, countResult] = await Promise.all([
-        this.prisma.$queryRaw<ResourceWithMetrics[]>(finalQuery),
-        this.prisma.$queryRaw<[{ total: bigint }]>(countQuery)
+        this.prisma.$queryRawUnsafe(
+          dataQueryString,
+          ...params,
+          limitNum,
+          offset,
+        ) as Promise<ResourceWithMetrics[]>,
+        this.prisma.$queryRawUnsafe(countQueryString, ...params) as Promise<
+          [{ total: bigint }]
+        >,
       ]);
 
       const total = Number(countResult[0]?.total || 0);
       const totalPages = Math.ceil(total / limitNum);
 
       // Transform raw SQL results to DTO format
-      const resources = rawResults.map(row => ({
+      const resources = rawResults.map((row) => ({
         resource_id: row.resource_id,
         user_id: userId,
         file_size: Number(row.file_size) || 0,
@@ -709,30 +846,37 @@ export class UploadsService {
         resource_details: {
           title: row.title || '',
           description: row.description || '',
-          visibility: (row.visibility as ResourceVisibility) || ResourceVisibility.PRIVATE,
+          visibility:
+            (row.visibility as ResourceVisibility) ||
+            ResourceVisibility.PRIVATE,
           category: row.category || '',
           folder_name: row.folder_name || 'No Folder',
           upvotes_count: Number(row.upvotes_count) || 0,
-          downloads_count: Number(row.downloads_count) || 0
-        }
+          downloads_count: Number(row.downloads_count) || 0,
+        },
       }));
 
-      this.logger.log(`Retrieved ${resources.length} resources for user ${userId}`);
-      this.logger.log(`full information: ${JSON.stringify(resources, null, 2)}`);
+      this.logger.log(
+        `Retrieved ${resources.length} resources for user ${userId}`,
+      );
+      this.logger.log(
+        `full information: ${JSON.stringify(resources, null, 2)}`,
+      );
       return {
         resources,
         pagination: {
           page: pageNum,
           limit: limitNum,
           total,
-          totalPages
-        }
+          totalPages,
+        },
       };
-
     } catch (error) {
-      this.logger.error(`Failed to get user resources for user ${userId}:`, error);
+      this.logger.error(
+        `Failed to get user resources for user ${userId}:`,
+        error,
+      );
       throw new BadRequestException('Failed to retrieve user resources');
     }
   }
-
 }

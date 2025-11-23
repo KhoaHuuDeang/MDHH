@@ -11,9 +11,14 @@ import {
   GetMultipleResourceVotesRequestDto
 } from './votes.dto';
 
+import { LogsService } from '../logs/logs.service';
+
 @Injectable()
 export class VotesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private logsService: LogsService,
+  ) {}
 
   /**
    * Vote for a resource (file)
@@ -22,7 +27,7 @@ export class VotesService {
     // Validate resource exists
     const resource = await this.prisma.resources.findUnique({
       where: { id: dto.resourceId },
-      select: { id: true, visibility: true }
+      select: { id: true, visibility: true, uploads: { select: { user_id: true } } }
     });
 
     if (!resource) {
@@ -34,6 +39,7 @@ export class VotesService {
     }
 
     const voteValue = dto.voteType === VoteType.UP ? 1 : -1;
+    const ownerId = resource.uploads[0]?.user_id;
 
     try {
       // Check if user already voted on this resource
@@ -69,6 +75,17 @@ export class VotesService {
               rated_at: new Date()
             }
           });
+          
+          // Create log for owner
+          if (ownerId && ownerId !== userId) {
+            await this.logsService.createLog({
+              userId: ownerId,
+              actorId: userId,
+              type: voteValue === 1 ? 'UPVOTE' : 'DOWNVOTE',
+              entityType: 'resource',
+              entityId: dto.resourceId,
+            });
+          }
         }
       } else {
         // New vote - create it
@@ -84,6 +101,17 @@ export class VotesService {
             }
           }
         });
+        
+        // Create log for owner
+        if (ownerId && ownerId !== userId) {
+          await this.logsService.createLog({
+            userId: ownerId,
+            actorId: userId,
+            type: voteValue === 1 ? 'UPVOTE' : 'DOWNVOTE',
+            entityType: 'resource',
+            entityId: dto.resourceId,
+          });
+        }
       }
 
       // Get updated vote counts and user's current vote
@@ -118,7 +146,7 @@ export class VotesService {
     // Debug: Log query parameters
     console.log('🔍 SQL Query executing:', { userId, resourceId });
     
-    // Optimized single query with aggregation to reduce connections
+    // Use template literal with $queryRaw for safe parameterization
     const voteStats = await this.prisma.$queryRaw<Array<{
       upvotes: bigint;
       downvotes: bigint;
@@ -127,11 +155,12 @@ export class VotesService {
       SELECT 
         COUNT(CASE WHEN r.value = 1 THEN 1 END)::bigint as upvotes,
         COUNT(CASE WHEN r.value = -1 THEN 1 END)::bigint as downvotes,
-        ${userId ? Prisma.sql`MAX(CASE WHEN r.user_id = ${userId}::uuid THEN r.value END)` : Prisma.sql`NULL`} as "userVote"
+        MAX(CASE WHEN r.user_id = ${userId || null}::uuid THEN r.value END) as "userVote"
       FROM ratings r
       INNER JOIN ratings_resources rr ON r.id = rr.rating_id
       WHERE rr.resource_id = ${resourceId}::uuid
     `;
+
     const stats = voteStats[0] || { upvotes: 0n, downvotes: 0n, userVote: null };
     console.log('🔍 Raw SQL results:', stats);
     console.log('USER ID:', userId);
@@ -312,7 +341,7 @@ export class VotesService {
       throw new NotFoundException(`Folder with ID ${folderId} not found`);
     }
 
-    // Optimized single query with aggregation to reduce connections
+    // Use template literal with $queryRaw for safe parameterization
     const voteStats = await this.prisma.$queryRaw<Array<{
       upvotes: bigint;
       downvotes: bigint;
@@ -321,7 +350,7 @@ export class VotesService {
       SELECT 
         COUNT(CASE WHEN r.value = 1 THEN 1 END)::bigint as upvotes,
         COUNT(CASE WHEN r.value = -1 THEN 1 END)::bigint as downvotes,
-        ${userId ? Prisma.sql`MAX(CASE WHEN r.user_id = ${userId}::uuid THEN r.value END)` : Prisma.sql`NULL`} as "userVote"
+        MAX(CASE WHEN r.user_id = ${userId || null}::uuid THEN r.value END) as "userVote"
       FROM ratings r
       INNER JOIN ratings_folders rf ON r.id = rf.rating_id
       WHERE rf.folder_id = ${folderId}::uuid

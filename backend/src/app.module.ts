@@ -12,6 +12,8 @@ import { HomepageModule } from './homepage/homepage.module';
 import { VotesModule } from './votes/votes.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
+import { CommentsModule } from './comments/comments.module';
+import { LogsModule } from './logs/logs.module';
 
 @Module({
 
@@ -32,7 +34,9 @@ import { HealthModule } from './health/health.module';
     HomepageModule,
     VotesModule,
     PrismaModule,
-    HealthModule
+    HealthModule,
+    CommentsModule,
+    LogsModule
   ],
   controllers: [AppController],
   providers: [AppService],

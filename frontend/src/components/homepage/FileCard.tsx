@@ -7,6 +7,7 @@ import { getMimeTypeIcon, getFileTypeDescription } from '@/utils/mimeTypeIcons';
 import { FileData } from '@/services/homepageService';
 import useFileActions from '@/hooks/useFileActions';
 import { VoteData } from '@/types/vote.types';
+import CommentModal from '@/components/modals/CommentModal';
 
 const getIcons = (iconName: string, size: number, className?: string) => {
   const IconComponent = lucideIcons[iconName as keyof typeof lucideIcons] as LucideIcon;
@@ -34,6 +35,9 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
     downvotes: 0,
     userVote: null
   });
+
+  // Comment modal state
+  const [commentModalOpen, setCommentModalOpen] = useState(false);
 
   // Load vote data on mount
   useEffect(() => {
@@ -70,11 +74,11 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
     }
   }, [file.createdAt]);
 
-  // Handle file view
-  const handleView = useCallback(async () => {
-    await viewFile(file.id);
-    onView?.(file.id);
-  }, [file.id, viewFile, onView]);
+  // Handle file view - open comment modal
+  const handleView = useCallback((e?: React.MouseEvent | React.KeyboardEvent) => {
+    e?.stopPropagation();
+    setCommentModalOpen(true);
+  }, []);
 
   // Handle file download
   const handleDownload = useCallback(async (e: React.MouseEvent) => {
@@ -315,6 +319,13 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
           </div>
         </div>
       </div>
+
+      <CommentModal
+        isOpen={commentModalOpen}
+        onClose={() => setCommentModalOpen(false)}
+        resourceId={file.id}
+        title={file.title}
+      />
     </div>
   );
 });

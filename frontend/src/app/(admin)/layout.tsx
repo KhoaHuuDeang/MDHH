@@ -17,9 +17,9 @@ export default async function AdminLayout({
         redirect('/auth');
     }
     
-    // Role-based access control  
+    // Role-based access control
     if (session.user.role !== "ADMIN") {
-        redirect('/');
+        redirect('/home?error=unauthorized');
     }
 
     // Create real user data from session

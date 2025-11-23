@@ -69,19 +69,19 @@ export const authOptions: NextAuthOptions = {
                     })
 
                     const data = await res.json()
-                    if (res.ok && data.user) {
+                    if (res.ok && data.result?.user) {
                         return {
-                            id: data.user.id,
-                            email: data.user.email,
-                            name: data.user.displayname,
-                            username: data.user.username,
-                            role: data.user.role,
-                            birth: data.user.birth,
-                            accessToken: data.accessToken,
-                            sessionToken: data.sessionToken,
-                            is_disabled: data.user.is_disabled || false,
-                            disabled_until: data.user.disabled_until,
-                            disabled_reason: data.user.disabled_reason,
+                            id: data.result.user.id,
+                            email: data.result.user.email,
+                            name: data.result.user.displayname,
+                            username: data.result.user.username,
+                            role: data.result.user.role,
+                            birth: data.result.user.birth,
+                            accessToken: data.result.accessToken,
+                            sessionToken: data.result.sessionToken,
+                            is_disabled: data.result.user.is_disabled || false,
+                            disabled_until: data.result.user.disabled_until,
+                            disabled_reason: data.result.user.disabled_reason,
                         }
                     }
                     return null
@@ -115,7 +115,6 @@ export const authOptions: NextAuthOptions = {
                         profile.id,
                         process.env.DISCORD_GUILD_ID! // ID của server Discord
                     );
-                    console.log("Fetched Discord roles:", discordRoles);
 
                     const payload = {
                         discordId: profile.id,

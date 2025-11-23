@@ -244,4 +244,41 @@ export class AdminService {
       select: this.getUserSelectFields()
     });
   }
+
+
+  async updateUserRole(userId: string, newRole: 'USER' | 'ADMIN', adminId: string) {
+    // Verify user exists
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: { id: true, role_id: true }
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Prevent admin from changing their own role
+    if (userId === adminId) {
+      throw new Error('Cannot change your own role');
+    }
+
+    // Get the role ID for the new role
+    const role = await this.prisma.roles.findUnique({
+      where: { name: newRole }
+    });
+
+    if (!role) {
+      throw new NotFoundException('Role not found');
+    }
+
+    // Update user role
+    return this.prisma.users.update({
+      where: { id: userId },
+      data: {
+        role_id: role.id,
+        updated_at: new Date()
+      },
+      select: this.getUserSelectFields()
+    });
+  }
 }

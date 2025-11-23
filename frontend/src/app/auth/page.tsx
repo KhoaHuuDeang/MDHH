@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLoadingStore } from "@/store/loadingStore";
 import { useAuth } from "@/hooks/auth/useAuth";
 import LoginForm from "@/components/auth/LoginForm";
@@ -12,22 +12,31 @@ import Image from "next/image";
 // ------------------------------------
 export default function AuthPage() {
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [mounted, setMounted] = useState(false);
   const { isLoading } = useLoadingStore();
   const { handleAuth } = useAuth(mode, setMode);
 
   const isLogin = mode === "login";
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 py-10">
       {/* Background image - moved outside main and fixed positioning */}
       <div className="absolute inset-0 -z-10">
         <Image
-          src="/bg_auth.jpg"         
+          src="/bg_auth.jpg"
           alt=""
-          fill                      
-          sizes="100vw"               
-          quality={90}               
-          priority                    
+          fill
+          sizes="100vw"
+          quality={90}
+          priority
           className="object-cover"
           aria-hidden="true"
         />
