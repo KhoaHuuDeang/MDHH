@@ -8,6 +8,9 @@ export const SidebarItems = [
             { id: 'manage_document', label: 'Manage Document', href: '/uploads/resources' },
         ],
     },
+    { id: 'activities', label: 'Activities', icon: 'Clock', href: '/activities' },
+    { id: 'achievements', label: 'Achievements', icon: 'Trophy', href: '/achievements' },
+    { id: 'shop', label: 'Souvenir', icon: 'ShoppingBag', href: '/shop' },
 ];
 
 export const AdminSidebarItems = [
@@ -18,8 +21,17 @@ export const AdminSidebarItems = [
     { id: 'divider', label: '─────────', type: 'separator' },
     
     // Admin-only functions
-    { id: 'admin-dashboard', label: 'Bảng Quản trị', icon: 'LayoutDashboard', href: '/admin/dashboard' },
+    { id: 'admin-dashboard', label: 'Bảng Quản trị', icon: 'LayoutDashboard', href: '/dashboard' },
     { id: 'admin-users', label: 'Quản lý Người dùng', icon: 'Users', href: '/admin/users' },
-    { id: 'admin-moderation', label: 'Kiểm Soát Nội dung', icon: 'ShieldCheck', href: '/admin/moderation' },
+    { 
+        id: 'admin-moderation', 
+        label: 'Kiểm Soát Nội dung', 
+        icon: 'ShieldCheck',
+        subMenu: [
+            { id: 'moderation-uploads', label: 'Uploads', href: '/admin/moderation/uploads' },
+            { id: 'moderation-comments', label: 'Comments', href: '/admin/moderation/comments' },
+            { id: 'moderation-folders', label: 'Folders', href: '/admin/moderation/folders' },
+        ],
+    },
     { id: 'admin-orders', label: 'Quản lý Đơn hàng', icon: 'ShoppingCart', href: '/admin/orders' },
-];
+];;;

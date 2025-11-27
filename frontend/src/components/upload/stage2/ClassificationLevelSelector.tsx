@@ -43,7 +43,7 @@ function ClassificationLevelSelector({
               onClick={() => onLevelChange(level.id)}
               className={`
                 p-4 rounded-lg border-2 text-left transition-all duration-200
-                hover:shadow-md hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50
+                hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50
                 ${selectedLevelId === level.id
                   ? 'border-[#6A994E] bg-[#F0F7F4] shadow-lg shadow-[#6A994E]/20'
                   : 'border-gray-200 bg-white hover:border-[#6A994E]/50'

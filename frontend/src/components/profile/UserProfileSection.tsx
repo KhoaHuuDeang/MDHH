@@ -6,6 +6,7 @@ import { signOut } from "next-auth/react";
 import { getIcon } from "@/utils/getIcon";
 import FieldRow from "./FieldRow";
 import useUserProfile from "@/hooks/useUserProfile";
+import { userService } from "@/services/userService";
 
 interface UserProfileSectionProps {
     userId: string;
@@ -64,19 +65,30 @@ function UserProfileSection({ userId }: UserProfileSectionProps) {
     const handleAvatarChange = useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file && userData) {
-            // For now, create a temporary URL
-            const tempUrl = URL.createObjectURL(file);
-            await updateProfile({ avatar: tempUrl });
+            try {
+                // Upload file and get real S3 URL
+                const publicUrl = await userService.uploadProfileImage(file, 'avatar');
+                // Update profile with real URL
+                await updateProfile({ avatar: publicUrl });
+            } catch (error) {
+                console.error('Avatar upload failed:', error);
+            }
         }
-    }, [updateProfile]);
+    }, [userData, updateProfile]);
 
     const handleBackgroundChange = useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file && userData) {
-            const tempUrl = URL.createObjectURL(file);
-            await updateProfile({ banner: tempUrl });
+            try {
+                // Upload file and get real S3 URL
+                const publicUrl = await userService.uploadProfileImage(file, 'banner');
+                // Update profile with real URL
+                await updateProfile({ banner: publicUrl });
+            } catch (error) {
+                console.error('Banner upload failed:', error);
+            }
         }
-    }, [updateProfile]);
+    }, [userData, updateProfile]);
 
     const maskEmail = useCallback((email: string) => {
         const [local, domain] = email.split("@");

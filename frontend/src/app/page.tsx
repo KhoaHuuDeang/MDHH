@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import useNotifications from "@/hooks/useNotifications";
 // Giả định utility này nhập các icon từ thư viện như lucide-react hoặc feather-icons
@@ -17,7 +17,7 @@ import Link from "next/link";
  * - Responsive typography scaling
  */
 
-export default function MDHHLandingPage() {
+function MDHHLandingPageContent() {
   const searchParams = useSearchParams();
   const toast = useNotifications();
   const [scrollY, setScrollY] = useState(0);
@@ -756,5 +756,13 @@ export default function MDHHLandingPage() {
         </div>
       </footer>
     </main>
+  );
+}
+
+export default function MDHHLandingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div>Loading...</div></div>}>
+      <MDHHLandingPageContent />
+    </Suspense>
   );
 }

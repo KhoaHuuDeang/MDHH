@@ -55,7 +55,9 @@ async function main() {
 
   const testAdmin = await prisma.users.upsert({
     where: { email: 'admin@test.com' },
-    update: {},
+    update: {
+      role_id: adminRole.id,
+    },
     create: {
       email: 'admin@test.com',
       username: 'testadmin',
@@ -237,6 +239,9 @@ async function main() {
       file_size: 1024 * 500, // 500KB
       s3_key: 'uploads/getting-started.pdf',
       status: 'COMPLETED',
+      moderation_status: 'APPROVED',
+      moderated_by: testAdmin.id,
+      moderated_at: new Date(),
       uploaded_at: new Date(),
     },
   });
@@ -250,6 +255,7 @@ async function main() {
       file_size: 1024 * 1024 * 2, // 2MB
       s3_key: 'uploads/q1-report.xlsx',
       status: 'COMPLETED',
+      moderation_status: 'PENDING_APPROVAL',
       uploaded_at: new Date(),
     },
   });
@@ -263,6 +269,10 @@ async function main() {
       file_size: 1024 * 250, // 250KB
       s3_key: 'uploads/meeting-notes-nov.docx',
       status: 'COMPLETED',
+      moderation_status: 'REJECTED',
+      moderation_reason: 'Inappropriate content',
+      moderated_by: testAdmin.id,
+      moderated_at: new Date(),
       uploaded_at: new Date(),
     },
   });
@@ -336,6 +346,259 @@ async function main() {
 
   console.log('Votes seeded successfully');
 
+  // Seed souvenirs
+  console.log('\nSeeding souvenirs...');
+
+  const souvenirs = [
+    {
+      name: 'MDHH T-Shirt',
+      description: 'Official MDHH branded t-shirt',
+      price: 150000,
+      stock: 50,
+      image_url: 'https://via.placeholder.com/300x300?text=MDHH+T-Shirt',
+      is_active: true,
+    },
+    {
+      name: 'MDHH Mug',
+      description: 'Ceramic mug with MDHH logo',
+      price: 80000,
+      stock: 100,
+      image_url: 'https://via.placeholder.com/300x300?text=MDHH+Mug',
+      is_active: true,
+    },
+    {
+      name: 'MDHH Notebook',
+      description: 'Premium notebook for note-taking',
+      price: 120000,
+      stock: 75,
+      image_url: 'https://via.placeholder.com/300x300?text=MDHH+Notebook',
+      is_active: true,
+    },
+    {
+      name: 'MDHH Keychain',
+      description: 'Metal keychain with logo',
+      price: 30000,
+      stock: 200,
+      image_url: 'https://via.placeholder.com/300x300?text=MDHH+Keychain',
+      is_active: true,
+    },
+    {
+      name: 'MDHH Sticker Pack',
+      description: 'Set of 5 vinyl stickers',
+      price: 25000,
+      stock: 150,
+      image_url: 'https://via.placeholder.com/300x300?text=MDHH+Stickers',
+      is_active: true,
+    },
+  ];
+
+  for (const souvenir of souvenirs) {
+    await prisma.souvenirs.create({ data: souvenir });
+  }
+
+  console.log(`Souvenirs seeded successfully: ${souvenirs.length} items`);
+
+  // Seed test activities/logs
+  console.log('\nSeeding test activities...');
+
+  await prisma.logs.createMany({
+    data: [
+      {
+        user_id: testUser.id,
+        actor_id: testUser.id,
+        type: 'UPLOAD_SUCCESS',
+        entity_type: 'resource',
+        entity_id: resource1.id,
+        message: 'You uploaded Đề thi Giải tích 1',
+        is_read: true,
+      },
+      {
+        user_id: testUser.id,
+        actor_id: testAdmin.id,
+        type: 'UPVOTE',
+        entity_type: 'resource',
+        entity_id: resource1.id,
+        message: 'Test Admin upvoted your resource',
+        is_read: true,
+      },
+      {
+        user_id: testUser.id,
+        actor_id: testAdmin.id,
+        type: 'COMMENT',
+        entity_type: 'resource',
+        entity_id: resource1.id,
+        message: 'Test Admin commented on your resource',
+        is_read: false,
+      },
+      {
+        user_id: testUser.id,
+        actor_id: testUser.id,
+        type: 'UPLOAD_SUCCESS',
+        entity_type: 'resource',
+        entity_id: resource2.id,
+        message: 'You uploaded Slide Java cơ bản',
+        is_read: true,
+      },
+    ],
+  });
+
+  console.log('Test activities seeded successfully');
+
+  // Seed sample orders
+  console.log('\nSeeding sample orders...');
+
+  const allSouvenirs = await prisma.souvenirs.findMany();
+
+  // Order 1: PAID order for testUser
+  const order1 = await prisma.orders.create({
+    data: {
+      user_id: testUser.id,
+      total_amount: 350000,
+      status: 'PAID',
+      payment_method: 'VNPAY',
+      payment_ref: 'VNP001234',
+      created_at: new Date('2025-11-20T10:30:00Z'),
+      updated_at: new Date('2025-11-20T10:35:00Z'),
+    },
+  });
+
+  await prisma.order_items.createMany({
+    data: [
+      {
+        order_id: order1.id,
+        souvenir_id: allSouvenirs[0].id, // T-Shirt
+        quantity: 2,
+        price: 150000,
+      },
+      {
+        order_id: order1.id,
+        souvenir_id: allSouvenirs[3].id, // Keychain
+        quantity: 1,
+        price: 30000,
+      },
+    ],
+  });
+
+  // Order 2: PROCESSING order for testUser
+  const order2 = await prisma.orders.create({
+    data: {
+      user_id: testUser.id,
+      total_amount: 200000,
+      status: 'PROCESSING',
+      payment_method: 'VNPAY',
+      payment_ref: 'VNP001235',
+      created_at: new Date('2025-11-22T14:20:00Z'),
+      updated_at: new Date('2025-11-22T14:25:00Z'),
+    },
+  });
+
+  await prisma.order_items.createMany({
+    data: [
+      {
+        order_id: order2.id,
+        souvenir_id: allSouvenirs[1].id, // Mug
+        quantity: 2,
+        price: 80000,
+      },
+    ],
+  });
+
+  // Order 3: PENDING order for testAdmin
+  const order3 = await prisma.orders.create({
+    data: {
+      user_id: testAdmin.id,
+      total_amount: 370000,
+      status: 'PENDING',
+      payment_method: 'VNPAY',
+      created_at: new Date('2025-11-24T09:15:00Z'),
+      updated_at: new Date('2025-11-24T09:15:00Z'),
+    },
+  });
+
+  await prisma.order_items.createMany({
+    data: [
+      {
+        order_id: order3.id,
+        souvenir_id: allSouvenirs[2].id, // Notebook
+        quantity: 3,
+        price: 120000,
+      },
+    ],
+  });
+
+  // Order 4: COMPLETED order for testUser
+  const order4 = await prisma.orders.create({
+    data: {
+      user_id: testUser.id,
+      total_amount: 75000,
+      status: 'COMPLETED',
+      payment_method: 'VNPAY',
+      payment_ref: 'VNP001236',
+      created_at: new Date('2025-11-18T16:00:00Z'),
+      updated_at: new Date('2025-11-19T10:00:00Z'),
+    },
+  });
+
+  await prisma.order_items.createMany({
+    data: [
+      {
+        order_id: order4.id,
+        souvenir_id: allSouvenirs[4].id, // Sticker Pack
+        quantity: 3,
+        price: 25000,
+      },
+    ],
+  });
+
+  // Order 5: CANCELLED order for testAdmin
+  const order5 = await prisma.orders.create({
+    data: {
+      user_id: testAdmin.id,
+      total_amount: 150000,
+      status: 'CANCELLED',
+      payment_method: 'VNPAY',
+      created_at: new Date('2025-11-25T11:30:00Z'),
+      updated_at: new Date('2025-11-25T12:00:00Z'),
+    },
+  });
+
+  await prisma.order_items.createMany({
+    data: [
+      {
+        order_id: order5.id,
+        souvenir_id: allSouvenirs[0].id, // T-Shirt
+        quantity: 1,
+        price: 150000,
+      },
+    ],
+  });
+
+  // Order 6: REFUNDED order for testUser
+  const order6 = await prisma.orders.create({
+    data: {
+      user_id: testUser.id,
+      total_amount: 240000,
+      status: 'REFUNDED',
+      payment_method: 'VNPAY',
+      payment_ref: 'VNP001237',
+      created_at: new Date('2025-11-15T13:45:00Z'),
+      updated_at: new Date('2025-11-16T09:30:00Z'),
+    },
+  });
+
+  await prisma.order_items.createMany({
+    data: [
+      {
+        order_id: order6.id,
+        souvenir_id: allSouvenirs[2].id, // Notebook
+        quantity: 2,
+        price: 120000,
+      },
+    ],
+  });
+
+  console.log(`Sample orders seeded successfully: 6 orders created`);
+
   console.log('\n========================================');
   console.log('Database seed completed successfully!');
   console.log('========================================');
@@ -347,6 +610,9 @@ async function main() {
   console.log('Folders: 3 (2 user, 1 admin)');
   console.log('Resources: 3 with uploads');
   console.log('Votes: 3 ratings');
+  console.log('Souvenirs: 5 items');
+  console.log('Orders: 6 orders with various statuses');
+  console.log('Activities: 4 logs for user');
   console.log('================');
 }
 

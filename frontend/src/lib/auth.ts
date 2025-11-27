@@ -59,6 +59,11 @@ export const authOptions: NextAuthOptions = {
             },
             async authorize(credentials) {
                 try {
+                    if (!BACKEND_URL) {
+                        console.error('NEXT_PUBLIC_API_URL not configured')
+                        return null
+                    }
+
                     const res = await fetch(`${BACKEND_URL}/auth/login`, {
                         method: 'POST',
                         body: JSON.stringify({
@@ -69,7 +74,9 @@ export const authOptions: NextAuthOptions = {
                     })
 
                     const data = await res.json()
-                    if (res.ok && data.result?.user) {
+
+                    // Handle standardized response format {message, status, result}
+                    if (res.ok && data.status === 200 && data.result?.user) {
                         return {
                             id: data.result.user.id,
                             email: data.result.user.email,
@@ -84,9 +91,15 @@ export const authOptions: NextAuthOptions = {
                             disabled_reason: data.result.user.disabled_reason,
                         }
                     }
+
+                    // Log error message from standardized error response
+                    if (data.message) {
+                        console.error('Login failed:', data.message)
+                    }
+
                     return null
                 } catch (error) {
-                    console.error('Auth error:', error)
+                    console.error('Auth error - Backend may not be running:', error)
                     return null
                 }
             }
@@ -138,20 +151,23 @@ export const authOptions: NextAuthOptions = {
                         body: JSON.stringify(payload),
                     });
 
-                    if (!res.ok) {
-                        console.error("Backend sign-in failed:", await res.json());
+                    const data = await res.json();
+
+                    // Handle standardized response format {message, status, result}
+                    if (!res.ok || data.status !== 200 || !data.result) {
+                        console.error("Backend sign-in failed:", data.message || 'Unknown error');
                         return false;
                     }
-                    const data = await res.json();
-                    user.id = data.user.id;
-                    user.role = data.user.role;
-                    user.username = data.user.username;
-                    user.birth = data.user.birth;
-                    user.is_disabled = data.user.is_disabled || false;
-                    user.disabled_until = data.user.disabled_until;
-                    user.disabled_reason = data.user.disabled_reason;
+
+                    user.id = data.result.user.id;
+                    user.role = data.result.user.role;
+                    user.username = data.result.user.username;
+                    user.birth = data.result.user.birth;
+                    user.is_disabled = data.result.user.is_disabled || false;
+                    user.disabled_until = data.result.user.disabled_until;
+                    user.disabled_reason = data.result.user.disabled_reason;
                     user.accessToken = account.access_token!;
-                    user.backendToken = data.accessToken!;
+                    user.backendToken = data.result.accessToken!;
                     return true;
                 } catch (error) {
                     console.error("SignIn callback error:", error);
@@ -250,6 +266,9 @@ export const authOptions: NextAuthOptions = {
     pages: {
         signIn: '/auth',
     },
-    session: { strategy: "jwt" },
+    session: {
+        strategy: "jwt",
+        maxAge: 7 * 24 * 60 * 60, // 7 days (matches backend JWT_EXPIRES_IN)
+    },
     secret: process.env.NEXTAUTH_SECRET,
 }

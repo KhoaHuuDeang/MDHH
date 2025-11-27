@@ -14,6 +14,10 @@ import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
 import { CommentsModule } from './comments/comments.module';
 import { LogsModule } from './logs/logs.module';
+import { ShopModule } from './shop/shop.module';
+import { CartModule } from './cart/cart.module';
+import { PaymentModule } from './payment/payment.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
 
@@ -36,7 +40,11 @@ import { LogsModule } from './logs/logs.module';
     PrismaModule,
     HealthModule,
     CommentsModule,
-    LogsModule
+    LogsModule,
+    ShopModule,
+    CartModule,
+    PaymentModule,
+    EmailModule
   ],
   controllers: [AppController],
   providers: [AppService],

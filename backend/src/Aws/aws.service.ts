@@ -16,7 +16,15 @@ export class S3Service {
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ];
+    private readonly ALLOWED_IMAGE_MIME_TYPES = [
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/webp',
+        'image/gif'
+    ];
     private readonly MAX_FILE_SIZE = 50 * 1024 * 1024;
+    private readonly MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB for images
     private readonly MAX_FILES_PER_RESOURCE = 10;
 
     constructor(private configService: ConfigService) {
@@ -212,6 +220,66 @@ export class S3Service {
         } catch (error) {
             this.logger.error(`Failed to get file metadata for ${s3Key}:`, error);
             throw new BadRequestException('Failed to get file information');
+        }
+    }
+
+    /**
+     * Validate image file metadata
+     */
+    validateImageMetadata(file: { mimetype: string; fileSize: number; originalFilename: string }): void {
+        if (!this.ALLOWED_IMAGE_MIME_TYPES.includes(file.mimetype)) {
+            throw new BadRequestException(
+                `Invalid image type: ${file.mimetype}. Allowed types: JPEG, PNG, WEBP, GIF`
+            );
+        }
+
+        if (file.fileSize > this.MAX_IMAGE_SIZE) {
+            throw new BadRequestException(
+                `Image size exceeds limit: ${file.fileSize} bytes. Max allowed: ${this.MAX_IMAGE_SIZE} bytes (5MB)`
+            );
+        }
+
+        if (file.originalFilename.includes('..') || file.originalFilename.includes('/')) {
+            throw new BadRequestException('Invalid filename: contains illegal characters');
+        }
+
+        if (file.originalFilename.length > 255) {
+            throw new BadRequestException('Filename too long (max 255 characters)');
+        }
+    }
+
+    /**
+     * Generate pre-signed URL for profile image upload (avatar/banner)
+     */
+    async generateProfileImageUploadUrl(
+        userId: string,
+        filename: string,
+        mimetype: string,
+        fileSize: number,
+        imageType: 'avatar' | 'banner'
+    ): Promise<{ s3Key: string; uploadUrl: string; publicUrl: string }> {
+        this.validateImageMetadata({ mimetype, fileSize, originalFilename: filename });
+
+        const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const uniqueId = uuidv4();
+        const s3Key = `profile/${imageType}/${uniqueId}-${sanitizedFilename}`;
+
+        try {
+            const command = new PutObjectCommand({
+                Bucket: this.bucketName,
+                Key: s3Key,
+                ContentType: mimetype,
+            });
+
+            const uploadUrl = await getSignedUrl(this.s3, command, { expiresIn: 3600 });
+            const publicUrl = `https://${this.bucketName}.s3.${this.configService.get('AWS_REGION')}.amazonaws.com/${s3Key}`;
+
+            this.logger.log(`Generated profile image upload URL for ${imageType}: ${s3Key}`);
+
+            return { s3Key, uploadUrl, publicUrl };
+        } catch (error) {
+            this.logger.error(`Failed to generate profile image upload URL:`, error);
+            throw new BadRequestException('Failed to generate image upload URL');
         }
     }
 

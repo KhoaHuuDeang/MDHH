@@ -56,7 +56,7 @@ const FileUploadArea = () => {
   return (
     <section
       className={`relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300 ${dragOver
-          ? 'border-[#6A994E] bg-green-100 scale-105'
+          ? 'border-[#6A994E] bg-green-100 shadow-lg'
           : 'border-[#6A994E]/50 bg-green-50 hover:bg-green-100'
         }`}
       onDragOver={handleDragOver}
@@ -84,7 +84,7 @@ const FileUploadArea = () => {
       />
 
       <div className="flex flex-col items-center justify-center">
-        <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-all duration-300 ${dragOver ? 'bg-[#386641] scale-110' : 'bg-[#6A994E]/20'
+        <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-all duration-300 ${dragOver ? 'bg-[#386641] shadow-lg' : 'bg-[#6A994E]/20'
           }`}>
           {getIcon('CloudUpload', 32, `transition-colors duration-300 ${dragOver ? 'text-white' : 'text-[#386641]'
             }`)}

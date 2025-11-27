@@ -11,6 +11,10 @@ export class AdminUploadItemDto {
   file_size: number | null;
   s3_key: string | null;
   status: string | null;
+  moderation_status: string | null;
+  moderation_reason: string | null;
+  moderated_by: string | null;
+  moderated_at: Date | null;
   created_at: Date | null;
   uploaded_at: Date | null;
   user?: {
@@ -46,6 +50,10 @@ export class AdminUploadsQueryDto {
   status?: string;
 
   @IsOptional()
+  @IsEnum(['PENDING_APPROVAL', 'APPROVED', 'REJECTED'])
+  moderation_status?: string;
+
+  @IsOptional()
   @IsString()
   sortBy?: string;
 
@@ -75,6 +83,18 @@ export class FlagUploadDto {
   @IsUUID()
   uploadId: string;
 
+  @IsString()
+  reason: string;
+}
+
+
+export class ApproveUploadDto {
+  @IsString()
+  @IsOptional()
+  note?: string;
+}
+
+export class RejectUploadDto {
   @IsString()
   reason: string;
 }

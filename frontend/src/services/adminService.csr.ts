@@ -34,6 +34,12 @@ class AdminService {
     const response = await csrAxiosClient.patch(`/admin/users/${userId}/role`, { role });
     return response.data;
   }
+
+
+  async getAnalytics() {
+    const response = await csrAxiosClient.get('/admin/users/analytics');
+    return response.data;
+  }
 }
 
 export const adminService = new AdminService();

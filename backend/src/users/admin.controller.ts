@@ -16,7 +16,8 @@ import {
   AdminUsersResponseDto,
   DisableUserDto,
   EnableUserDto,
-  UpdateUserRoleDto
+  UpdateUserRoleDto,
+  AdminAnalyticsDto
 } from './admin-users.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -30,6 +31,17 @@ import { RolesGuard } from '../auth/roles.guard';
 @ApiBearerAuth()
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
+
+  @Get('analytics')
+  @ApiOperation({ summary: 'Get admin dashboard analytics' })
+  @ApiResponse({
+    status: 200,
+    description: 'Analytics retrieved successfully',
+    type: AdminAnalyticsDto
+  })
+  async getAnalytics() {
+    return this.adminService.getAnalytics();
+  }
 
   @Get()
   @ApiOperation({ summary: 'Get users with hybrid pagination' })

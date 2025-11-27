@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { LogsService } from '../logs/logs.service';
 import {
   AdminUploadsQueryDto,
   AdminUploadsResponseDto,
@@ -17,7 +18,10 @@ import {
 
 @Injectable()
 export class AdminModerationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly logsService: LogsService,
+  ) {}
 
   // ========== UPLOADS MODERATION ==========
   async getUploads(query: AdminUploadsQueryDto): Promise<AdminUploadsResponseDto> {
@@ -38,6 +42,9 @@ export class AdminModerationService {
     if (query.status) {
       where.status = query.status;
     }
+    if (query.moderation_status) {
+      where.moderation_status = query.moderation_status;
+    }
 
     const [uploads, total] = await Promise.all([
       this.prisma.uploads.findMany({
@@ -54,6 +61,10 @@ export class AdminModerationService {
           file_size: true,
           s3_key: true,
           status: true,
+          moderation_status: true,
+          moderation_reason: true,
+          moderated_by: true,
+          moderated_at: true,
           created_at: true,
           uploaded_at: true,
           users: {
@@ -83,6 +94,10 @@ export class AdminModerationService {
       file_size: upload.file_size,
       s3_key: upload.s3_key,
       status: upload.status,
+      moderation_status: upload.moderation_status,
+      moderation_reason: upload.moderation_reason,
+      moderated_by: upload.moderated_by,
+      moderated_at: upload.moderated_at,
       created_at: upload.created_at,
       uploaded_at: upload.uploaded_at,
       user: upload.users
@@ -143,6 +158,82 @@ export class AdminModerationService {
 
     return {
       message: `Upload flagged: ${reason}`,
+    };
+  }
+
+
+  async approveUpload(uploadId: string, adminId: string): Promise<{ message: string; status: string; result: any }> {
+    const upload = await this.prisma.uploads.findUnique({
+      where: { id: uploadId },
+    });
+
+    if (!upload) {
+      throw new NotFoundException('Upload not found');
+    }
+
+    const updated = await this.prisma.uploads.update({
+      where: { id: uploadId },
+      data: {
+        moderation_status: 'APPROVED',
+        moderated_by: adminId,
+        moderated_at: new Date(),
+      },
+    });
+
+    // Create APPROVED notification log
+    if (upload.user_id) {
+      await this.logsService.createLog({
+        userId: upload.user_id,
+        actorId: adminId,
+        type: 'APPROVED',
+        entityType: 'upload',
+        entityId: uploadId,
+        message: `Your upload "${upload.file_name}" has been approved`,
+      });
+    }
+
+    return {
+      message: 'Upload approved successfully',
+      status: 'success',
+      result: updated,
+    };
+  }
+
+  async rejectUpload(uploadId: string, adminId: string, reason: string): Promise<{ message: string; status: string; result: any }> {
+    const upload = await this.prisma.uploads.findUnique({
+      where: { id: uploadId },
+    });
+
+    if (!upload) {
+      throw new NotFoundException('Upload not found');
+    }
+
+    const updated = await this.prisma.uploads.update({
+      where: { id: uploadId },
+      data: {
+        moderation_status: 'REJECTED',
+        moderation_reason: reason,
+        moderated_by: adminId,
+        moderated_at: new Date(),
+      },
+    });
+
+    // Create DECLINED notification log
+    if (upload.user_id) {
+      await this.logsService.createLog({
+        userId: upload.user_id,
+        actorId: adminId,
+        type: 'DECLINED',
+        entityType: 'upload',
+        entityId: uploadId,
+        message: `Your upload "${upload.file_name}" was rejected. Reason: ${reason}`,
+      });
+    }
+
+    return {
+      message: 'Upload rejected successfully',
+      status: 'success',
+      result: updated,
     };
   }
 

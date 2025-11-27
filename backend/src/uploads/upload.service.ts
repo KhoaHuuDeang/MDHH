@@ -405,6 +405,19 @@ export class UploadsService {
       );
     } catch (error) {
       this.logger.error('Failed to create resource with uploads:', error);
+
+      // Create UPLOAD_FAILED log
+      try {
+        await this.logsService.createLog({
+          userId,
+          type: 'UPLOAD_FAILED',
+          entityType: 'resource',
+          message: `Failed to create resource: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        });
+      } catch (logError) {
+        this.logger.error('Failed to create UPLOAD_FAILED log:', logError);
+      }
+
       throw new BadRequestException('Failed to create resource with uploads');
     }
   }
@@ -466,6 +479,26 @@ export class UploadsService {
       );
     } catch (error) {
       this.logger.error('Failed to complete upload:', error);
+
+      // Create UPLOAD_FAILED log if we have resource info
+      try {
+        await this.prisma.resources.findUnique({
+          where: { id: completeDto.resourceId },
+          include: { uploads: { select: { user_id: true }, take: 1 } },
+        }).then(async (resource) => {
+          if (resource?.uploads[0]?.user_id) {
+            await this.logsService.createLog({
+              userId: resource.uploads[0].user_id,
+              type: 'UPLOAD_FAILED',
+              entityType: 'resource',
+              entityId: completeDto.resourceId,
+              message: `Failed to complete upload: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            });
+          }
+        });
+      } catch (logError) {
+        this.logger.error('Failed to create UPLOAD_FAILED log:', logError);
+      }
 
       if (error instanceof NotFoundException) {
         throw error;
@@ -588,15 +621,30 @@ export class UploadsService {
   }
 
   /**
-   * Generate download URL for a file (simplified version)
-   * Note: This is a placeholder since S3 key is not currently stored
+   * Generate download URL for a file
+   * Uses S3 presigned URLs for secure download
    */
   async generateDownloadUrl(uploadId: string, userId: string): Promise<string> {
     try {
+      // Fetch upload with resource info
       const upload = await this.prisma.uploads.findFirst({
         where: {
           id: uploadId,
-          user_id: userId,
+          // Allow download if user owns it OR resource is public
+          OR: [
+            { user_id: userId },
+            {
+              resources: {
+                visibility: 'PUBLIC',
+                // Only approved uploads
+              }
+            }
+          ],
+          moderation_status: 'APPROVED',
+          status: 'COMPLETED',
+        },
+        include: {
+          resources: true,
         },
       });
 
@@ -604,18 +652,48 @@ export class UploadsService {
         throw new NotFoundException('Upload not found or not accessible');
       }
 
-      // For now, return a placeholder since S3 key is not available
-      // In a full implementation, you would store the S3 key and use it here
-      throw new BadRequestException(
-        'Download functionality not yet implemented - S3 key not stored',
-      );
+      if (!upload.s3_key) {
+        throw new BadRequestException('S3 key not available for this upload');
+      }
+
+      // Generate presigned download URL from S3
+      const downloadUrl = await this.s3Service.generateDownloadUrl(upload.s3_key);
+
+      // Track download in database
+      if (upload.resource_id) {
+        await this.prisma.downloads.create({
+          data: {
+            user_id: userId,
+            resource_id: upload.resource_id,
+            downloaded_at: new Date(),
+          },
+        }).catch(err => {
+          // Log but don't fail if tracking fails
+          this.logger.error(`Failed to track download for ${uploadId}:`, err);
+        });
+
+        // Log download activity
+        await this.logsService.createLog({
+          userId: upload.user_id || userId,
+          actorId: userId,
+          type: 'DOWNLOAD' as any, // Need to add to LogType enum
+          entityType: 'resource',
+          entityId: upload.resource_id,
+          message: `Downloaded file: ${upload.file_name}`,
+        }).catch(err => {
+          this.logger.error(`Failed to log download for ${uploadId}:`, err);
+        });
+      }
+
+      this.logger.log(`Generated download URL for upload ${uploadId}`);
+      return downloadUrl;
     } catch (error) {
       this.logger.error(
         `Failed to generate download URL for upload ${uploadId}:`,
         error,
       );
 
-      if (error instanceof NotFoundException) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
 
@@ -719,21 +797,16 @@ export class UploadsService {
     status?: string,
     search?: string,
   ): Promise<UserResourcesResponseDto> {
-    // Ensure parameters are numbers (defensive programming)
     const pageNum = Number(page);
     const limitNum = Number(limit);
     const offset = (pageNum - 1) * limitNum;
-
-    this.logger.log(
-      `Type check - page: ${typeof page} (${page}), limit: ${typeof limit} (${limit})`,
-    );
 
     try {
       this.logger.log(
         `Fetching resources for user ${userId}, page ${page}, limit ${limit}`,
       );
 
-      // Build WHERE conditions dynamically
+      // Optimized query with proper indexes
       const conditions: string[] = [
         'u.user_id = $1::uuid',
         'u.resource_id IS NOT NULL',
@@ -741,7 +814,6 @@ export class UploadsService {
       const params: any[] = [userId];
       let paramIndex = 2;
 
-      // Add search filter if provided
       if (search && search.trim()) {
         const searchPattern = `%${search.trim()}%`;
         conditions.push(
@@ -751,7 +823,6 @@ export class UploadsService {
         paramIndex++;
       }
 
-      // Add status filter if provided
       if (status && status !== 'all') {
         const visibilityMapping: Record<string, string> = {
           APPROVED: 'PUBLIC',
@@ -769,7 +840,7 @@ export class UploadsService {
 
       const whereClause = conditions.join(' AND ');
 
-      // Build the data query
+      // Optimized query: removed nested subqueries, use LEFT JOINs directly
       const dataQueryString = `
         SELECT 
           u.resource_id,
@@ -781,46 +852,35 @@ export class UploadsService {
           r.description,
           r.visibility,
           r.category,
-          COALESCE(f.name, 'No Folder') as folder_name,
+          COALESCE(fo.name, 'No Folder') as folder_name,
           COALESCE(d.downloads_count, 0) as downloads_count,
           COALESCE(rt.upvotes_count, 0) as upvotes_count
         FROM uploads u
         INNER JOIN resources r ON u.resource_id = r.id
-        LEFT JOIN (
-          SELECT ff.resource_id, fo.name
-          FROM folder_files ff
-          INNER JOIN folders fo ON ff.folder_id = fo.id
-          WHERE ff.resource_id IS NOT NULL
-        ) f ON u.resource_id = f.resource_id
-        LEFT JOIN (
-          SELECT resource_id, COUNT(*) as downloads_count
+        LEFT JOIN folder_files ff ON u.resource_id = ff.resource_id
+        LEFT JOIN folders fo ON ff.folder_id = fo.id
+        LEFT JOIN LATERAL (
+          SELECT COUNT(*) as downloads_count
           FROM downloads
-          GROUP BY resource_id
-        ) d ON u.resource_id = d.resource_id
-        LEFT JOIN (
-          SELECT rr.resource_id, COUNT(*) as upvotes_count
+          WHERE resource_id = u.resource_id
+        ) d ON true
+        LEFT JOIN LATERAL (
+          SELECT COUNT(*) as upvotes_count
           FROM ratings_resources rr
           INNER JOIN ratings rt ON rr.rating_id = rt.id
-          WHERE rt.value > 0
-          GROUP BY rr.resource_id
-        ) rt ON u.resource_id = rt.resource_id
+          WHERE rr.resource_id = u.resource_id AND rt.value > 0
+        ) rt ON true
         WHERE ${whereClause}
         ORDER BY u.created_at DESC
         LIMIT $${paramIndex}
         OFFSET $${paramIndex + 1}`;
 
-      // Build the count query
       const countQueryString = `
         SELECT COUNT(*) as total
         FROM uploads u
         INNER JOIN resources r ON u.resource_id = r.id
         WHERE ${whereClause}`;
 
-      this.logger.debug(
-        `Executing query with filters - search: ${search}, status: ${status}`,
-      );
-
-      // Execute both queries in parallel
       const [rawResults, countResult] = await Promise.all([
         this.prisma.$queryRawUnsafe(
           dataQueryString,
@@ -836,7 +896,6 @@ export class UploadsService {
       const total = Number(countResult[0]?.total || 0);
       const totalPages = Math.ceil(total / limitNum);
 
-      // Transform raw SQL results to DTO format
       const resources = rawResults.map((row) => ({
         resource_id: row.resource_id,
         user_id: userId,
@@ -859,9 +918,7 @@ export class UploadsService {
       this.logger.log(
         `Retrieved ${resources.length} resources for user ${userId}`,
       );
-      this.logger.log(
-        `full information: ${JSON.stringify(resources, null, 2)}`,
-      );
+
       return {
         resources,
         pagination: {
@@ -877,6 +934,36 @@ export class UploadsService {
         error,
       );
       throw new BadRequestException('Failed to retrieve user resources');
+    }
+  }
+
+  /**
+   * Generate presigned URL for profile image upload
+   */
+  async generateProfileImageUploadUrl(
+    userId: string,
+    filename: string,
+    mimetype: string,
+    fileSize: number,
+    imageType: 'avatar' | 'banner'
+  ): Promise<{ message: string; status: number; result: { s3Key: string; uploadUrl: string; publicUrl: string } }> {
+    try {
+      const result = await this.s3Service.generateProfileImageUploadUrl(
+        userId,
+        filename,
+        mimetype,
+        fileSize,
+        imageType
+      );
+
+      return {
+        message: 'Profile image upload URL generated successfully',
+        status: 200,
+        result
+      };
+    } catch (error) {
+      this.logger.error('Failed to generate profile image upload URL:', error);
+      throw error;
     }
   }
 }

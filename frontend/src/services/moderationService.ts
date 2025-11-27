@@ -1,3 +1,4 @@
+import { csrAxiosClient } from '@/utils/axiosClient';
 import {
   AdminUploadsQuery,
   AdminUploadsResponse,
@@ -8,20 +9,6 @@ import {
 } from '@/types/moderation.types';
 
 class ModerationService {
-  private baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-
-  private async fetchWithAuth(url: string, options: RequestInit = {}) {
-    const token = localStorage.getItem('token');
-    return fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
-      },
-    });
-  }
-
   // ========== UPLOADS ==========
   async getUploads(query: AdminUploadsQuery): Promise<AdminUploadsResponse> {
     const params = new URLSearchParams();
@@ -29,38 +16,45 @@ class ModerationService {
     if (query.limit) params.append('limit', query.limit.toString());
     if (query.search) params.append('search', query.search);
     if (query.status) params.append('status', query.status);
+    if (query.moderation_status) params.append('moderation_status', query.moderation_status);
     if (query.sortBy) params.append('sortBy', query.sortBy);
     if (query.sortOrder) params.append('sortOrder', query.sortOrder);
 
-    const response = await this.fetchWithAuth(
-      `${this.baseUrl}/admin/moderation/uploads?${params}`
+    const response = await csrAxiosClient.get<AdminUploadsResponse>(
+      `/admin/moderation/uploads?${params}`
     );
-    if (!response.ok) throw new Error('Failed to fetch uploads');
-    return response.json();
+    return response.data;
   }
 
   async deleteUpload(uploadId: string, reason?: string): Promise<{ message: string }> {
-    const response = await this.fetchWithAuth(
-      `${this.baseUrl}/admin/moderation/uploads/${uploadId}`,
-      {
-        method: 'DELETE',
-        body: JSON.stringify({ uploadId, reason }),
-      }
+    const response = await csrAxiosClient.delete<{ message: string }>(
+      `/admin/moderation/uploads/${uploadId}`,
+      { data: { uploadId, reason } }
     );
-    if (!response.ok) throw new Error('Failed to delete upload');
-    return response.json();
+    return response.data;
   }
 
   async flagUpload(uploadId: string, reason: string): Promise<{ message: string }> {
-    const response = await this.fetchWithAuth(
-      `${this.baseUrl}/admin/moderation/uploads/${uploadId}/flag`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ uploadId, reason }),
-      }
+    const response = await csrAxiosClient.post<{ message: string }>(
+      `/admin/moderation/uploads/${uploadId}/flag`,
+      { uploadId, reason }
     );
-    if (!response.ok) throw new Error('Failed to flag upload');
-    return response.json();
+    return response.data;
+  }
+
+  async approveUpload(uploadId: string): Promise<{ message: string; status: string; result: any }> {
+    const response = await csrAxiosClient.post<{ message: string; status: string; result: any }>(
+      `/admin/moderation/uploads/${uploadId}/approve`
+    );
+    return response.data;
+  }
+
+  async rejectUpload(uploadId: string, reason: string): Promise<{ message: string; status: string; result: any }> {
+    const response = await csrAxiosClient.post<{ message: string; status: string; result: any }>(
+      `/admin/moderation/uploads/${uploadId}/reject`,
+      { reason }
+    );
+    return response.data;
   }
 
   // ========== COMMENTS ==========
@@ -73,23 +67,18 @@ class ModerationService {
     if (query.sortBy) params.append('sortBy', query.sortBy);
     if (query.sortOrder) params.append('sortOrder', query.sortOrder);
 
-    const response = await this.fetchWithAuth(
-      `${this.baseUrl}/admin/moderation/comments?${params}`
+    const response = await csrAxiosClient.get<AdminCommentsResponse>(
+      `/admin/moderation/comments?${params}`
     );
-    if (!response.ok) throw new Error('Failed to fetch comments');
-    return response.json();
+    return response.data;
   }
 
   async deleteComment(commentId: string, reason?: string): Promise<{ message: string }> {
-    const response = await this.fetchWithAuth(
-      `${this.baseUrl}/admin/moderation/comments/${commentId}`,
-      {
-        method: 'DELETE',
-        body: JSON.stringify({ commentId, reason }),
-      }
+    const response = await csrAxiosClient.delete<{ message: string }>(
+      `/admin/moderation/comments/${commentId}`,
+      { data: { commentId, reason } }
     );
-    if (!response.ok) throw new Error('Failed to delete comment');
-    return response.json();
+    return response.data;
   }
 
   // ========== FOLDERS ==========
@@ -102,23 +91,18 @@ class ModerationService {
     if (query.sortBy) params.append('sortBy', query.sortBy);
     if (query.sortOrder) params.append('sortOrder', query.sortOrder);
 
-    const response = await this.fetchWithAuth(
-      `${this.baseUrl}/admin/moderation/folders?${params}`
+    const response = await csrAxiosClient.get<AdminFoldersResponse>(
+      `/admin/moderation/folders?${params}`
     );
-    if (!response.ok) throw new Error('Failed to fetch folders');
-    return response.json();
+    return response.data;
   }
 
   async deleteFolder(folderId: string, reason?: string): Promise<{ message: string }> {
-    const response = await this.fetchWithAuth(
-      `${this.baseUrl}/admin/moderation/folders/${folderId}`,
-      {
-        method: 'DELETE',
-        body: JSON.stringify({ folderId, reason }),
-      }
+    const response = await csrAxiosClient.delete<{ message: string }>(
+      `/admin/moderation/folders/${folderId}`,
+      { data: { folderId, reason } }
     );
-    if (!response.ok) throw new Error('Failed to delete folder');
-    return response.json();
+    return response.data;
   }
 }
 

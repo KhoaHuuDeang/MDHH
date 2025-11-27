@@ -39,6 +39,31 @@ export const userService = {
   deleteUser: async (id: string) => {
     const response = await csrAxiosClient.delete(`/users/${id}`)
     return response.data
+  },
+
+  // Profile image upload
+  uploadProfileImage: async (file: File, imageType: 'avatar' | 'banner') => {
+    // Step 1: Get presigned URL
+    const presignedResponse = await csrAxiosClient.post('/uploads/profile-image', {
+      filename: file.name,
+      mimetype: file.type,
+      fileSize: file.size,
+      imageType
+    })
+
+    const { uploadUrl, publicUrl } = presignedResponse.data.result
+
+    // Step 2: Upload to S3
+    await fetch(uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type
+      }
+    })
+
+    // Step 3: Return public URL
+    return publicUrl
   }
 }
 

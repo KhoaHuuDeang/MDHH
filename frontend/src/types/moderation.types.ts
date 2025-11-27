@@ -8,6 +8,10 @@ export interface AdminUploadItem {
   file_size: number | null;
   s3_key: string | null;
   status: string | null;
+  moderation_status: string | null;
+  moderation_reason: string | null;
+  moderated_by: string | null;
+  moderated_at: string | null;
   created_at: string | null;
   uploaded_at: string | null;
   user?: {
@@ -26,6 +30,7 @@ export interface AdminUploadsQuery {
   limit?: number;
   search?: string;
   status?: 'PENDING' | 'COMPLETED' | 'FAILED';
+  moderation_status?: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }

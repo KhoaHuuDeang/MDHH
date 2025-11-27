@@ -281,4 +281,64 @@ export class AdminService {
       select: this.getUserSelectFields()
     });
   }
+
+
+  async getAnalytics() {
+    const analytics = await this.prisma.$queryRaw<any[]>`
+      SELECT 
+        -- Total counts
+        (SELECT COUNT(*)::int FROM "users") as "totalUsers",
+        (SELECT COUNT(*)::int FROM "uploads") as "totalUploads",
+        (SELECT COUNT(*)::int FROM "comments") as "totalComments",
+        (SELECT COUNT(*)::int FROM "folders") as "totalFolders",
+        
+        -- Active users (last 30 days)
+        (SELECT COUNT(DISTINCT u.id)::int 
+         FROM "users" u
+         LEFT JOIN "uploads" up ON up.user_id = u.id
+         LEFT JOIN "comments" c ON c.user_id = u.id
+         WHERE up.created_at >= NOW() - INTERVAL '30 days'
+            OR c.created_at >= NOW() - INTERVAL '30 days'
+        ) as "activeUsers",
+        
+        -- Disabled users
+        (SELECT COUNT(*)::int FROM "users" WHERE is_disabled = true) as "disabledUsers",
+        
+        -- Recent activity (last 7 days)
+        (SELECT COUNT(*)::int FROM "users" WHERE created_at >= NOW() - INTERVAL '7 days') as "newUsers",
+        (SELECT COUNT(*)::int FROM "uploads" WHERE created_at >= NOW() - INTERVAL '7 days') as "newUploads",
+        (SELECT COUNT(*)::int FROM "comments" WHERE created_at >= NOW() - INTERVAL '7 days') as "newComments"
+    `;
+
+    const usersByRole = await this.prisma.$queryRaw<any[]>`
+      SELECT 
+        r.name as role,
+        COUNT(u.id)::int as count
+      FROM "roles" r
+      LEFT JOIN "users" u ON u.role_id = r.id
+      GROUP BY r.name
+      ORDER BY count DESC
+    `;
+
+    const stats = analytics[0];
+
+    return {
+      message: 'Analytics retrieved successfully',
+      status: 200,
+      result: {
+        totalUsers: stats.totalUsers,
+        totalUploads: stats.totalUploads,
+        totalComments: stats.totalComments,
+        totalFolders: stats.totalFolders,
+        activeUsers: stats.activeUsers,
+        disabledUsers: stats.disabledUsers,
+        usersByRole: usersByRole,
+        recentActivity: {
+          newUsers: stats.newUsers,
+          newUploads: stats.newUploads,
+          newComments: stats.newComments,
+        },
+      },
+    };
+  }
 }

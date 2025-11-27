@@ -2,11 +2,14 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
   Body,
   Query,
   Param,
   UseGuards,
+  Request,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminModerationService } from './admin-moderation.service';
@@ -18,6 +21,8 @@ import {
   AdminUploadsResponseDto,
   DeleteUploadDto,
   FlagUploadDto,
+  ApproveUploadDto,
+  RejectUploadDto,
   AdminCommentsQueryDto,
   AdminCommentsResponseDto,
   DeleteCommentDto,
@@ -62,6 +67,40 @@ export class AdminModerationController {
     @Body() dto: FlagUploadDto
   ): Promise<{ message: string }> {
     return this.moderationService.flagUpload(uploadId, dto.reason);
+  }
+
+
+  @Patch('uploads/:id/approve')
+  @ApiOperation({ summary: 'Approve an upload' })
+  @ApiResponse({ status: 200, description: 'Upload approved successfully' })
+  @ApiResponse({ status: 404, description: 'Upload not found' })
+  async approveUpload(
+    @Param('id') uploadId: string,
+    @Request() req: any,
+  ): Promise<{ message: string; status: number; result: any }> {
+    const serviceResult = await this.moderationService.approveUpload(uploadId, req.user.userId);
+    return {
+      message: serviceResult.message,
+      status: HttpStatus.OK,
+      result: serviceResult.result,
+    };
+  }
+
+  @Patch('uploads/:id/reject')
+  @ApiOperation({ summary: 'Reject an upload' })
+  @ApiResponse({ status: 200, description: 'Upload rejected successfully' })
+  @ApiResponse({ status: 404, description: 'Upload not found' })
+  async rejectUpload(
+    @Param('id') uploadId: string,
+    @Body() dto: RejectUploadDto,
+    @Request() req: any,
+  ): Promise<{ message: string; status: number; result: any }> {
+    const serviceResult = await this.moderationService.rejectUpload(uploadId, req.user.userId, dto.reason);
+    return {
+      message: serviceResult.message,
+      status: HttpStatus.OK,
+      result: serviceResult.result,
+    };
   }
 
   // ========== COMMENTS ENDPOINTS ==========

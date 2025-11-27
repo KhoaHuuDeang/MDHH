@@ -154,9 +154,13 @@ export class UploadsController {
   async generateDownloadUrl(
     @Param('uploadId') uploadId: string,
     @Request() req: any
-  ): Promise<{ downloadUrl: string }> {
+  ): Promise<{ message: string; status: number; result: { downloadUrl: string } }> {
     const downloadUrl = await this.uploadsService.generateDownloadUrl(uploadId, req.user.userId);
-    return { downloadUrl };
+    return {
+      message: 'Download URL generated successfully',
+      status: 200,
+      result: { downloadUrl }
+    };
   }
 
   /**
@@ -200,5 +204,25 @@ export class UploadsController {
     @Request() req: any
   ): Promise<void> {
     return await this.uploadsService.deleteMultipleS3Files(deleteDto.s3Keys, req.user.userId);
+  }
+
+  @Post('profile-image')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get presigned URL for profile image upload',
+    description: 'Returns presigned URL for uploading avatar or banner images'
+  })
+  @ApiResponse({ status: 200, description: 'Presigned URL generated successfully' })
+  async uploadProfileImage(
+    @Body() body: { filename: string; mimetype: string; fileSize: number; imageType: 'avatar' | 'banner' },
+    @Request() req: any
+  ) {
+    return await this.uploadsService.generateProfileImageUploadUrl(
+      req.user.userId,
+      body.filename,
+      body.mimetype,
+      body.fileSize,
+      body.imageType
+    );
   }
 }
