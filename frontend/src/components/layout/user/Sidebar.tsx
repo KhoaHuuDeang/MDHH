@@ -1,49 +1,61 @@
 "use client";
 
-import React, { JSX, useState } from 'react';
+import React, { JSX, useState, forwardRef } from 'react';
 import Link from 'next/link';
 import * as LucideIcons from 'lucide-react';
 import { SidebarProfileMenuProps, SidebarMenuItems } from '@/types/user.types';
 import { LucideIcon } from 'lucide-react';
 import { signOut } from 'next-auth/react';
-export default function Sidebar({
-  navItems,
-  userItems,
-  user,
-}: {
+import { useTranslation } from 'react-i18next';
+
+interface SidebarProps {
   navItems: SidebarMenuItems['items'];
   userItems: SidebarMenuItems['items'];
   user: SidebarProfileMenuProps['mockUser'];
-}) {
+  style?: React.CSSProperties;
+  onCollapsedChange?: (collapsed: boolean) => void;
+}
+
+const Sidebar = forwardRef<HTMLElement, SidebarProps>(({
+  navItems,
+  userItems,
+  user,
+  style,
+  onCollapsedChange,
+}, ref) => {
+  const { t } = useTranslation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  // Chuyển đổi trạng thái thu gọn của toàn bộ sidebar
+
+  // Toggle sidebar collapsed state
   const toggleSidebar = () => {
-    setIsCollapsed((prev) => !prev);
+    setIsCollapsed((prev) => {
+      const newValue = !prev;
+      onCollapsedChange?.(newValue);
+      return newValue;
+    });
   };
 
-  // Chuyển đổi trạng thái đóng/mở của một submenu cụ thể
+  // Toggle submenu
   const toggleMenu = (menuId: string) => {
-    console.log(menuId);
     setOpenMenus((prevState) => ({
       ...prevState,
       [menuId]: !prevState[menuId],
     }));
   };
 
-  // Hàm xử lý các hành động như mở tìm kiếm hoặc tạo mục mới
   const handleAction = async (action: string) => {
     switch (action) {
       case '/signout':
         await handleSignOut();
         break;
-      //other cases 
       default:
         console.log(`Unhandled action : ${action}`)
     }
   };
+
   const handleSignOut = async () => {
     setIsSigningOut(true);
     await signOut({
@@ -59,10 +71,12 @@ export default function Sidebar({
 
   return (
     <>
-      {/* --- SIDEBAR --- */}
       <aside
-        className={`flex-shrink-0 transition-all duration-200 ease-out shadow-2xl
-          ${isCollapsed ? 'w-20' : 'w-62'}
+        ref={ref}
+        style={style}
+        // FIX: Changed w-62 to w-64 (standard Tailwind) to fix transition animation
+        className={`flex-shrink-0 transition-all duration-300 ease-in-out shadow-2xl
+          ${isCollapsed ? 'w-20' : 'w-64'} 
           bg-gradient-to-b from-[#1a2e1a] via-[#2d4a2d] to-[#0f1a0f]
           border-r-2 border-[#386641]/30
           relative 
@@ -89,10 +103,11 @@ export default function Sidebar({
           </header>
 
           {/* Navigation */}
-          <nav className="flex-grow overflow-y-auto overflow-x-hidden px-3 py-4 space-y-3">
+          <nav className="flex-grow overflow-y-auto overflow-x-hidden px-3 py-4 space-y-3 scrollbar-thin scrollbar-thumb-[#386641]/50">
             {/* Search Button */}
             <div className="px-1">
               <button
+                type="button" // FIX: Added type="button"
                 onClick={() => handleAction('open-search')}
                 className="flex items-center w-full gap-3 text-left outline-none transition-all duration-300
                   text-sm py-3 px-4 rounded-xl
@@ -104,9 +119,9 @@ export default function Sidebar({
                   focus:ring-2 focus:ring-[#6A994E]/50 focus:border-[#6A994E]
                   group"
               >
-                <div className="flex items-center gap-3 w-full">
+                <div className={`flex items-center gap-3 w-full ${isCollapsed ? 'justify-center' : ''}`}>
                   {getIcon('Search', 18, 'group-hover:text-[#6A994E] transition-colors duration-300')}
-                  {!isCollapsed && <span className="font-semibold tracking-wide">Tìm kiếm</span>}
+                  {!isCollapsed && <span className="font-semibold tracking-wide whitespace-nowrap">{t('home.search')}</span>}
                 </div>
               </button>
             </div>
@@ -114,28 +129,27 @@ export default function Sidebar({
             {/* Main Menu Items */}
             <ul className={`flex flex-col space-y-2 ${isCollapsed ? 'items-center' : ''}`}>
               {navItems.map((item) => (
-                <li key={item.id} className="relative group/menu-item">
+                <li key={item.id} className="relative group/menu-item w-full">
                   {item.subMenu ? (
-                    // Submenu Button
                     <button
+                      type="button" // FIX: Added type="button"
                       onClick={() => toggleMenu(item.id)}
-                      className="flex items-center w-full gap-4 rounded-xl transition-all duration-300
+                      className={`flex items-center w-full gap-4 rounded-xl transition-all duration-300
                         text-sm h-12 px-4 text-white font-medium tracking-wide
                         hover:bg-gradient-to-r hover:from-[#386641]/20 hover:to-[#2d4a2d]/50
                         hover:text-[#6A994E] hover:shadow-lg hover:shadow-[#386641]/20
                         focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50
                         border border-transparent hover:border-[#386641]/30
-                        group/submenu"
+                        group/submenu ${isCollapsed ? 'justify-center' : ''}`}
                     >
                       {item.icon && getIcon(item.icon, 20, 'group-hover/submenu:text-[#6A994E] transition-colors duration-300')}
                       {!isCollapsed && (
                         <>
-                          <span className="flex-grow text-left">{item.label}</span>
+                          <span className="flex-grow text-left whitespace-nowrap">{(item as any).labelKey ? t((item as any).labelKey) : (item as any).label}</span>
                           {getIcon(
                             'ChevronDown',
                             18,
-                            `transition-all duration-300 group-hover/submenu:text-[#6A994E] ${openMenus[item.id] ? 'rotate-180' : ''
-                            }`
+                            `transition-all duration-300 group-hover/submenu:text-[#6A994E] ${openMenus[item.id] ? 'rotate-180' : ''}`
                           )}
                         </>
                       )}
@@ -144,25 +158,29 @@ export default function Sidebar({
                     item.href && (
                       <Link
                         href={item.href}
-                        className="flex items-center w-full gap-4 rounded-xl transition-all duration-300
+                        className={`flex items-center w-full gap-4 rounded-xl transition-all duration-300
                           text-sm h-12 px-4 text-white font-medium tracking-wide
                           hover:bg-gradient-to-r hover:from-[#386641]/20 hover:to-[#2d4a2d]/50
                           hover:text-[#6A994E] hover:shadow-lg hover:shadow-[#386641]/20
                           focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50
                           border border-transparent hover:border-[#386641]/30
-                          group/link"
+                          group/link ${isCollapsed ? 'justify-center' : ''}`}
                       >
                         {item.icon && getIcon(item.icon, 20, 'group-hover/link:text-[#6A994E] transition-colors duration-300')}
-                        {!isCollapsed && <span>{item.label}</span>}
+                        {!isCollapsed && <span className="whitespace-nowrap">{(item as any).labelKey ? t((item as any).labelKey) : (item as any).label}</span>}
                       </Link>
                     )
                   )}
 
-                  {/* Action Button */}
+                  {/* Action Button (Add) */}
                   {!isCollapsed && item.action && (
                     <span className="absolute top-1/2 right-3 -translate-y-1/2 opacity-0 group-hover/menu-item:opacity-100 transition-all duration-300">
                       <button
-                        onClick={() => handleAction(item.action ?? '?')}
+                        type="button" // FIX: Added type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleAction(item.action ?? '?');
+                        }}
                         className="h-7 w-7 flex items-center justify-center rounded-lg transition-all duration-300
                           hover:bg-[#386641] hover:text-white text-[#6A994E]
                           hover:shadow-lg hover:shadow-[#386641]/50 hover:scale-110
@@ -174,7 +192,7 @@ export default function Sidebar({
                     </span>
                   )}
 
-                  {/* Submenu */}
+                  {/* Submenu List */}
                   {item.subMenu && !isCollapsed && (
                     <ul
                       className={`pl-12 pr-3 space-y-1.5 overflow-hidden transition-all duration-500 ease-out
@@ -186,12 +204,12 @@ export default function Sidebar({
                             <Link
                               href={subItem.href}
                               className="flex items-center w-full rounded-lg transition-all duration-300
-                                text-xs h-9 px-4 text-gray-300 font-medium
+                                text-xs h-9 px-4 text-gray-300 font-medium whitespace-nowrap
                                 hover:bg-[#386641]/15 hover:text-white
                                 hover:shadow-md hover:shadow-[#386641]/10
                                 border-l-2 border-transparent hover:border-[#6A994E]/50"
                             >
-                              {subItem.label}
+                              {(subItem as any).labelKey ? t((subItem as any).labelKey) : (subItem as any).label}
                             </Link>
                           )}
                         </li>
@@ -203,110 +221,82 @@ export default function Sidebar({
             </ul>
           </nav>
 
-          {/* Footer với user menu */}
+          {/* Footer */}
           <footer className="flex-shrink-0 p-3 border-t border-[#386641]/20 mt-auto bg-gradient-to-r from-[#1a2e1a]/50 to-[#2d4a2d]/50">
             <div className="relative">
               {/* User Menu Dropdown */}
-              {isUserMenuOpen && (
-                <div
-                  className={`absolute bottom-full mb-3 w-64 rounded-2xl shadow-2xl p-3 z-50
-                    bg-gradient-to-b from-[#2d4a2d] to-[#1a3a1a]
-                    border-2 border-[#386641]/40
-                    shadow-[#386641]/25
-                    ${isCollapsed ? 'left-0' : 'left-2'}`}
-                >
-                  {/* User Info */}
-                  <div className="flex items-center p-3 border-b border-[#386641]/30 mb-3 rounded-xl bg-[#386641]/5">
-                    <div
-                      className="h-12 w-12 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0
-                        bg-gradient-to-br from-[#386641] to-[#6A994E]
-                        shadow-lg shadow-[#386641]/50 ring-2 ring-[#6A994E]/50"
-                    >
-                      {user.initials}
-                    </div>
-                    <div className="ml-4 truncate">
-                      <p className="text-sm font-semibold text-white truncate">{user.name}</p>
-                      <p className="text-xs text-gray-300 truncate">{user.email}</p>
-                    </div>
+              <div
+                className={`absolute bottom-full mb-3 w-64 rounded-2xl shadow-2xl p-3 z-50
+                  bg-gradient-to-b from-[#2d4a2d] to-[#1a3a1a]
+                  border-2 border-[#386641]/40 shadow-[#386641]/25
+                  transition-all duration-200 ease-out
+                  ${isUserMenuOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'}
+                  ${isCollapsed ? 'left-0' : 'left-2'}`}
+              >
+                <div className="flex items-center p-3 border-b border-[#386641]/30 mb-3 rounded-xl bg-[#386641]/5">
+                  <div className="h-12 w-12 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0 bg-gradient-to-br from-[#386641] to-[#6A994E]">
+                    {user.initials}
                   </div>
-                  {/* User Menu Items */}
-                  <ul className="space-y-1.5">
-                    {userItems.map((item) => (
-                      <li key={item.id}>
-                        {/* HREFS */}
-                        {item.href ? (
-                          <Link
-
-                            href={item.href}
-                            className="flex items-center gap-4 w-full rounded-xl transition-all duration-300
-                              text-sm h-11 px-4 text-white font-medium
-                              hover:bg-gradient-to-r hover:from-[#386641]/20 hover:to-[#2d4a2d]/50
-                              hover:text-[#6A994E] hover:shadow-lg hover:shadow-[#386641]/20
-                              border border-transparent hover:border-[#386641]/30"
-                          >
-
-                            {item.icon &&
-                              getIcon(item.icon, 20, 'hover:text-[#6A994E] transition-colors duration-200')}
-                            <span>{item.label}</span>
-                          </Link>
-                        ) : (
-                          item.action && (
-                            <button
-                              disabled={isSigningOut && item.id === 'signout'}
-                              className={`flex items-center gap-2 w-full rounded-xl transition-all duration-300
-                                text-sm h-11 px-4 text-white font-medium
-                                hover:bg-gradient-to-r hover:from-[#386641]/20 hover:to-[#2d4a2d]/50
-                                hover:text-[#6A994E] hover:shadow-lg hover:shadow-[#386641]/20
-                                border border-transparent hover:border-[#386641]/30 cursor-pointer
-                                ${isSigningOut && item.id === 'signout' ? 'opacity-50 cursor-not-allowed' : ''}
-                                ${item.id === 'signout' ? 'hover:bg-red-500/20 hover:text-red-400' : ''}`}
-                              onClick={() => item.action && handleAction(item.action)}
-                            >
-                              {isSigningOut && item.id === 'signout' ?
-                                (<div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />)
-                                : (
-                                  item.icon &&
-                                  getIcon(item.icon, 20, 'hover:text-[#6A994E] transition-colors duration-200')
-                                )}
-                              <span>
-                                {isSigningOut && item.id === 'signout' ? 'Đang đăng xuất...' : item.label}
-                              </span>
-                            </button>
-                          )
-                        )}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="ml-4 truncate">
+                    <p className="text-sm font-semibold text-white truncate">{user.name}</p>
+                    <p className="text-xs text-gray-300 truncate">{user.email}</p>
+                  </div>
                 </div>
-              )}
-              {/* Footer Controls */}
+                <ul className="space-y-1.5">
+                  {userItems.map((item) => (
+                    <li key={item.id}>
+                      {item.href ? (
+                        <Link
+                          href={item.href}
+                          className="flex items-center gap-4 w-full rounded-xl transition-all duration-300 text-sm h-11 px-4 text-white font-medium hover:bg-[#386641]/20"
+                        >
+                          {item.icon && getIcon(item.icon, 20)}
+                          <span>{item.label}</span>
+                        </Link>
+                      ) : (
+                        item.action && (
+                          <button
+                            type="button"
+                            disabled={isSigningOut && item.id === 'signout'}
+                            className={`flex items-center gap-2 w-full rounded-xl transition-all duration-300 text-sm h-11 px-4 text-white font-medium hover:bg-[#386641]/20 ${
+                              isSigningOut && item.id === 'signout' ? 'opacity-50' : ''
+                            } ${item.id === 'signout' ? 'hover:bg-red-500/20 hover:text-red-400' : ''}`}
+                            onClick={() => item.action && handleAction(item.action)}
+                          >
+                            {isSigningOut && item.id === 'signout' ? (
+                              <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                            ) : (
+                              item.icon && getIcon(item.icon, 20)
+                            )}
+                            <span>{isSigningOut && item.id === 'signout' ? t('common.loading') : item.label}</span>
+                          </button>
+                        )
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
               <div className="flex items-center justify-between">
                 {/* User Avatar Button */}
                 <button
+                  type="button" // FIX: Added type="button"
                   onClick={() => setIsUserMenuOpen((prev) => !prev)}
-                  aria-expanded={isUserMenuOpen}
-                  aria-haspopup="menu"
                   className={`h-14 w-14 rounded-full flex items-center justify-center transition-all duration-300
                     focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50
                     hover:scale-110 hover:shadow-xl hover:shadow-[#386641]/50
                     border-2 border-[#6A994E]/60 hover:border-[#6A994E]
-                    ${isCollapsed ? 'mx-auto' : 'ml-1'}
-                    group`}
-                  aria-label="User menu"
+                    ${isCollapsed ? 'mx-auto' : 'ml-1'} group`}
                 >
-                  <span
-                    className="flex h-full w-full items-center justify-center rounded-full font-bold text-white text-lg
-                      bg-gradient-to-br from-[#386641] to-[#6A994E] 
-                      shadow-inner group-hover:from-[#6A994E] group-hover:to-[#386641]
-                      transition-all duration-300"
-                  >
+                  <span className="flex h-full w-full items-center justify-center rounded-full font-bold text-white text-lg bg-gradient-to-br from-[#386641] to-[#6A994E]">
                     {user.initials}
                   </span>
                 </button>
 
-                {/* Collapse Button */}
+                {/* Collapse Button (Visible when expanded) */}
                 {!isCollapsed && (
                   <button
+                    type="button" // FIX: Added type="button"
                     onClick={toggleSidebar}
                     className="h-11 w-11 flex items-center justify-center rounded-xl transition-all duration-300
                       hover:bg-[#386641]/20 text-gray-300 hover:text-[#6A994E]
@@ -314,15 +304,17 @@ export default function Sidebar({
                       border border-transparent hover:border-[#386641]/30"
                     aria-label="Collapse Sidebar"
                   >
-                    {getIcon('ChevronRight', 20, `transition-transform duration-300 ${isCollapsed ? 'rotate-0' : 'rotate-180'}`)}
+                    {/* Using ChevronLeft pointing Left (<) */}
+                    {getIcon('ChevronLeft', 20, `transition-transform duration-300 rotate-0`)}
                   </button>
                 )}
               </div>
 
-              {/* Expand Button when collapsed */}
+              {/* Expand Button (Visible when collapsed) */}
               {isCollapsed && (
                 <div className="mt-3 flex justify-center">
                   <button
+                    type="button" // FIX: Added type="button"
                     onClick={toggleSidebar}
                     className="h-11 w-11 flex items-center justify-center rounded-xl transition-all duration-300
                       hover:bg-[#386641]/20 text-gray-300 hover:text-[#6A994E]
@@ -330,7 +322,8 @@ export default function Sidebar({
                       border border-transparent hover:border-[#386641]/30"
                     aria-label="Expand Sidebar"
                   >
-                    {getIcon('ChevronLeft', 20, `transition-transform duration-300 ${isCollapsed ? 'rotate-180' : 'rotate-0'}`)}
+                     {/* Using ChevronLeft rotated 180 pointing Right (>) */}
+                    {getIcon('ChevronLeft', 20, `transition-transform duration-300 rotate-180`)}
                   </button>
                 </div>
               )}
@@ -340,4 +333,8 @@ export default function Sidebar({
       </aside>
     </>
   );
-}
+});
+
+Sidebar.displayName = 'Sidebar';
+
+export default Sidebar;

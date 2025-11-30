@@ -6,8 +6,6 @@ import { HomepageResponseDto, SearchFilesQueryDto, SearchFilesResponseDto } from
 
 @ApiTags('Homepage')
 @Controller('homepage')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 export class HomepageController {
   constructor(private readonly homepageService: HomepageService) {}
 
@@ -42,5 +40,16 @@ export class HomepageController {
   })
   async searchFiles(@Query() queryDto: SearchFilesQueryDto): Promise<SearchFilesResponseDto> {
     return this.homepageService.searchFiles(queryDto);
+  }
+
+
+  @Get('stats')
+  @ApiOperation({ summary: 'Get public statistics' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return public statistics for landing page'
+  })
+  async getPublicStats() {
+    return this.homepageService.getPublicStats();
   }
 }

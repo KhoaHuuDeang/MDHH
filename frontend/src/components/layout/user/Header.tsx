@@ -1,14 +1,23 @@
 'use client'
 import * as LucideIcons from 'lucide-react';
-import { JSX, useState, useRef, useEffect } from 'react';
+import { JSX, useState, useRef, useEffect, forwardRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { SidebarProfileMenuProps } from '@/types/user.types';
 import { LucideIcon } from 'lucide-react';
 import { useLogNotifications } from '@/hooks/useLogNotifications';
 import { getIconForLogType, formatRelativeTime, formatNotificationMessage } from '@/utils/notificationHelpers';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
-export default function Header({ userProps, HeaderItems }: { userProps: SidebarProfileMenuProps['mockUser'], HeaderItems: SidebarProfileMenuProps['items'] }) {
+interface HeaderProps {
+    userProps: SidebarProfileMenuProps['mockUser'];
+    HeaderItems: SidebarProfileMenuProps['items'];
+    style?: React.CSSProperties;
+}
+
+const Header = forwardRef<HTMLElement, HeaderProps>(({ userProps, HeaderItems, style }, ref) => {
+    const { t } = useTranslation();
 
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -53,8 +62,11 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
     }, []);
 
     return (
-        
-        <header className="sticky top-0 z-40 shadow-2xl border-b-2 border-[#386641]/30
+
+        <header
+            ref={ref}
+            style={style}
+            className="sticky top-0 z-40 shadow-2xl border-b-2 border-[#386641]/30
                          bg-gradient-to-r from-[#1a2e1a] via-[#2d4a2d] to-[#1a2e1a]
                          backdrop-blur-md
                          relative
@@ -92,8 +104,20 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
                             </Link>
                         </div>
 
-                        {/* Right Section - Notifications + Messages + User */}
+                        {/* Right Section - Cart + Notifications + Messages + User */}
                         <div className="flex items-center gap-3">
+                            {/* Cart Button */}
+                            <Link
+                                href="/cart"
+                                className="hidden sm:flex relative p-3 rounded-xl transition-all duration-300
+                                         text-white hover:text-[#6A994E] hover:bg-[#386641]/20
+                                         hover:shadow-lg hover:shadow-[#386641]/25 hover:scale-105
+                                         border border-transparent hover:border-[#386641]/30
+                                         focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50"
+                            >
+                                {getIcons('ShoppingCart', 20)}
+                            </Link>
+
                             {/* Notification Button */}
                             <div className="relative" ref={notificationRef}>
                                 <button
@@ -220,6 +244,25 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
                             </div>
 
 
+                            {/* Language Switcher */}
+                            <LanguageSwitcher />
+
+                            {/* Admin Console Button - Only visible to admins */}
+                            {userProps.role === 'ADMIN' && (
+                                <Link
+                                    href="/admin/users"
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300
+                                             text-white hover:text-[#6A994E] hover:bg-[#386641]/20
+                                             hover:shadow-lg hover:shadow-[#386641]/25 hover:scale-105
+                                             border border-[#386641]/30 hover:border-[#6A994E]
+                                             focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50"
+                                    title="Admin Console"
+                                >
+                                    {getIcons('Settings', 20, 'transition-colors duration-300')}
+                                    <span className="hidden md:inline text-sm font-semibold">{t('header.admin')}</span>
+                                </Link>
+                            )}
+
                             {/* User Avatar Dropdown - Rest of existing code... */}
                             <div className="relative">
                                 {isUserMenuOpen && (
@@ -284,10 +327,10 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
                                 >
                                     <div className="relative">
                                         <Image
-                                            className="h-10 w-10 md:h-12 md:w-12 rounded-full object-cover 
+                                            className="h-10 w-10 md:h-12 md:w-12 rounded-full object-cover
                                                      border-2 border-[#6A994E]/60 hover:border-[#6A994E] transition-all duration-300
                                                      shadow-lg hover:shadow-xl hover:shadow-[#386641]/50"
-                                            src="https://lh3.googleusercontent.com/a/ACg8ocJjqTxlK60D1xNMf5mP2f4-wHDBzQkTZdHaNxLKLNGDjw=s96-c"
+                                            src={userProps.avatar || '/logo.svg'}
                                             alt="User avatar"
                                             width={48}
                                             height={48}
@@ -316,4 +359,8 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
             </div>
         </header>
     );
-}
+})
+
+Header.displayName = 'Header'
+
+export default Header

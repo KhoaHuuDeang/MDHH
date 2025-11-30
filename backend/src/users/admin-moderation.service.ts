@@ -124,7 +124,7 @@ export class AdminModerationService {
     };
   }
 
-  async deleteUpload(dto: DeleteUploadDto): Promise<{ message: string }> {
+  async deleteUpload(dto: DeleteUploadDto): Promise<{ message: string; result: any }> {
     const upload = await this.prisma.uploads.findUnique({
       where: { id: dto.uploadId },
     });
@@ -133,16 +133,17 @@ export class AdminModerationService {
       throw new NotFoundException('Upload not found');
     }
 
-    await this.prisma.uploads.delete({
+    const deleted = await this.prisma.uploads.delete({
       where: { id: dto.uploadId },
     });
 
     return {
       message: `Upload deleted successfully${dto.reason ? `: ${dto.reason}` : ''}`,
+      result: deleted,
     };
   }
 
-  async flagUpload(uploadId: string, reason: string): Promise<{ message: string }> {
+  async flagUpload(uploadId: string, reason: string): Promise<{ message: string; result: any }> {
     const upload = await this.prisma.uploads.findUnique({
       where: { id: uploadId },
     });
@@ -151,13 +152,14 @@ export class AdminModerationService {
       throw new NotFoundException('Upload not found');
     }
 
-    await this.prisma.uploads.update({
+    const updated = await this.prisma.uploads.update({
       where: { id: uploadId },
       data: { status: 'FAILED' },
     });
 
     return {
       message: `Upload flagged: ${reason}`,
+      result: updated,
     };
   }
 

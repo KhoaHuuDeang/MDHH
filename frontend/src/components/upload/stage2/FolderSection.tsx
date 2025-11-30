@@ -95,18 +95,19 @@ function FolderSection({
     (folderId: string) => {
       const folder = availableFolders.find((f) => f.id === folderId);
       if (folder) {
-        const folderData = {
-          name: folder.name,
-          description: folder.description || "",
-          folderClassificationId: folder.classification_level_id!,
-          folderTagIds: folder.tags?.map((t) => t.id) || [],
-        };
-
-        // Immediate update cho folder selection (không cần debounce)
-        setLocalFolderData(folderData);
+        // When selecting existing folder, ONLY set selectedFolderId
+        // DO NOT set newFolderData - files inherit folder's classification automatically
         onFolderManagementChange({
           selectedFolderId: folderId,
-          newFolderData: folderData,
+          newFolderData: undefined,
+        });
+
+        // Clear local state to prevent form from showing
+        setLocalFolderData({
+          name: "",
+          description: "",
+          folderClassificationId: "",
+          folderTagIds: [],
         });
       }
     },

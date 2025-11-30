@@ -19,7 +19,6 @@ interface FileMetadataEditorProps {
 const DEFAULT_METADATA: FileMetadata = {
   title: '',
   description: '',
-  category: DocumentCategory.OTHER,
   visibility: VisibilityType.PUBLIC
 };
 
@@ -46,7 +45,7 @@ function FileMetadataEditor({
   const completionStats = useMemo(() => {
     const completed = files.filter(file => {
       const meta = getFileMetadata(file.id);
-      return !!(meta.title?.trim() && meta.description?.trim() && meta.category);
+      return !!(meta.title?.trim() && meta.description?.trim());
     }).length;
 
     return {

@@ -6,6 +6,8 @@ import useNotifications from "@/hooks/useNotifications";
 // Giả định utility này nhập các icon từ thư viện như lucide-react hoặc feather-icons
 import { getIcon } from "@/utils/getIcon";
 import Link from "next/link";
+import { homepageService } from "@/services/homepageService";
+import { classificationService } from "@/services/classificationService";
 
 /**
  * MDHH Landing Page - Educational Document Management Platform
@@ -23,7 +25,9 @@ function MDHHLandingPageContent() {
   const [scrollY, setScrollY] = useState(0);
   const [activeCategory, setActiveCategory] = useState('all');
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
-  
+  const [classificationLevels, setClassificationLevels] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
   // State cho hiệu ứng đếm số
   const [counter, setCounter] = useState({
     documents: 0,
@@ -86,51 +90,67 @@ function MDHHLandingPageContent() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []); // Dependency array rỗng đảm bảo chỉ chạy MỘT LẦN
 
-  // Animated counter effect với easing (chỉ chạy 1 lần)
+  // Fetch real classification levels and stats
   useEffect(() => {
-    const targets = {
-      documents: 15234,
-      users: 8567,
-      downloads: 45678,
-      discussions: 12890
+    const fetchData = async () => {
+      try {
+        // Fetch classification levels
+        const levels = await classificationService.getClassificationLevels();
+        setClassificationLevels(levels);
+
+        // Fetch stats
+        const stats = await homepageService.getPublicStats();
+        const targets = {
+          documents: stats.documents || 0,
+          users: stats.users || 0,
+          downloads: stats.downloads || 0,
+          discussions: stats.discussions || 0
+        };
+
+        const duration = 2000;
+        const steps = 60;
+        const interval = duration / steps;
+
+        let currentStep = 0;
+        const timer = setInterval(() => {
+          currentStep++;
+          const progress = currentStep / steps;
+          const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+
+          setCounter({
+            documents: Math.floor(targets.documents * easeOutQuart),
+            users: Math.floor(targets.users * easeOutQuart),
+            downloads: Math.floor(targets.downloads * easeOutQuart),
+            discussions: Math.floor(targets.discussions * easeOutQuart)
+          });
+
+          if (currentStep >= steps) {
+            clearInterval(timer);
+            setCounter(targets);
+          }
+        }, interval);
+
+        setLoading(false);
+        return () => clearInterval(timer);
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+        setLoading(false);
+      }
     };
 
-    const duration = 2000;
-    const steps = 60;
-    const interval = duration / steps;
+    fetchData();
+  }, []);
 
-    let currentStep = 0;
-    const timer = setInterval(() => {
-      currentStep++;
-      const progress = currentStep / steps;
-      // Hàm easing (Ease Out Quart)
-      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+  // --- DATA ---
 
-      setCounter({
-        documents: Math.floor(targets.documents * easeOutQuart),
-        users: Math.floor(targets.users * easeOutQuart),
-        downloads: Math.floor(targets.downloads * easeOutQuart),
-        discussions: Math.floor(targets.discussions * easeOutQuart)
-      });
-
-      if (currentStep >= steps) {
-        clearInterval(timer);
-        // Đảm bảo dừng ở giá trị cuối cùng
-        setCounter(targets);
-      }
-    }, interval);
-
-    return () => clearInterval(timer);
-  }, []); // Dependency array rỗng đảm bảo chỉ chạy MỘT LẦN
-
-  // --- DATA MOCKUP ---
-
+  // Transform classification levels into categories
   const categories = [
     { id: 'all', name: 'Tất cả', icon: 'Globe' },
-    { id: 'thcs', name: 'THCS', icon: 'BookOpen' },
-    { id: 'thpt', name: 'THPT', icon: 'GraduationCap' },
-    { id: 'university', name: 'Đại học', icon: 'Award' },
-    { id: 'english', name: 'IELTS/TOEIC', icon: 'Target' }
+    ...classificationLevels.map(level => ({
+      id: level.id,
+      name: level.name,
+      icon: 'FolderOpen'
+    }))
   ];
 
   const features = [
@@ -312,17 +332,17 @@ function MDHHLandingPageContent() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center px-4">
-              <button className="group min-h-[44px] min-w-[44px] px-8 py-4 bg-[#386641] text-white font-semibold rounded-xl shadow-lg hover:bg-[#2d4f31] hover:shadow-xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50">
+              <Link href="/home" className="group min-h-[44px] min-w-[44px] px-8 py-4 bg-[#386641] text-white font-semibold rounded-xl shadow-lg hover:bg-[#2d4f31] hover:shadow-xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50 flex items-center justify-center">
                 <span className="flex items-center justify-center">
                   Khám phá ngay
                   {getIcon('ArrowRight', 20, 'ml-2 group-hover:translate-x-1 transition-transform')}
                 </span>
-              </button>
+              </Link>
 
-              <button className="group min-h-[44px] min-w-[44px] px-8 py-4 bg-white/80 backdrop-blur-sm text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl border border-gray-200 hover:border-[#6A994E]/30 transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
+              <Link href="/home" className="group min-h-[44px] min-w-[44px] px-8 py-4 bg-white/80 backdrop-blur-sm text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl border border-gray-200 hover:border-[#6A994E]/30 transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-300 flex items-center justify-center">
                 {getIcon('Play', 20, 'w-5 h-5 mr-2 text-[#6A994E] group-hover:scale-110 transition-transform')}
                 Xem Demo
-              </button>
+              </Link>
             </div>
           </div>
 
@@ -376,106 +396,80 @@ function MDHHLandingPageContent() {
 
           {/* Category Filters */}
           <div className="flex flex-wrap justify-center gap-3 mb-8 sm:mb-12">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`group flex items-center min-h-[44px] px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-medium transition-all duration-300 ${
-                  activeCategory === cat.id
-                    ? 'bg-[#386641] text-white shadow-lg scale-105'
-                    : 'bg-white text-gray-600 hover:text-gray-800 hover:shadow-md hover:scale-105 border border-gray-200 hover:border-[#6A994E]/30'
-                }`}
-              >
-                {getIcon(cat.icon, 18, `mr-2 ${
-                  activeCategory === cat.id ? 'text-white' : 'text-gray-400 group-hover:text-[#6A994E]'
-                }`)}
-                <span className="text-sm sm:text-base">{cat.name}</span>
-              </button>
-            ))}
+            {loading ? (
+              <div className="text-gray-500">Đang tải...</div>
+            ) : (
+              categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={`group flex items-center min-h-[44px] px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-medium transition-all duration-300 ${
+                    activeCategory === cat.id
+                      ? 'bg-[#386641] text-white shadow-lg scale-105'
+                      : 'bg-white text-gray-600 hover:text-gray-800 hover:shadow-md hover:scale-105 border border-gray-200 hover:border-[#6A994E]/30'
+                  }`}
+                >
+                  {getIcon(cat.icon, 18, `mr-2 ${
+                    activeCategory === cat.id ? 'text-white' : 'text-gray-400 group-hover:text-[#6A994E]'
+                  }`)}
+                  <span className="text-sm sm:text-base">{cat.name}</span>
+                </button>
+              ))
+            )}
           </div>
 
-          {/* Document Grid */}
+          {/* Classification Levels Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {popularDocuments
-              .filter(doc => activeCategory === 'all' || doc.category.toLowerCase().includes(activeCategory.toLowerCase()))
-              .map((doc) => (
-                <div
-                  key={doc.id}
-                  className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden"
-                  onMouseEnter={() => setHoveredCard(doc.id)}
-                  onMouseLeave={() => setHoveredCard(null)}
+            {loading ? (
+              <div className="col-span-full text-center text-gray-500">Đang tải cấp độ phân loại...</div>
+            ) : (
+              (activeCategory === 'all' ? classificationLevels : classificationLevels.filter(l => l.id === activeCategory)).map((level) => (
+                <Link
+                  key={level.id}
+                  href="/home"
+                  className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden p-6"
                 >
-                  {/* Image with Overlay */}
-                  <div className="relative h-44 sm:h-48 overflow-hidden bg-gray-100">
-                    <img 
-                      src={doc.image} 
-                      alt={doc.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    
-                    {/* Category Badge */}
-                    <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-semibold text-[#6A994E] shadow-md">
-                      {doc.category}
-                    </div>
-
-                    {/* Level Badge */}
-                    <div className="absolute top-4 right-4 px-3 py-1 bg-[#386641] text-white rounded-full text-xs font-semibold shadow-md">
-                      {doc.level}
-                    </div>
-
-                    {/* Hover Action */}
-                    {hoveredCard === doc.id && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <button className="min-h-[44px] px-6 py-3 bg-white/90 backdrop-blur-sm text-gray-800 font-semibold rounded-xl shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50">
-                          {getIcon('Eye', 20, 'w-5 h-5 inline mr-2')}
-                          Xem chi tiết
-                        </button>
-                      </div>
-                    )}
+                  {/* Icon */}
+                  <div className="inline-flex p-4 bg-gradient-to-br from-[#386641] to-[#6A994E] rounded-xl mb-4 shadow-lg group-hover:scale-110 transition-transform">
+                    {getIcon('FolderOpen', 32, 'text-white')}
                   </div>
 
                   {/* Content */}
-                  <div className="p-4 sm:p-6">
-                    <h3 className="font-bold text-base sm:text-lg text-gray-800 mb-2 line-clamp-2 group-hover:text-[#6A994E] transition-colors">
-                      {doc.title}
-                    </h3>
-                    
-                    <p className="text-xs sm:text-sm text-gray-500 mb-4">
-                      Bởi {doc.author}
-                    </p>
+                  <h3 className="font-bold text-xl text-gray-800 mb-2 group-hover:text-[#6A994E] transition-colors">
+                    {level.name}
+                  </h3>
 
-                    {/* Stats */}
-                    <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600 mb-4">
-                      <div className="flex items-center">
-                        {getIcon('Star', 16, 'text-yellow-500 mr-1')}
-                        <span className="font-semibold">{doc.rating}</span>
-                      </div>
-                      <div className="flex items-center">
-                        {getIcon('Download', 16, 'text-[#6A994E] mr-1')}
-                        <span>{doc.downloads.toLocaleString()}</span>
-                      </div>
-                      <div className="flex items-center">
-                        {getIcon('MessageSquare', 16, 'text-[#386641] mr-1')}
-                        <span>{doc.discussions}</span>
-                      </div>
-                    </div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    {level.description}
+                  </p>
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                      <button className="flex-1 min-h-[44px] px-4 py-2 bg-[#386641] text-white font-medium rounded-lg hover:bg-[#2d4f31] hover:shadow-lg transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50">
-                        Tải xuống
-                      </button>
-                      <button className="min-h-[44px] min-w-[44px] px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 hover:text-[#6A994E] transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                        {getIcon('Heart', 20)}
-                      </button>
-                      <button className="min-h-[44px] min-w-[44px] px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 hover:text-[#6A994E] transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                        {getIcon('Share2', 20)}
-                      </button>
+                  {/* Tags */}
+                  {level.tags && level.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {level.tags.slice(0, 3).map((tag: any) => (
+                        <span
+                          key={tag.id}
+                          className="px-3 py-1 bg-[#6A994E]/10 text-[#386641] text-xs font-medium rounded-full"
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                      {level.tags.length > 3 && (
+                        <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+                          +{level.tags.length - 3}
+                        </span>
+                      )}
                     </div>
+                  )}
+
+                  {/* Arrow */}
+                  <div className="flex items-center text-[#6A994E] font-medium group-hover:text-[#386641] transition-colors mt-4">
+                    <span className="text-sm">Khám phá</span>
+                    {getIcon('ArrowRight', 16, 'ml-2 group-hover:translate-x-2 transition-transform')}
                   </div>
-                </div>
-              ))}
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </section>

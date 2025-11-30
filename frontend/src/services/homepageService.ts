@@ -11,6 +11,8 @@ export interface FileData {
   fileType: string;
   downloadCount: number;
   folderName?: string;
+  classificationLevel?: string;
+  tags?: string[];
 }
 
 export interface FolderData {
@@ -25,6 +27,13 @@ export interface HomepageData {
   recentFiles: FileData[];
   popularFiles: FileData[];
   folders: FolderData[];
+}
+
+export interface PublicStats {
+  documents: number;
+  users: number;
+  downloads: number;
+  discussions: number;
 }
 
 export interface SearchFilesParams {
@@ -54,14 +63,19 @@ export const homepageService = {
     return response.data;
   },
 
+  getPublicStats: async (): Promise<PublicStats> => {
+    const response = await apiClient.get('/homepage/stats');
+    return response.data;
+  },
+
   searchFiles: async (params: SearchFilesParams): Promise<SearchFilesResponse> => {
     const response = await apiClient.get('/homepage/search', { params });
     return response.data;
   },
 
   downloadFile: async (fileId: string): Promise<{ downloadUrl: string }> => {
-    const response = await apiClient.post(`/files/${fileId}/download`);
-    return response.data;
+    const response = await apiClient.get(`/files/${fileId}/download`);
+    return response.data.result;
   },
 
   rateFile: async (fileId: string, rating: number): Promise<void> => {

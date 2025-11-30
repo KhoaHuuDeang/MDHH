@@ -43,14 +43,14 @@ class ModerationService {
   }
 
   async approveUpload(uploadId: string): Promise<{ message: string; status: string; result: any }> {
-    const response = await csrAxiosClient.post<{ message: string; status: string; result: any }>(
+    const response = await csrAxiosClient.patch<{ message: string; status: string; result: any }>(
       `/admin/moderation/uploads/${uploadId}/approve`
     );
     return response.data;
   }
 
   async rejectUpload(uploadId: string, reason: string): Promise<{ message: string; status: string; result: any }> {
-    const response = await csrAxiosClient.post<{ message: string; status: string; result: any }>(
+    const response = await csrAxiosClient.patch<{ message: string; status: string; result: any }>(
       `/admin/moderation/uploads/${uploadId}/reject`,
       { reason }
     );

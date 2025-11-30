@@ -71,18 +71,14 @@ export class AdminUploadsResponseDto {
 }
 
 export class DeleteUploadDto {
-  @IsUUID()
-  uploadId: string;
-
   @IsOptional()
   @IsString()
   reason?: string;
+
+  uploadId?: string; // Set by controller from URL param
 }
 
 export class FlagUploadDto {
-  @IsUUID()
-  uploadId: string;
-
   @IsString()
   reason: string;
 }

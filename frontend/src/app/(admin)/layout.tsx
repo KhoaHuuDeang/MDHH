@@ -1,9 +1,9 @@
 import profileItems from '@/data/profileMenuItem'
-import Sidebar from "@/components/layout/user/Sidebar";
-import Header from "@/components/layout/user/Header";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
+import AdminLayoutClient from '@/components/layout/admin/AdminLayoutClient';
+
 export default async function AdminLayout({
     children,
 }: {
@@ -27,6 +27,7 @@ export default async function AdminLayout({
         initials: (session.user?.displayname || session.user?.username)?.substring(0, 2).toUpperCase() || 'AD',
         name: session.user?.displayname || session.user?.username || 'Admin User',
         email: session.user?.email || 'admin@example.com',
+        avatar: session.user?.avatar || '/logo.svg',
         role: session.user?.role
     };
 
@@ -36,22 +37,12 @@ export default async function AdminLayout({
     const sidebarItems = isAdmin ? AdminSidebarItems : SidebarItems;
 
     return (
-        <div className="flex min-h-screen bg-gray-100">
-            <div className="hidden lg:flex">
-                <Sidebar
-                    navItems={sidebarItems}
-                    userItems={profileItems}
-                    user={realUserData}
-                />
-            </div>
-            <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Vùng nội dung chính */}
-                <main className="flex-1 overflow-auto  bg-white text-gray-900">
-                    {/* Header */}
-                    <Header userProps={realUserData} HeaderItems={profileItems} />
-                    {children}
-                </main>
-            </div>
-        </div>
+        <AdminLayoutClient
+            sidebarItems={sidebarItems}
+            profileItems={profileItems}
+            userData={realUserData}
+        >
+            {children}
+        </AdminLayoutClient>
     );
 }

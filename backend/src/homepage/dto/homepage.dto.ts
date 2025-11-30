@@ -73,6 +73,26 @@ export class FileDataDto {
   @IsOptional()
   @IsString()
   folderName?: string;
+
+  @ApiProperty({
+    description: 'Classification level of the folder containing this file',
+    example: 'Beginner',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  classificationLevel?: string;
+
+  @ApiProperty({
+    description: 'Tags associated with this file',
+    example: ['react', 'javascript', 'frontend'],
+    required: false,
+    type: [String]
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
 }
 
 export class FolderDataDto {

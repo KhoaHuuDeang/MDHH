@@ -273,6 +273,7 @@ export class DiscordService {
         email: user.email,
         role: user.roles.name,
         displayname: user.displayname || user.username,
+        sessionToken: session.session_token,
       };
 
       const accessToken = this.jwtService.sign(payload);
@@ -288,6 +289,7 @@ export class DiscordService {
             username: user.username,
             role: user.roles.name,
             displayname: user.displayname,
+            avatar: user.avatar,
           },
           accessToken,
           sessionToken: session.session_token,

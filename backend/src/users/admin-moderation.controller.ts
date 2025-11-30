@@ -54,8 +54,13 @@ export class AdminModerationController {
   async deleteUpload(
     @Param('id') uploadId: string,
     @Body() dto: DeleteUploadDto
-  ): Promise<{ message: string }> {
-    return this.moderationService.deleteUpload({ ...dto, uploadId });
+  ): Promise<{ message: string; status: number; result: any }> {
+    const serviceResult = await this.moderationService.deleteUpload({ ...dto, uploadId });
+    return {
+      message: serviceResult.message,
+      status: HttpStatus.OK,
+      result: serviceResult.result,
+    };
   }
 
   @Post('uploads/:id/flag')
@@ -65,8 +70,13 @@ export class AdminModerationController {
   async flagUpload(
     @Param('id') uploadId: string,
     @Body() dto: FlagUploadDto
-  ): Promise<{ message: string }> {
-    return this.moderationService.flagUpload(uploadId, dto.reason);
+  ): Promise<{ message: string; status: number; result: any }> {
+    const serviceResult = await this.moderationService.flagUpload(uploadId, dto.reason);
+    return {
+      message: serviceResult.message,
+      status: HttpStatus.OK,
+      result: serviceResult.result,
+    };
   }
 
 

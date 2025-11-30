@@ -1,35 +1,36 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
 import { useRef, useState } from 'react'
-import { SidebarItems } from "@/data/SidebarItems"
-import profileItems from '@/data/profileMenuItem'
-import Footer from "@/components/layout/user/Footer"
+import { SidebarMenuItems, SidebarProfileMenuProps } from '@/types/user.types'
 import Sidebar from "@/components/layout/user/Sidebar"
 import Header from "@/components/layout/user/Header"
 import { useLayoutDimensions } from '@/hooks/useLayoutDimensions'
 import { useComputedPosition, generateStyleObject, getScrollableContentStyles } from '@/hooks/useComputedPosition'
 
-interface UserLayoutClientProps {
+interface AdminLayoutClientProps {
   children: React.ReactNode
+  sidebarItems: SidebarMenuItems['items']
+  profileItems: SidebarMenuItems['items']
+  userData: SidebarProfileMenuProps['mockUser']
 }
 
-export default function UserLayoutClient({ children }: UserLayoutClientProps) {
-  const { data: session } = useSession()
-
+export default function AdminLayoutClient({
+  children,
+  sidebarItems,
+  profileItems,
+  userData,
+}: AdminLayoutClientProps) {
   // Refs for layout elements
   const headerRef = useRef<HTMLElement>(null)
   const sidebarRef = useRef<HTMLElement>(null)
-  const footerRef = useRef<HTMLElement>(null)
 
   // Sidebar collapsed state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
-  // CPU-based layout calculations
+  // CPU-based layout calculations (no footer in admin layout)
   const dimensions = useLayoutDimensions({
     headerRef,
     sidebarRef,
-    footerRef,
     sidebarCollapsedWidth: 80,
     sidebarExpandedWidth: 248,
   })
@@ -37,24 +38,23 @@ export default function UserLayoutClient({ children }: UserLayoutClientProps) {
   // Compute positions using CPU-only calculations
   const computedStyles = useComputedPosition(dimensions)
 
-  // Create user data from session (guaranteed by DisabledGuard)
-  const realUserData = {
-    initials: (session?.user?.displayname || session?.user?.username)?.substring(0, 2).toUpperCase() || 'U',
-    name: session?.user?.displayname || session?.user?.username || 'User',
-    email: session?.user?.email || 'user@example.com',
-    avatar: session?.user?.avatar || '/logo.svg',
-    role: session?.user?.role
+  // Adjust main content to account for no footer
+  const mainContentStyles = {
+    ...computedStyles.mainContent,
+    bottom: 0,
+    height: `calc(100vh - ${dimensions.header.height}px)`,
+    maxHeight: `calc(100vh - ${dimensions.header.height}px)`,
   }
 
   return (
-    <div className="relative w-full h-screen bg-gray-900 text-gray-100 font-sans overflow-hidden">
+    <div className="relative w-full h-screen bg-gray-100 overflow-hidden">
       {/* Sidebar - Hidden on mobile/tablet via computed position */}
       {dimensions.breakpoint === 'desktop' && (
         <Sidebar
           ref={sidebarRef}
-          navItems={SidebarItems}
+          navItems={sidebarItems}
           userItems={profileItems}
-          user={realUserData}
+          user={userData}
           style={generateStyleObject(computedStyles.sidebar)}
           onCollapsedChange={setIsSidebarCollapsed}
         />
@@ -63,7 +63,7 @@ export default function UserLayoutClient({ children }: UserLayoutClientProps) {
       {/* Header - Fixed position with computed dimensions */}
       <Header
         ref={headerRef}
-        userProps={realUserData}
+        userProps={userData}
         HeaderItems={profileItems}
         style={generateStyleObject(computedStyles.header)}
       />
@@ -72,18 +72,12 @@ export default function UserLayoutClient({ children }: UserLayoutClientProps) {
       <main
         className="bg-white text-gray-900"
         style={{
-          ...generateStyleObject(computedStyles.mainContent),
-          ...getScrollableContentStyles(computedStyles.mainContent.maxHeight),
+          ...generateStyleObject(mainContentStyles),
+          ...getScrollableContentStyles(mainContentStyles.maxHeight),
         }}
       >
         {children}
       </main>
-
-      {/* Footer - Fixed at bottom with computed position */}
-      <Footer
-        ref={footerRef}
-        style={generateStyleObject(computedStyles.footer)}
-      />
     </div>
   )
 }

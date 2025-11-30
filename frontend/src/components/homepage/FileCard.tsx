@@ -215,7 +215,36 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
                   <span>{file.category}</span>
                 </div>
               )}
-              
+
+              {/* Classification Level */}
+              {file.classificationLevel && (
+                <div className="flex items-center text-sm text-gray-500">
+                  {getIcons("Shield", 14, "mr-1")}
+                  <span className="text-xs font-medium px-2 py-0.5 bg-[#6A994E]/10 text-[#386641] rounded-full">
+                    {file.classificationLevel}
+                  </span>
+                </div>
+              )}
+
+              {/* Tags */}
+              {file.tags && file.tags.length > 0 && (
+                <div className="flex items-start text-sm text-gray-500">
+                  {getIcons("Tags", 14, "mr-1 mt-0.5")}
+                  <div className="flex flex-wrap gap-1">
+                    {file.tags.slice(0, 3).map((tag, index) => (
+                      <span key={index} className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full">
+                        {tag}
+                      </span>
+                    ))}
+                    {file.tags.length > 3 && (
+                      <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full">
+                        +{file.tags.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Folder information */}
               {file.folderName && (
                 <div className="flex items-center text-sm text-gray-500 cursor-pointer hover:text-[#386641] transition-colors duration-200 px-2 py-1 hover:bg-gray-50 rounded-md -mx-2">

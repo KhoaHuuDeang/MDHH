@@ -966,4 +966,32 @@ export class UploadsService {
       throw error;
     }
   }
+
+  /**
+   * Generate presigned URL for souvenir image upload
+   */
+  async generateSouvenirImageUploadUrl(
+    userId: string,
+    filename: string,
+    mimetype: string,
+    fileSize: number
+  ): Promise<{ message: string; status: number; result: { s3Key: string; uploadUrl: string; publicUrl: string } }> {
+    try {
+      const result = await this.s3Service.generateSouvenirImageUploadUrl(
+        userId,
+        filename,
+        mimetype,
+        fileSize
+      );
+
+      return {
+        message: 'Souvenir image upload URL generated successfully',
+        status: 200,
+        result
+      };
+    } catch (error) {
+      this.logger.error('Failed to generate souvenir image upload URL:', error);
+      throw error;
+    }
+  }
 }

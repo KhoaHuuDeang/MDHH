@@ -283,4 +283,35 @@ export class S3Service {
         }
     }
 
+    async generateSouvenirImageUploadUrl(
+        userId: string,
+        filename: string,
+        mimetype: string,
+        fileSize: number
+    ): Promise<{ s3Key: string; uploadUrl: string; publicUrl: string }> {
+        this.validateImageMetadata({ mimetype, fileSize, originalFilename: filename });
+
+        const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const uniqueId = uuidv4();
+        const s3Key = `souvenirs/${uniqueId}-${sanitizedFilename}`;
+
+        try {
+            const command = new PutObjectCommand({
+                Bucket: this.bucketName,
+                Key: s3Key,
+                ContentType: mimetype,
+            });
+
+            const uploadUrl = await getSignedUrl(this.s3, command, { expiresIn: 3600 });
+            const publicUrl = `https://${this.bucketName}.s3.${this.configService.get('AWS_REGION')}.amazonaws.com/${s3Key}`;
+
+            this.logger.log(`Generated souvenir image upload URL: ${s3Key}`);
+
+            return { s3Key, uploadUrl, publicUrl };
+        } catch (error) {
+            this.logger.error(`Failed to generate souvenir image upload URL:`, error);
+            throw new BadRequestException('Failed to generate image upload URL');
+        }
+    }
+
 }

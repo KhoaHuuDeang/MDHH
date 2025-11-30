@@ -84,6 +84,7 @@ export const authOptions: NextAuthOptions = {
                             username: data.result.user.username,
                             role: data.result.user.role,
                             birth: data.result.user.birth,
+                            avatar: data.result.user.avatar,
                             accessToken: data.result.accessToken,
                             sessionToken: data.result.sessionToken,
                             is_disabled: data.result.user.is_disabled || false,
@@ -163,6 +164,7 @@ export const authOptions: NextAuthOptions = {
                     user.role = data.result.user.role;
                     user.username = data.result.user.username;
                     user.birth = data.result.user.birth;
+                    user.avatar = data.result.user.avatar;
                     user.is_disabled = data.result.user.is_disabled || false;
                     user.disabled_until = data.result.user.disabled_until;
                     user.disabled_reason = data.result.user.disabled_reason;
@@ -184,6 +186,7 @@ export const authOptions: NextAuthOptions = {
                 token.role = user.role
                 token.username = user.username
                 token.birth = user.birth
+                token.avatar = user.avatar
                 token.is_disabled = user.is_disabled
                 token.disabled_until = user.disabled_until
                 token.disabled_reason = user.disabled_reason
@@ -212,7 +215,7 @@ export const authOptions: NextAuthOptions = {
 
             return token
         },
-        async session({ session, token }) {
+        async session({ session, token, trigger }) {
             // Send properties from token to the client
             if (session.user) {
                 session.user.id = token.sub || token.id as string || ""
@@ -257,8 +260,19 @@ export const authOptions: NextAuthOptions = {
                     session.user.avatar = token.image as string
                 } else {
                     session.user.provider = "credentials"
+                    session.user.avatar = token.avatar as string
                 }
             }
+
+            // Handle avatar update from trigger (when user uploads new avatar)
+            if (trigger === "update" && session?.user) {
+                const updatedAvatar = (session as any).avatar;
+                if (updatedAvatar) {
+                    token.avatar = updatedAvatar;
+                    session.user.avatar = updatedAvatar;
+                }
+            }
+
             session.accessToken = token.accessToken!;
             return session
         },

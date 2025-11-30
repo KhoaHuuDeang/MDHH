@@ -653,7 +653,6 @@ export const useUploadStore = create<UploadState>()(
                 state.fileMetadata[fileId] = {
                   title: '',
                   description: '',
-                  category: 'OTHER' as DocumentCategory,
                   visibility: 'PUBLIC' as VisibilityType,
                 };
               }
@@ -681,7 +680,6 @@ export const useUploadStore = create<UploadState>()(
                   state.fileMetadata[fileId] = {
                     title: '',
                     description: '',
-                    category: 'OTHER' as DocumentCategory,
                     visibility: 'PUBLIC' as VisibilityType,
                   };
                 }
@@ -728,9 +726,6 @@ export const useUploadStore = create<UploadState>()(
             }
             if (!fileMeta?.description?.trim()) {
               fileErrors.push('Description is required');
-            }
-            if (!fileMeta?.category) {
-              fileErrors.push('Category is required');
             }
             if (fileErrors.length > 0) {
               invalidFiles.push(`${file.name}: ${fileErrors.join(', ')}`);
@@ -784,9 +779,6 @@ export const useUploadStore = create<UploadState>()(
             }
             if (!fileMeta?.description.trim()) {
               fileErrors.push('Description is required');
-            }
-            if (!fileMeta?.category) {
-              fileErrors.push('Category is required');
             }
 
             if (fileErrors.length > 0) {

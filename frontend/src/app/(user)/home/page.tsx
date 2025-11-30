@@ -116,8 +116,13 @@ export default function HomePage() {
 
   // Unified search/filter handler
   const performSearch = useCallback(async (query: string, filters: FilterChangeParams | null) => {
-    // If no query and no filters, reset to homepage data
-    if (!query.trim() && (!filters || (!filters.classificationLevelId && filters.selectedTags.length === 0))) {
+    // Check if user has intentionally applied filters (even if "All Classifications")
+    // filters will be non-null when user clicks "Apply Filters" button
+    const hasQuery = query.trim().length > 0;
+    const hasFiltersApplied = filters !== null;
+
+    // If no query and no filters applied, reset to homepage data
+    if (!hasQuery && !hasFiltersApplied) {
       setHasSearched(false);
       setSearchResults([]);
       return;
@@ -129,7 +134,10 @@ export default function HomePage() {
     try {
       const params: SearchFilesParams = {
         query: query.trim() || undefined,
-        classificationLevelId: filters?.classificationLevelId || undefined,
+        // Only send classificationLevelId if it's not empty string
+        classificationLevelId: filters?.classificationLevelId && filters.classificationLevelId.trim() !== ''
+          ? filters.classificationLevelId
+          : undefined,
         tags: filters?.selectedTags.length ? filters.selectedTags.join(',') : undefined,
         page: 1,
         limit: 20

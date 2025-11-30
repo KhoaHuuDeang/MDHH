@@ -18,6 +18,7 @@ import { ShopModule } from './shop/shop.module';
 import { CartModule } from './cart/cart.module';
 import { PaymentModule } from './payment/payment.module';
 import { EmailModule } from './email/email.module';
+import { FilesModule } from './files/files.module';
 
 @Module({
 
@@ -44,7 +45,8 @@ import { EmailModule } from './email/email.module';
     ShopModule,
     CartModule,
     PaymentModule,
-    EmailModule
+    EmailModule,
+    FilesModule
   ],
   controllers: [AppController],
   providers: [AppService],

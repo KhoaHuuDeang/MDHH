@@ -37,18 +37,31 @@ export class HomepageService {
         u.displayname as author,
         up.mime_type as "fileType",
         COALESCE(dc.download_count, 0)::integer as "downloadCount",
-        f.name as "folderName"
+        f.name as "folderName",
+        cl.name as "classificationLevel",
+        COALESCE(
+          json_agg(DISTINCT t.name) FILTER (WHERE t.id IS NOT NULL),
+          '[]'::json
+        ) as tags
       FROM resources r
       LEFT JOIN folder_files ff ON r.id = ff.resource_id
       LEFT JOIN folders f ON ff.folder_id = f.id  
       LEFT JOIN users u ON f.user_id = u.id
-      LEFT JOIN uploads up ON r.id = up.resource_id AND up.status = 'COMPLETED'
+      LEFT JOIN classification_levels cl ON f.classification_level_id = cl.id
+      LEFT JOIN resource_tags rt ON r.id = rt.resource_id
+      LEFT JOIN tags t ON rt.tag_id = t.id
+      LEFT JOIN uploads up ON r.id = up.resource_id 
+        AND up.status = 'COMPLETED'
+        AND up.moderation_status = 'APPROVED'
       LEFT JOIN (
         SELECT resource_id, COUNT(*)::integer as download_count 
         FROM downloads 
         GROUP BY resource_id
       ) dc ON r.id = dc.resource_id
       WHERE r.visibility = 'PUBLIC'
+        AND up.id IS NOT NULL
+      GROUP BY r.id, r.title, r.description, r.category, r.created_at, 
+               u.displayname, up.mime_type, dc.download_count, f.name, cl.name
       ORDER BY r.created_at DESC
       LIMIT 4
     `;
@@ -64,6 +77,10 @@ export class HomepageService {
       dto.fileType = row.fileType || 'application/octet-stream';
       dto.downloadCount = Math.max(0, row.downloadCount || 0);
       dto.folderName = row.folderName || undefined;
+      dto.classificationLevel = row.classificationLevel || undefined;
+      dto.tags = Array.isArray(row.tags) && row.tags.length > 0 && row.tags[0] !== null 
+        ? row.tags 
+        : undefined;
       return dto;
     });
   }
@@ -79,12 +96,22 @@ export class HomepageService {
         u.displayname as author,
         up.mime_type as "fileType",
         dc.download_count::integer as "downloadCount",
-        f.name as "folderName"
+        f.name as "folderName",
+        cl.name as "classificationLevel",
+        COALESCE(
+          json_agg(DISTINCT t.name) FILTER (WHERE t.id IS NOT NULL),
+          '[]'::json
+        ) as tags
       FROM resources r
       LEFT JOIN folder_files ff ON r.id = ff.resource_id
       LEFT JOIN folders f ON ff.folder_id = f.id
       LEFT JOIN users u ON f.user_id = u.id  
-      LEFT JOIN uploads up ON r.id = up.resource_id AND up.status = 'COMPLETED'
+      LEFT JOIN classification_levels cl ON f.classification_level_id = cl.id
+      LEFT JOIN resource_tags rt ON r.id = rt.resource_id
+      LEFT JOIN tags t ON rt.tag_id = t.id
+      LEFT JOIN uploads up ON r.id = up.resource_id 
+        AND up.status = 'COMPLETED'
+        AND up.moderation_status = 'APPROVED'
       INNER JOIN (
         SELECT resource_id, COUNT(*)::integer as download_count
         FROM downloads 
@@ -92,6 +119,9 @@ export class HomepageService {
         HAVING COUNT(*) > 0
       ) dc ON r.id = dc.resource_id
       WHERE r.visibility = 'PUBLIC'
+        AND up.id IS NOT NULL
+      GROUP BY r.id, r.title, r.description, r.category, r.created_at,
+               u.displayname, up.mime_type, dc.download_count, f.name, cl.name
       ORDER BY dc.download_count DESC
       LIMIT 4
     `;
@@ -107,6 +137,10 @@ export class HomepageService {
       dto.fileType = row.fileType || 'application/octet-stream';
       dto.downloadCount = Math.max(0, row.downloadCount || 0);
       dto.folderName = row.folderName || undefined;
+      dto.classificationLevel = row.classificationLevel || undefined;
+      dto.tags = Array.isArray(row.tags) && row.tags.length > 0 && row.tags[0] !== null 
+        ? row.tags 
+        : undefined;
       return dto;
     });
   }
@@ -118,9 +152,17 @@ export class HomepageService {
         f.name,
         f.description,
         u.displayname as author,
-        fc.follow_count::integer as "followCount"
+        fc.follow_count::integer as "followCount",
+        COUNT(DISTINCT CASE 
+          WHEN up.moderation_status = 'APPROVED' 
+            AND up.status = 'COMPLETED'
+          THEN r.id 
+        END)::integer as approved_file_count
       FROM folders f
       LEFT JOIN users u ON f.user_id = u.id
+      LEFT JOIN folder_files ff ON f.id = ff.folder_id
+      LEFT JOIN resources r ON ff.resource_id = r.id
+      LEFT JOIN uploads up ON r.id = up.resource_id
       INNER JOIN (
         SELECT folder_id, COUNT(*)::integer as follow_count
         FROM follows
@@ -128,6 +170,12 @@ export class HomepageService {
         HAVING COUNT(*) > 0
       ) fc ON f.id = fc.folder_id
       WHERE f.visibility = 'PUBLIC'
+      GROUP BY f.id, f.name, f.description, u.displayname, fc.follow_count
+      HAVING COUNT(DISTINCT CASE 
+        WHEN up.moderation_status = 'APPROVED' 
+          AND up.status = 'COMPLETED'
+        THEN r.id 
+      END) > 0
       ORDER BY fc.follow_count DESC
       LIMIT 5
     `;
@@ -141,6 +189,24 @@ export class HomepageService {
       dto.followCount = Math.max(0, row.followCount || 0);
       return dto;
     });
+  }
+
+
+  async getPublicStats() {
+    try {
+      const stats = await this.prisma.$queryRaw<any[]>`
+        SELECT 
+          (SELECT COUNT(*)::int FROM "resources" WHERE visibility = 'PUBLIC') as "documents",
+          (SELECT COUNT(*)::int FROM "users" WHERE is_disabled = false) as "users",
+          (SELECT COUNT(*)::int FROM "downloads") as "downloads",
+          (SELECT COUNT(*)::int FROM "comments" WHERE is_deleted = false) as "discussions"
+      `;
+
+      return stats[0];
+    } catch (error) {
+      console.error('Error fetching public stats:', error);
+      throw new InternalServerErrorException('Failed to fetch public stats');
+    }
   }
 
   async searchFiles(queryDto: SearchFilesQueryDto): Promise<SearchFilesResponseDto> {
@@ -188,8 +254,12 @@ export class HomepageService {
         FROM resources r
         LEFT JOIN folder_files ff ON r.id = ff.resource_id
         LEFT JOIN folders f ON ff.folder_id = f.id
+        LEFT JOIN uploads up ON r.id = up.resource_id 
+          AND up.status = 'COMPLETED'
+          AND up.moderation_status = 'APPROVED'
         ${joinClause}
         ${whereClause}
+          AND up.id IS NOT NULL
       `;
 
       // Build params array dynamically
@@ -220,7 +290,9 @@ export class HomepageService {
         LEFT JOIN folder_files ff ON r.id = ff.resource_id
         LEFT JOIN folders f ON ff.folder_id = f.id
         LEFT JOIN users u ON f.user_id = u.id
-        LEFT JOIN uploads up ON r.id = up.resource_id AND up.status = 'COMPLETED'
+        LEFT JOIN uploads up ON r.id = up.resource_id 
+          AND up.status = 'COMPLETED'
+          AND up.moderation_status = 'APPROVED'
         LEFT JOIN (
           SELECT resource_id, COUNT(*)::integer as download_count
           FROM downloads
@@ -228,6 +300,7 @@ export class HomepageService {
         ) dc ON r.id = dc.resource_id
         ${joinClause}
         ${whereClause}
+          AND up.id IS NOT NULL
         ORDER BY r.id, r.created_at DESC
         LIMIT ${limit}
         OFFSET ${offset}

@@ -2,7 +2,7 @@
 
 import React, { ChangeEvent, useCallback, useDeferredValue, useEffect, useState } from 'react';
 import { getIcon } from '@/utils/getIcon';
-import { DocumentCategory, FileMetadata, FileUploadInterface, VisibilityType } from '@/types/FileUploadInterface';
+import { FileMetadata, FileUploadInterface, VisibilityType } from '@/types/FileUploadInterface';
 
 interface FileMetadataCardProps {
   file: FileUploadInterface;
@@ -11,14 +11,6 @@ interface FileMetadataCardProps {
   onFieldChange: (fileId: string, field: keyof FileMetadata, val: string) => void;
   maxDescriptionLength: number;
 }
-
-const DOCUMENT_CATEGORIES = [
-  { value: DocumentCategory.LECTURE, label: '📚 Lecture', icon: 'BookOpen' },
-  { value: DocumentCategory.EXAM, label: '📋 Exam', icon: 'FileText' },
-  { value: DocumentCategory.EXERCISE, label: '📝 Exercise', icon: 'PenTool' },
-  { value: DocumentCategory.REFERENCE, label: '📖 Reference', icon: 'Book' },
-  { value: DocumentCategory.OTHER, label: '📄 Other', icon: 'File' },
-] as const;
 
 const VISIBILITY_OPTIONS = [
   {
@@ -45,12 +37,12 @@ function FileMetadataCard({
   // Use local state for immediate UI updates without store subscriptions
   const [localTitle, setLocalTitle] = useState(metadata.title || '');
   const [localDescription, setLocalDescription] = useState(metadata.description || '');
-  
+
   // Debounced values to reduce store updates
   const deferredTitle = useDeferredValue(localTitle);
   const deferredDescription = useDeferredValue(localDescription);
-  
-  const isComplete = !!(metadata.title?.trim() && metadata.description?.trim() && metadata.category);
+
+  const isComplete = !!(metadata.title?.trim() && metadata.description?.trim());
   const descriptionLength = localDescription.length;
 
   // Sync local state when store metadata changes (from external updates)
@@ -83,10 +75,6 @@ function FileMetadataCard({
   const handleDescriptionChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
     setLocalDescription(e.target.value);
   }, []);
-
-  const handleCategoryChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
-    onFieldChange(file.id, 'category', e.target.value);
-  }, [file.id, onFieldChange]);
 
   const handleVisibilityChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
     onFieldChange(file.id, 'visibility', e.target.value);
@@ -136,7 +124,7 @@ function FileMetadataCard({
       </div>
 
       {/* Form fields */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Title */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -151,26 +139,8 @@ function FileMetadataCard({
           />
         </div>
 
-        {/* Category */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Category *
-          </label>
-          <select
-            value={metadata.category}
-            onChange={handleCategoryChange}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-          >
-            {DOCUMENT_CATEGORIES.map(category => (
-              <option key={category.value} value={category.value}>
-                {category.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
         {/* Description */}
-        <div className="lg:col-span-2">
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Description *
           </label>
@@ -204,6 +174,14 @@ function FileMetadataCard({
             ))}
           </select>
         </div>
+
+        {/* Info message about classification inheritance */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-xs text-blue-700">
+            {getIcon('Info', 14, 'text-blue-600 inline mr-1')}
+            Classification and tags will be inherited from the selected folder automatically.
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -216,7 +194,6 @@ function areEqual(prevProps: FileMetadataCardProps, nextProps: FileMetadataCardP
     prevProps.file.id === nextProps.file.id &&
     prevProps.metadata.title === nextProps.metadata.title &&
     prevProps.metadata.description === nextProps.metadata.description &&
-    prevProps.metadata.category === nextProps.metadata.category &&
     prevProps.metadata.visibility === nextProps.metadata.visibility &&
     prevProps.maxDescriptionLength === nextProps.maxDescriptionLength
   );

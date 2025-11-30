@@ -225,4 +225,23 @@ export class UploadsController {
       body.imageType
     );
   }
+
+  @Post('souvenir-image')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get presigned URL for souvenir image upload',
+    description: 'Returns presigned URL for uploading souvenir product images'
+  })
+  @ApiResponse({ status: 200, description: 'Presigned URL generated successfully' })
+  async uploadSouvenirImage(
+    @Body() body: { filename: string; mimetype: string; fileSize: number },
+    @Request() req: any
+  ) {
+    return await this.uploadsService.generateSouvenirImageUploadUrl(
+      req.user.userId,
+      body.filename,
+      body.mimetype,
+      body.fileSize
+    );
+  }
 }

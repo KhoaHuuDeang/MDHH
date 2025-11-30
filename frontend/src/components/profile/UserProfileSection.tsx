@@ -2,7 +2,7 @@
 
 import React, { ChangeEvent, useRef, useState, useCallback } from "react";
 import Image from "next/image";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { getIcon } from "@/utils/getIcon";
 import FieldRow from "./FieldRow";
 import useUserProfile from "@/hooks/useUserProfile";
@@ -15,7 +15,8 @@ interface UserProfileSectionProps {
 function UserProfileSection({ userId }: UserProfileSectionProps) {
 
     const { optimisticData: userData, isLoading, updateProfile } = useUserProfile(userId);
-    
+    const { update: updateSession } = useSession();
+
     // Internal state management
     const [editingField, setEditingField] = useState<string | null>(null);
     const [tempValues, setTempValues] = useState<Record<string, string>>({});
@@ -70,11 +71,13 @@ function UserProfileSection({ userId }: UserProfileSectionProps) {
                 const publicUrl = await userService.uploadProfileImage(file, 'avatar');
                 // Update profile with real URL
                 await updateProfile({ avatar: publicUrl });
+                // Refresh session to sync avatar to header
+                await updateSession({ avatar: publicUrl });
             } catch (error) {
                 console.error('Avatar upload failed:', error);
             }
         }
-    }, [userData, updateProfile]);
+    }, [userData, updateProfile, updateSession]);
 
     const handleBackgroundChange = useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];

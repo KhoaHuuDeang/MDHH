@@ -148,13 +148,21 @@ function ResourcesListSection({ userId, accessToken }: ResourcesListSectionProps
                 {/* Left Part */}
                 <div className="flex-1">
                   <div className="flex items-start gap-4">
-                    <Image
-                      src={upload.thumbnail}
-                      alt="thumbnail"
-                      width={60}
-                      height={80}
-                      className="w-16 h-20 rounded-lg object-cover border bg-white"
-                    />
+                    <div className="w-16 h-20 rounded-lg border bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+                      {upload.fileType.toLowerCase() === 'pdf' ? (
+                        getIcon('FileText', 32, 'text-red-500')
+                      ) : upload.fileType.toLowerCase().includes('word') || upload.fileType.toLowerCase().includes('doc') ? (
+                        getIcon('FileText', 32, 'text-blue-500')
+                      ) : upload.fileType.toLowerCase().includes('excel') || upload.fileType.toLowerCase().includes('xls') ? (
+                        getIcon('FileSpreadsheet', 32, 'text-green-500')
+                      ) : upload.fileType.toLowerCase().includes('ppt') || upload.fileType.toLowerCase().includes('powerpoint') ? (
+                        getIcon('Presentation', 32, 'text-orange-500')
+                      ) : upload.fileType.toLowerCase().includes('zip') || upload.fileType.toLowerCase().includes('rar') ? (
+                        getIcon('FileArchive', 32, 'text-yellow-600')
+                      ) : (
+                        getIcon('File', 32, 'text-gray-500')
+                      )}
+                    </div>
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 cursor-pointer">
                         {upload.title}
