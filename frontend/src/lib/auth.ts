@@ -241,14 +241,16 @@ export const authOptions: NextAuthOptions = {
 
                     if (userStatusRes.ok) {
                         const statusData = await userStatusRes.json();
+                        // Handle both wrapped and unwrapped response formats
+                        const result = statusData.result || statusData;
                         // Override with fresh backend data
-                        session.user.is_disabled = statusData.is_disabled;
-                        session.user.disabled_until = statusData.disabled_until;
-                        session.user.disabled_reason = statusData.disabled_reason;
+                        session.user.is_disabled = result.is_disabled ?? session.user.is_disabled;
+                        session.user.disabled_until = result.disabled_until ?? session.user.disabled_until;
+                        session.user.disabled_reason = result.disabled_reason ?? session.user.disabled_reason;
                     }
                 } catch (error) {
                     console.error('Error refreshing user status from backend:', error);
-                    // Continue with token data if backend fails
+                    // Continue with token data if backend fails - don't break session
                 }
 
                 // Add Discord-specific data
