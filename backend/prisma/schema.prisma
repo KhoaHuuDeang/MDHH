@@ -388,6 +388,7 @@ enum ModerationStatus {
   PENDING_APPROVAL
   APPROVED
   REJECTED
+  FLAGGED
 }
 
 enum Visibility {

@@ -13,6 +13,7 @@ export interface FileData {
   folderName?: string;
   classificationLevel?: string;
   tags?: string[];
+  moderation_status?: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'FLAGGED';
 }
 
 export interface FolderData {
@@ -58,8 +59,13 @@ export interface SearchFilesResponse {
 
 // Homepage services
 export const homepageService = {
-  getHomepageData: async (): Promise<HomepageData> => {
-    const response = await apiClient.get('/homepage');
+  getHomepageData: async (recentLimit?: number, popularLimit?: number, folderLimit?: number): Promise<HomepageData> => {
+    const params = new URLSearchParams();
+    if (recentLimit) params.append('recentLimit', recentLimit.toString());
+    if (popularLimit) params.append('popularLimit', popularLimit.toString());
+    if (folderLimit) params.append('folderLimit', folderLimit.toString());
+
+    const response = await apiClient.get(`/homepage${params.toString() ? '?' + params.toString() : ''}`);
     return response.data;
   },
 
@@ -141,6 +147,12 @@ export const homepageService = {
   getFolderVotes: async (folderId: string, includeUserVote: boolean = false): Promise<VoteData> => {
     const params = includeUserVote ? { includeUserVote: 'true' } : {};
     const response = await apiClient.get(`/votes/folders/${folderId}`, { params });
+    return response.data;
+  },
+
+  // Flag upload
+  flagUpload: async (uploadId: string, reason: string): Promise<{ message: string; status: number; result: any }> => {
+    const response = await apiClient.post(`/uploads/${uploadId}/flag`, { reason });
     return response.data;
   }
 };

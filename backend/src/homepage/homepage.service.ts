@@ -6,19 +6,19 @@ import { HomepageResponseDto, FileDataDto, FolderDataDto, SearchFilesQueryDto, S
 export class HomepageService {
   constructor(private prisma: PrismaService) {}
 
-  async getHomepageData(): Promise<HomepageResponseDto> {
+  async getHomepageData(recentLimit?: number, popularLimit?: number, folderLimit?: number): Promise<HomepageResponseDto> {
     try {
       const [recentFiles, popularFiles, popularFolders] = await Promise.all([
-        this.getRecentFiles(),
-        this.getPopularFiles(),
-        this.getPopularFolders()
+        this.getRecentFiles(recentLimit || 4),
+        this.getPopularFiles(popularLimit || 4),
+        this.getPopularFolders(folderLimit || 5)
       ]);
 
       const response = new HomepageResponseDto();
       response.recentFiles = recentFiles;
       response.popularFiles = popularFiles;
       response.folders = popularFolders;
-      
+
       return response;
     } catch (error) {
       console.error('Error fetching homepage data:', error);
@@ -26,12 +26,12 @@ export class HomepageService {
     }
   }
 
-  private async getRecentFiles(): Promise<FileDataDto[]> {
+  private async getRecentFiles(limit: number = 4): Promise<FileDataDto[]> {
     const result = await this.prisma.$queryRaw<any[]>`
-      SELECT 
+      SELECT
         r.id,
         r.title,
-        r.description, 
+        r.description,
         r.category,
         r.created_at as "createdAt",
         u.displayname as author,
@@ -45,25 +45,25 @@ export class HomepageService {
         ) as tags
       FROM resources r
       LEFT JOIN folder_files ff ON r.id = ff.resource_id
-      LEFT JOIN folders f ON ff.folder_id = f.id  
+      LEFT JOIN folders f ON ff.folder_id = f.id
       LEFT JOIN users u ON f.user_id = u.id
       LEFT JOIN classification_levels cl ON f.classification_level_id = cl.id
       LEFT JOIN resource_tags rt ON r.id = rt.resource_id
       LEFT JOIN tags t ON rt.tag_id = t.id
-      LEFT JOIN uploads up ON r.id = up.resource_id 
+      LEFT JOIN uploads up ON r.id = up.resource_id
         AND up.status = 'COMPLETED'
         AND up.moderation_status = 'APPROVED'
       LEFT JOIN (
-        SELECT resource_id, COUNT(*)::integer as download_count 
-        FROM downloads 
+        SELECT resource_id, COUNT(*)::integer as download_count
+        FROM downloads
         GROUP BY resource_id
       ) dc ON r.id = dc.resource_id
       WHERE r.visibility = 'PUBLIC'
         AND up.id IS NOT NULL
-      GROUP BY r.id, r.title, r.description, r.category, r.created_at, 
+      GROUP BY r.id, r.title, r.description, r.category, r.created_at,
                u.displayname, up.mime_type, dc.download_count, f.name, cl.name
       ORDER BY r.created_at DESC
-      LIMIT 4
+      LIMIT ${limit}
     `;
 
     return result.map(row => {
@@ -85,13 +85,13 @@ export class HomepageService {
     });
   }
 
-  private async getPopularFiles(): Promise<FileDataDto[]> {
+  private async getPopularFiles(limit: number = 4): Promise<FileDataDto[]> {
     const result = await this.prisma.$queryRaw<any[]>`
-      SELECT 
+      SELECT
         r.id,
         r.title,
         r.description,
-        r.category, 
+        r.category,
         r.created_at as "createdAt",
         u.displayname as author,
         up.mime_type as "fileType",
@@ -105,16 +105,16 @@ export class HomepageService {
       FROM resources r
       LEFT JOIN folder_files ff ON r.id = ff.resource_id
       LEFT JOIN folders f ON ff.folder_id = f.id
-      LEFT JOIN users u ON f.user_id = u.id  
+      LEFT JOIN users u ON f.user_id = u.id
       LEFT JOIN classification_levels cl ON f.classification_level_id = cl.id
       LEFT JOIN resource_tags rt ON r.id = rt.resource_id
       LEFT JOIN tags t ON rt.tag_id = t.id
-      LEFT JOIN uploads up ON r.id = up.resource_id 
+      LEFT JOIN uploads up ON r.id = up.resource_id
         AND up.status = 'COMPLETED'
         AND up.moderation_status = 'APPROVED'
       INNER JOIN (
         SELECT resource_id, COUNT(*)::integer as download_count
-        FROM downloads 
+        FROM downloads
         GROUP BY resource_id
         HAVING COUNT(*) > 0
       ) dc ON r.id = dc.resource_id
@@ -123,7 +123,7 @@ export class HomepageService {
       GROUP BY r.id, r.title, r.description, r.category, r.created_at,
                u.displayname, up.mime_type, dc.download_count, f.name, cl.name
       ORDER BY dc.download_count DESC
-      LIMIT 4
+      LIMIT ${limit}
     `;
 
     return result.map(row => {
@@ -145,7 +145,7 @@ export class HomepageService {
     });
   }
 
-  private async getPopularFolders(): Promise<FolderDataDto[]> {
+  private async getPopularFolders(limit: number = 5): Promise<FolderDataDto[]> {
     const result = await this.prisma.$queryRaw<any[]>`
       SELECT
         f.id,
@@ -153,10 +153,10 @@ export class HomepageService {
         f.description,
         u.displayname as author,
         fc.follow_count::integer as "followCount",
-        COUNT(DISTINCT CASE 
-          WHEN up.moderation_status = 'APPROVED' 
+        COUNT(DISTINCT CASE
+          WHEN up.moderation_status = 'APPROVED'
             AND up.status = 'COMPLETED'
-          THEN r.id 
+          THEN r.id
         END)::integer as approved_file_count
       FROM folders f
       LEFT JOIN users u ON f.user_id = u.id
@@ -171,13 +171,13 @@ export class HomepageService {
       ) fc ON f.id = fc.folder_id
       WHERE f.visibility = 'PUBLIC'
       GROUP BY f.id, f.name, f.description, u.displayname, fc.follow_count
-      HAVING COUNT(DISTINCT CASE 
-        WHEN up.moderation_status = 'APPROVED' 
+      HAVING COUNT(DISTINCT CASE
+        WHEN up.moderation_status = 'APPROVED'
           AND up.status = 'COMPLETED'
-        THEN r.id 
+        THEN r.id
       END) > 0
       ORDER BY fc.follow_count DESC
-      LIMIT 5
+      LIMIT ${limit}
     `;
 
     return result.map(row => {

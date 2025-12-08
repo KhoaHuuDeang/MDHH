@@ -25,13 +25,18 @@ import {
   GetUserResourcesQueryDto,
 } from './dto/user-resources.dto';
 import { UploadsService } from './upload.service';
+import { AdminModerationService } from '../users/admin-moderation.service';
+import { FlagUploadDto } from '../users/admin-moderation.dto';
 
 @ApiTags('uploads')
 @Controller('uploads')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UploadsController {
-  constructor(private readonly uploadsService: UploadsService) { }
+  constructor(
+    private readonly uploadsService: UploadsService,
+    private readonly moderationService: AdminModerationService
+  ) { }
 
   /**
    * Step 1: Request pre-signed URLs for file uploads
@@ -79,6 +84,26 @@ export class UploadsController {
   /**
    * Step 3: Complete upload process (optional verification)
    */
+  /**
+   * Flag an upload as inappropriate
+   */
+  @Post(':uploadId/flag')
+  @ApiOperation({ summary: 'Flag an upload as inappropriate' })
+  @ApiResponse({ status: 200, description: 'Upload flagged successfully' })
+  @ApiResponse({ status: 404, description: 'Upload not found' })
+  async flagUpload(
+    @Param('uploadId') uploadId: string,
+    @Body() dto: FlagUploadDto,
+    @Request() req: any
+  ): Promise<{ message: string; status: number; result: any }> {
+    const serviceResult = await this.moderationService.flagUpload(uploadId, dto.reason, req.user.userId);
+    return {
+      message: serviceResult.message,
+      status: HttpStatus.OK,
+      result: serviceResult.result,
+    };
+  }
+
   @Post('complete/:resourceId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -244,4 +269,6 @@ export class UploadsController {
       body.fileSize
     );
   }
+
+  
 }

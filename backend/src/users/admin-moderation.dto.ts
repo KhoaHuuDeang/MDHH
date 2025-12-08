@@ -50,7 +50,7 @@ export class AdminUploadsQueryDto {
   status?: string;
 
   @IsOptional()
-  @IsEnum(['PENDING_APPROVAL', 'APPROVED', 'REJECTED'])
+  @IsEnum(['PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'FLAGGED'])
   moderation_status?: string;
 
   @IsOptional()

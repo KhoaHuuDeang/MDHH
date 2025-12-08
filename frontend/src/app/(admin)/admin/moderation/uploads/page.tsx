@@ -41,16 +41,6 @@ export default function AdminUploadsPage() {
     }
   };
 
-  const handleFlag = async (id: string) => {
-    const reason = prompt(t('admin.reason'));
-    if (!reason) return;
-    try {
-      await moderationService.flagUpload(id, reason);
-      fetchUploads();
-    } catch (error) {
-      console.error('Failed to flag upload:', error);
-    }
-  };
 
   const handleApprove = async (id: string) => {
     if (!confirm(t('common.confirm'))) return;
@@ -225,13 +215,6 @@ export default function AdminUploadsPage() {
                                                 </button>
                                             </>
                                         )}
-                                        <button
-                                            onClick={() => handleFlag(upload.id)}
-                                            className="p-1.5 rounded-sm text-yellow-500 hover:bg-yellow-50 hover:text-yellow-600 transition-colors border border-transparent hover:border-yellow-100"
-                                            title={t('common.view')}
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-                                        </button>
                                         <button
                                             onClick={() => handleDelete(upload.id)}
                                             className="p-1.5 rounded-sm text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors border border-transparent hover:border-gray-300"

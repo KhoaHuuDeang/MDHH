@@ -63,23 +63,6 @@ export class AdminModerationController {
     };
   }
 
-  @Post('uploads/:id/flag')
-  @ApiOperation({ summary: 'Flag an upload as inappropriate' })
-  @ApiResponse({ status: 200, description: 'Upload flagged successfully' })
-  @ApiResponse({ status: 404, description: 'Upload not found' })
-  async flagUpload(
-    @Param('id') uploadId: string,
-    @Body() dto: FlagUploadDto
-  ): Promise<{ message: string; status: number; result: any }> {
-    const serviceResult = await this.moderationService.flagUpload(uploadId, dto.reason);
-    return {
-      message: serviceResult.message,
-      status: HttpStatus.OK,
-      result: serviceResult.result,
-    };
-  }
-
-
   @Patch('uploads/:id/approve')
   @ApiOperation({ summary: 'Approve an upload' })
   @ApiResponse({ status: 200, description: 'Upload approved successfully' })

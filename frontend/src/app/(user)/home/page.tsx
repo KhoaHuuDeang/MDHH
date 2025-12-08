@@ -44,14 +44,14 @@ const QuickActionCard = React.memo(({ action }: { action: QuickAction }) => {
 
   return (
     <button
-      className="group relative h-24 w-full rounded-xl border border-gray-200 bg-white p-8 flex items-center cursor-pointer 
-                 hover:shadow-lg 
+      className="group relative h-24 w-full rounded-xl border border-gray-200 bg-white p-8 flex items-center cursor-pointer
+                 hover:shadow-lg
                  transition-shadow duration-300 ease-out" // Chỉ animate shadow, nhẹ cho CPU
     >
       {/* Icon Container */}
       <div
-        className="flex h-14 w-14 items-center justify-center rounded-lg bg-gray-50 
-                      group-hover:bg-[#6A994E]/10 
+        className="flex h-14 w-14 items-center justify-center rounded-lg bg-gray-50
+                      group-hover:bg-[#6A994E]/10
                       transition-colors duration-300 ease-in-out"
       >
         {" "}
@@ -64,27 +64,27 @@ const QuickActionCard = React.memo(({ action }: { action: QuickAction }) => {
 
       {/* Title */}
       <span
-        className="ml-6 text-xl font-semibold text-gray-700 
-                       group-hover:text-[#386641] 
+        className="ml-6 text-xl font-semibold text-gray-700
+                       group-hover:text-[#386641]
                        transition-colors duration-300"
       >
         {action.title}
       </span>
 
-      {/* Border Bottom Animation 
+      {/* Border Bottom Animation
           Sử dụng scale-x (GPU) thay vì width (CPU) để không gây reflow layout */}
       <div
-        className="absolute bottom-0 left-0 h-1 w-full rounded-b-xl bg-[#6A994E] 
-                      origin-left scale-x-0 opacity-0 
-                      group-hover:scale-x-100 group-hover:opacity-100 
-                      transition-transform duration-300 ease-out 
+        className="absolute bottom-0 left-0 h-1 w-full rounded-b-xl bg-[#6A994E]
+                      origin-left scale-x-0 opacity-0
+                      group-hover:scale-x-100 group-hover:opacity-100
+                      transition-transform duration-300 ease-out
                       will-change-transform" // Gợi ý trình duyệt tối ưu
       />
 
       {/* Border Color Fake (Để tránh animate border-color gây paint lại toàn bộ box) */}
       <div
-        className="absolute inset-0 rounded-xl border border-transparent 
-                      group-hover:border-[#6A994E] pointer-events-none 
+        className="absolute inset-0 rounded-xl border border-transparent
+                      group-hover:border-[#6A994E] pointer-events-none
                       transition-colors duration-300"
       />
     </button>
@@ -129,6 +129,15 @@ export default function HomePage() {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
+  // Load more state
+  const [recentCount, setRecentCount] = useState(4);
+  const [popularCount, setPopularCount] = useState(4);
+  const [folderCount, setFolderCount] = useState(5);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // Dynamic homepage data
+  const [dynamicHomepageData, setDynamicHomepageData] = useState<any>(null);
+
   useEffect(() => {
     if (status === "unauthenticated") router.push("/auth");
   }, [status, router]);
@@ -139,6 +148,29 @@ export default function HomePage() {
       toast.error("Access denied. Admin privileges required.");
     }
   }, [searchParams, toast]);
+
+  // Fetch homepage data with custom limits
+  useEffect(() => {
+    const fetchHomepageData = async () => {
+      try {
+        const response = await homepageService.getHomepageData(
+          recentCount,
+          popularCount,
+          folderCount
+        );
+        setDynamicHomepageData(response);
+      } catch (err) {
+        console.error("Error fetching homepage data:", err);
+      }
+    };
+
+    if (recentCount > 4 || popularCount > 4 || folderCount > 5) {
+      setIsLoadingMore(true);
+      fetchHomepageData().finally(() => setIsLoadingMore(false));
+    } else {
+      setDynamicHomepageData(homepageData);
+    }
+  }, [recentCount, popularCount, folderCount, homepageData]);
 
   // Unified search/filter handler
   const performSearch = useCallback(
@@ -214,7 +246,7 @@ export default function HomePage() {
     recentFiles = [],
     popularFiles = [],
     folders = [],
-  } = homepageData || {};
+  } = dynamicHomepageData || homepageData || {};
 
   // Determine which files to display
   const displayFiles = hasSearched ? searchResults : recentFiles;
@@ -264,7 +296,7 @@ export default function HomePage() {
           hasNav={!hasSearched}
         />
         <ContentGrid
-          isLoading={isSearching || isLoading}
+          isLoading={isSearching || (isLoading && !dynamicHomepageData)}
           isEmpty={displayFiles.length === 0}
           icon={FileX}
           emptyText={
@@ -278,12 +310,25 @@ export default function HomePage() {
           ))}
         </ContentGrid>
 
+        {/* Load More Recent Files */}
+        {!hasSearched && recentFiles.length === recentCount && (
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => setRecentCount(recentCount + 4)}
+              disabled={isLoadingMore}
+              className="rounded-lg bg-[#386641] px-8 py-3 text-white transition-colors hover:bg-[#2d4f31] disabled:opacity-50"
+            >
+              {isLoadingMore ? "Loading..." : "Load More"}
+            </button>
+          </div>
+        )}
+
         {/* Popular Files - Hide when searching */}
         {!hasSearched && (
           <div className="mt-20">
             <SectionHeader title="Được tải nhiều nhất" />
             <ContentGrid
-              isLoading={isLoading}
+              isLoading={isLoading && !dynamicHomepageData}
               isEmpty={popularFiles.length === 0}
               icon={TrendingDown}
               emptyText="Không tìm thấy tệp phổ biến"
@@ -292,6 +337,19 @@ export default function HomePage() {
                 <FileCard key={file.id} file={file} onView={() => {}} />
               ))}
             </ContentGrid>
+
+            {/* Load More Popular Files */}
+            {popularFiles.length === popularCount && (
+              <div className="mt-6 text-center">
+                <button
+                  onClick={() => setPopularCount(popularCount + 4)}
+                  disabled={isLoadingMore}
+                  className="rounded-lg bg-[#386641] px-8 py-3 text-white transition-colors hover:bg-[#2d4f31] disabled:opacity-50"
+                >
+                  {isLoadingMore ? "Loading..." : "Load More"}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -301,7 +359,7 @@ export default function HomePage() {
             <h2 className="mb-10 text-4xl font-bold text-gray-800">
               Thư mục phổ biến
             </h2>
-            {isLoading ? (
+            {isLoading && !dynamicHomepageData ? (
               /* Skeleton Folders */
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 {[...Array(5)].map((_, i) => (
@@ -312,15 +370,30 @@ export default function HomePage() {
                 ))}
               </div>
             ) : folders.length > 0 ? (
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                {folders.map((folder: any) => (
-                  <FolderCard
-                    key={folder.id}
-                    folder={folder}
-                    onView={() => {}}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                  {folders.map((folder: any) => (
+                    <FolderCard
+                      key={folder.id}
+                      folder={folder}
+                      onView={() => {}}
+                    />
+                  ))}
+                </div>
+
+                {/* Load More Folders */}
+                {folders.length === folderCount && (
+                  <div className="mt-6 text-center">
+                    <button
+                      onClick={() => setFolderCount(folderCount + 5)}
+                      disabled={isLoadingMore}
+                      className="rounded-lg bg-[#386641] px-8 py-3 text-white transition-colors hover:bg-[#2d4f31] disabled:opacity-50"
+                    >
+                      {isLoadingMore ? "Loading..." : "Load More"}
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <EmptyState
                 icon={FolderX}

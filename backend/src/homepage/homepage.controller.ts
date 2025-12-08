@@ -20,8 +20,12 @@ export class HomepageController {
     status: 500,
     description: 'Internal server error - Failed to fetch homepage data'
   })
-  async getHomepageData(): Promise<HomepageResponseDto> {
-    return this.homepageService.getHomepageData();
+  async getHomepageData(
+    @Query('recentLimit') recentLimit?: number,
+    @Query('popularLimit') popularLimit?: number,
+    @Query('folderLimit') folderLimit?: number,
+  ): Promise<HomepageResponseDto> {
+    return this.homepageService.getHomepageData(recentLimit, popularLimit, folderLimit);
   }
 
   @Get('search')

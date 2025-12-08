@@ -13,7 +13,8 @@ export class RolesGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (!requiredRoles) {
+    // Skip role check if no roles are specified or empty array
+    if (!requiredRoles || (Array.isArray(requiredRoles) && requiredRoles.length === 0)) {
       return true;
     }
 

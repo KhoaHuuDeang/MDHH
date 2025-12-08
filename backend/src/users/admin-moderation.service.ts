@@ -143,7 +143,7 @@ export class AdminModerationService {
     };
   }
 
-  async flagUpload(uploadId: string, reason: string): Promise<{ message: string; result: any }> {
+  async flagUpload(uploadId: string, reason: string, userId: string): Promise<{ message: string; result: any }> {
     const upload = await this.prisma.uploads.findUnique({
       where: { id: uploadId },
     });
@@ -152,9 +152,50 @@ export class AdminModerationService {
       throw new NotFoundException('Upload not found');
     }
 
+    // Workflow: flag behavior depends on moderation_status
+    // If APPROVED: delete the upload (dangerous content in approved file)
+    // If REJECTED: clear the flag status (already rejected)
+    // Otherwise: set status to FLAGGED
+
+    if (upload.moderation_status === 'APPROVED') {
+      // Delete approved files that are flagged (dangerous content)
+      await this.prisma.uploads.delete({
+        where: { id: uploadId },
+      });
+
+      return {
+        message: `Approved upload deleted due to flag: ${reason}`,
+        result: { id: uploadId, deleted: true },
+      };
+    }
+
+    if (upload.moderation_status === 'REJECTED') {
+      // Clear flag status for rejected files (already filtered)
+      const updated = await this.prisma.uploads.update({
+        where: { id: uploadId },
+        data: {
+          moderation_status: 'REJECTED', // Keep as rejected
+          moderation_reason: upload.moderation_reason, // Keep original rejection reason
+          moderated_by: upload.moderated_by, // Keep original moderator
+          moderated_at: upload.moderated_at, // Keep original date
+        },
+      });
+
+      return {
+        message: `Flag cleared for rejected upload (file already filtered)`,
+        result: updated,
+      };
+    }
+
+    // For PENDING_APPROVAL or FLAGGED: set status to FLAGGED
     const updated = await this.prisma.uploads.update({
       where: { id: uploadId },
-      data: { status: 'FAILED' },
+      data: {
+        moderation_status: 'FLAGGED',
+        moderation_reason: reason,
+        moderated_by: userId,
+        moderated_at: new Date(),
+      },
     });
 
     return {
