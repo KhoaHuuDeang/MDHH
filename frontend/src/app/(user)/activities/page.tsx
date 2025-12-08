@@ -1,18 +1,20 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
+import { useTranslation } from 'react-i18next';
 import useUserActivities from '@/hooks/useUserActivities';
 import { getIcon } from '@/utils/getIcon';
 
 export default function ActivitiesPage() {
   const { data: session } = useSession();
+  const { t } = useTranslation();
   const { activities, isLoading, pagination, fetchMore } = useUserActivities(session!.user.id);
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#F7F8FA] p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">Activities</h1>
+          <h1 className="text-2xl font-bold mb-6">{t('stats.recentActivity')}</h1>
           <div className="space-y-3">
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="bg-white rounded-lg p-4 animate-pulse">
@@ -28,11 +30,11 @@ export default function ActivitiesPage() {
   return (
     <div className="min-h-screen bg-[#F7F8FA] p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Activities</h1>
+        <h1 className="text-2xl font-bold mb-6">{t('stats.recentActivity')}</h1>
 
         {!activities || activities.length === 0 ? (
           <div className="bg-white rounded-lg p-8 text-center text-gray-500">
-            <p>No activities yet</p>
+            <p>{t('stats.noActivity')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -55,7 +57,7 @@ export default function ActivitiesPage() {
                       </p>
                       {activity.actor && (
                         <p className="text-xs text-gray-600 mt-1">
-                          by {activity.actor.displayname}
+                          {t('home.by')} {activity.actor.displayname}
                         </p>
                       )}
                     </div>

@@ -1,18 +1,20 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
+import { useTranslation } from 'react-i18next'
 import useUserAchievements from '@/hooks/useUserAchievements'
 import { getIcon } from '@/utils/getIcon'
 
 export default function AchievementsPage() {
   const { data: session } = useSession()
+  const { t } = useTranslation()
   const { achievements, isLoading, unlockedCount } = useUserAchievements(session!.user.id)
 
   if (isLoading || !achievements) {
     return (
       <div className="min-h-screen bg-[#F7F8FA] p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold mb-6">Achievements</h1>
+          <h1 className="text-3xl font-bold mb-6">{t('profile.achievements')}</h1>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="bg-white rounded-lg p-6 animate-pulse">
@@ -31,9 +33,9 @@ export default function AchievementsPage() {
     <div className="min-h-screen bg-[#F7F8FA] p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Achievements</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('profile.achievements')}</h1>
           <p className="text-gray-600">
-            Progress: {unlockedCount}/{achievements.length} unlocked
+            {t('stats.progressBadge')}: {unlockedCount}/{achievements.length} {t('common.approved')}
           </p>
           <div className="mt-4 h-2 bg-gray-200 rounded-full overflow-hidden">
             <div
@@ -79,12 +81,12 @@ export default function AchievementsPage() {
 
               {achievement.progress !== undefined && achievement.target !== undefined && (
                 <div className="text-xs text-gray-500">
-                  Progress: {achievement.progress}/{achievement.target}
+                  {t('stats.progressBadge')}: {achievement.progress}/{achievement.target}
                 </div>
               )}
 
               {achievement.unlocked && (
-                <div className="mt-3 text-xs text-[#6A994E] font-medium">✓ Unlocked</div>
+                <div className="mt-3 text-xs text-[#6A994E] font-medium">✓ {t('common.approved')}</div>
               )}
             </div>
           ))}

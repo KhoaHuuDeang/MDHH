@@ -19,7 +19,7 @@ interface SearchBarProps {
 
 const SearchBar: React.FC<SearchBarProps> = React.memo(({
   onSearch,
-  placeholder = "Search documents, courses, quizzes...",
+  placeholder = "Tìm kiếm tài liệu ",
   className = '',
   initialValue = ''
 }) => {

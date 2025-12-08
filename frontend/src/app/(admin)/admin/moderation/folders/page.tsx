@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { moderationService } from '@/services/moderationService';
 import { AdminFolderItem, AdminFoldersQuery } from '@/types/moderation.types';
 
 export default function AdminFoldersPage() {
+  const { t } = useTranslation();
   const [folders, setFolders] = useState<AdminFolderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState<AdminFoldersQuery>({ page: 1, limit: 20 });
@@ -30,10 +32,9 @@ export default function AdminFoldersPage() {
   };
 
   const handleDelete = async (id: string) => {
-    // Logic cũ: Prompt -> Confirm -> Delete -> Refetch
-    const reason = prompt('Reason for deletion:');
+    const reason = prompt(t('admin.reason'));
     if (!reason) return;
-    if (!confirm('Delete this folder? This will remove all associated data.')) return;
+    if (!confirm(t('admin.confirm'))) return;
     try {
       await moderationService.deleteFolder(id, reason);
       fetchFolders();
@@ -46,7 +47,7 @@ export default function AdminFoldersPage() {
     <div className="flex items-center justify-center h-screen bg-gray-100 text-[#386641]">
         <div className="flex flex-col items-center gap-3">
              <div className="w-8 h-8 border-4 border-[#F0F8F2] border-t-[#386641] rounded-full animate-spin"></div>
-             <span className="text-sm font-medium">Loading Folders...</span>
+             <span className="text-sm font-medium">{t('common.loading')}</span>
         </div>
     </div>
   );
@@ -58,11 +59,11 @@ export default function AdminFoldersPage() {
         {/* Header Section */}
         <div className="flex justify-between items-end mb-4">
             <div>
-                <h1 className="text-xl font-bold text-[#386641] uppercase tracking-wide">Folders Management</h1>
-                <p className="text-gray-500 text-xs mt-1">Organize and moderate user collections.</p>
+                <h1 className="text-xl font-bold text-[#386641] uppercase tracking-wide">{t('admin.folderModeration')}</h1>
+                <p className="text-gray-500 text-xs mt-1">{t('admin.recentActivity')}</p>
             </div>
             <div className="text-xs text-gray-500 bg-white px-3 py-1 rounded-sm border border-gray-200 shadow-sm">
-                Total records: <span className="font-bold text-[#386641]">{total}</span>
+                {t('admin.pendingApprovals')}: <span className="font-bold text-[#386641]">{total}</span>
             </div>
         </div>
 
@@ -74,7 +75,7 @@ export default function AdminFoldersPage() {
                 </span>
                 <input
                     type="text"
-                    placeholder="Search folders..."
+                    placeholder={t('upload.folderNamePlaceholder')}
                     className="pl-9 pr-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-[#386641] focus:ring-1 focus:ring-[#386641] w-64 transition-all text-sm"
                     onChange={(e) => setQuery({ ...query, search: e.target.value, page: 1 })}
                 />
@@ -86,9 +87,9 @@ export default function AdminFoldersPage() {
                 className="px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-[#386641] focus:ring-1 focus:ring-[#386641] bg-white cursor-pointer hover:border-gray-400 transition-colors text-sm"
                 onChange={(e) => setQuery({ ...query, visibility: e.target.value as any, page: 1 })}
             >
-                <option value="">All Visibility</option>
-                <option value="PUBLIC">Public</option>
-                <option value="PRIVATE">Private</option>
+                <option value="">{t('admin.all')}</option>
+                <option value="PUBLIC">{t('upload.public')}</option>
+                <option value="PRIVATE">{t('upload.private')}</option>
             </select>
             
             <button 
@@ -106,13 +107,13 @@ export default function AdminFoldersPage() {
                 <table className="min-w-full border-collapse text-left">
                     <thead className="bg-[#386641] text-white">
                         <tr>
-                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[25%]">Name</th>
-                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[20%]">User</th>
-                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[10%] text-center">Visibility</th>
-                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[10%] text-center">Files</th>
-                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[10%] text-center">Followers</th>
-                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[15%]">Created</th>
-                            <th className="p-3 text-xs font-medium uppercase tracking-wider w-[10%] text-center">Actions</th>
+                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[25%]">{t('upload.folder')}</th>
+                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[20%]">{t('admin.user')}</th>
+                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[10%] text-center">{t('upload.visibility')}</th>
+                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[10%] text-center">{t('home.noFiles')}</th>
+                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[10%] text-center">{t('folderCard.followers')}</th>
+                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[15%]">{t('profile.birth')}</th>
+                            <th className="p-3 text-xs font-medium uppercase tracking-wider w-[10%] text-center">{t('admin.actions')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -121,7 +122,7 @@ export default function AdminFoldersPage() {
                                 <td colSpan={7} className="p-8 text-center text-gray-400 bg-white">
                                     <div className="flex flex-col items-center">
                                         <svg className="w-12 h-12 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
-                                        No folders found.
+                                        {t('admin.noData')}
                                     </div>
                                 </td>
                              </tr>
@@ -174,10 +175,10 @@ export default function AdminFoldersPage() {
                                     </td>
                                     {/* Actions */}
                                     <td className="p-3 text-center">
-                                        <button 
-                                            onClick={() => handleDelete(folder.id)} 
+                                        <button
+                                            onClick={() => handleDelete(folder.id)}
                                             className="p-1.5 rounded-sm text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors border border-transparent hover:border-red-100 opacity-80 group-hover:opacity-100"
-                                            title="Delete Folder"
+                                            title={t('common.delete')}
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                                         </button>
@@ -192,7 +193,7 @@ export default function AdminFoldersPage() {
             {/* Pagination Footer */}
             <div className="bg-gray-50 p-4 border-t border-gray-200 flex items-center justify-between">
                 <span className="text-xs text-gray-500">
-                    Showing page <span className="font-semibold text-gray-900">{query.page}</span> of <span className="font-semibold text-gray-900">{totalPages}</span>
+                    {t('admin.pageInfo', { current: query.page, total: totalPages })}
                 </span>
                 <div className="flex items-center gap-1">
                     <button
@@ -200,7 +201,7 @@ export default function AdminFoldersPage() {
                         onClick={() => setQuery({ ...query, page: (query.page || 1) - 1 })}
                         className="px-3 py-1.5 border border-gray-300 rounded-sm text-xs bg-white text-gray-600 hover:bg-gray-50 hover:text-[#386641] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        Previous
+                        {t('upload.previous')}
                     </button>
                     <div className="px-3 py-1.5 bg-[#386641] text-white text-xs font-bold rounded-sm border border-[#386641]">
                         {query.page}
@@ -210,7 +211,7 @@ export default function AdminFoldersPage() {
                         onClick={() => setQuery({ ...query, page: (query.page || 1) + 1 })}
                         className="px-3 py-1.5 border border-gray-300 rounded-sm text-xs bg-white text-gray-600 hover:bg-gray-50 hover:text-[#386641] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        Next
+                        {t('upload.next')}
                     </button>
                 </div>
             </div>

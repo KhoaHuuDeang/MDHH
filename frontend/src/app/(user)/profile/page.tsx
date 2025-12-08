@@ -6,12 +6,13 @@ import UserStatsSection from "@/components/profile/UserStatsSection";
 import ActivityFeedSection from "@/components/profile/ActivityFeedSection";
 import useUserActivities from "@/hooks/useUserActivities";
 
+import { useTranslation } from "react-i18next";
+
 export default function ProfilePage() {
-  // Authentication is handled at layout level - no need for guards here
   const { data: session } = useSession();
+  const { t } = useTranslation();
   const { activities, isLoading } = useUserActivities(session!.user.id);
 
-  // Transform real activities to match component interface (limit to 3 for profile)
   const recentActivities = activities
     ? activities.slice(0, 3).map((activity) => ({
         id: activity.id,

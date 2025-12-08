@@ -88,7 +88,7 @@ function NewFolderForm({
       {/* Classification Level */}
       <div className="rounded-xl border border-gray-100 bg-white/70 p-4">
         <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-          {getIcon("Layers", 16, "text-gray-500")} <span>Classification Level</span>
+          {getIcon("Layers", 16, "text-gray-500")} <span>Cấp độ</span>
         </div>
         <div className={isLoadingClassifications ? "animate-pulse" : ""}>
           <ClassificationLevelSelector

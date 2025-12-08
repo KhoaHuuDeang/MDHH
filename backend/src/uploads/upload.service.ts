@@ -23,17 +23,24 @@ import { Prisma } from '@prisma/client';
 
 // Interface for raw SQL query results
 interface ResourceWithMetrics {
+  upload_id: string;
   resource_id: string;
+  user_id: string;
   file_size: number;
   mime_type: string;
+  file_name: string;
+  moderation_status: string;
+  moderation_reason: string | null;
   created_at: Date;
   title: string;
   description: string;
   visibility: string;
   category: string;
   folder_name: string;
+  views_count: number;
   downloads_count: number;
   upvotes_count: number;
+  rating_count: number;
 }
 
 import { LogsService } from '../logs/logs.service';
@@ -824,52 +831,47 @@ export class UploadsService {
       }
 
       if (status && status !== 'all') {
-        const visibilityMapping: Record<string, string> = {
-          APPROVED: 'PUBLIC',
-          PENDING: 'PRIVATE',
-          REJECTED: 'PRIVATE',
+        const moderationMapping: Record<string, string> = {
+          approved: 'APPROVED',
+          pending: 'PENDING_APPROVAL',
+          rejected: 'REJECTED',
         };
 
-        const visibility = visibilityMapping[status];
-        if (visibility) {
-          conditions.push(`r.visibility = $${paramIndex}`);
-          params.push(visibility);
+        const moderationStatus = moderationMapping[status.toLowerCase()];
+        if (moderationStatus) {
+          conditions.push(`u.moderation_status::text = $${paramIndex}`);
+          params.push(moderationStatus);
           paramIndex++;
         }
       }
 
       const whereClause = conditions.join(' AND ');
 
-      // Optimized query: removed nested subqueries, use LEFT JOINs directly
+      // Optimized query: removed non-existent tables
       const dataQueryString = `
-        SELECT 
+        SELECT
+          u.id as upload_id,
           u.resource_id,
           u.user_id,
           u.file_size,
           u.mime_type,
+          u.file_name,
           u.created_at,
+          u.moderation_status,
+          u.moderation_reason,
           r.title,
           r.description,
           r.visibility,
           r.category,
           COALESCE(fo.name, 'No Folder') as folder_name,
-          COALESCE(d.downloads_count, 0) as downloads_count,
-          COALESCE(rt.upvotes_count, 0) as upvotes_count
+          0 as views_count,
+          0 as downloads_count,
+          0 as upvotes_count,
+          0 as rating_count
         FROM uploads u
         INNER JOIN resources r ON u.resource_id = r.id
         LEFT JOIN folder_files ff ON u.resource_id = ff.resource_id
         LEFT JOIN folders fo ON ff.folder_id = fo.id
-        LEFT JOIN LATERAL (
-          SELECT COUNT(*) as downloads_count
-          FROM downloads
-          WHERE resource_id = u.resource_id
-        ) d ON true
-        LEFT JOIN LATERAL (
-          SELECT COUNT(*) as upvotes_count
-          FROM ratings_resources rr
-          INNER JOIN ratings rt ON rr.rating_id = rt.id
-          WHERE rr.resource_id = u.resource_id AND rt.value > 0
-        ) rt ON true
         WHERE ${whereClause}
         ORDER BY u.created_at DESC
         LIMIT $${paramIndex}
@@ -897,10 +899,14 @@ export class UploadsService {
       const totalPages = Math.ceil(total / limitNum);
 
       const resources = rawResults.map((row) => ({
+        upload_id: row.upload_id,
         resource_id: row.resource_id,
         user_id: userId,
         file_size: Number(row.file_size) || 0,
         mime_type: row.mime_type || '',
+        file_name: row.file_name || '',
+        moderation_status: row.moderation_status || 'PENDING_APPROVAL',
+        moderation_reason: row.moderation_reason || null,
         created_at: new Date(row.created_at),
         resource_details: {
           title: row.title || '',
@@ -910,8 +916,10 @@ export class UploadsService {
             ResourceVisibility.PRIVATE,
           category: row.category || '',
           folder_name: row.folder_name || 'No Folder',
-          upvotes_count: Number(row.upvotes_count) || 0,
+          views_count: Number(row.views_count) || 0,
           downloads_count: Number(row.downloads_count) || 0,
+          upvotes_count: Number(row.upvotes_count) || 0,
+          rating_count: Number(row.rating_count) || 0,
         },
       }));
 

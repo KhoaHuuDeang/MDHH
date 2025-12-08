@@ -3,7 +3,8 @@
 //~~~~~~~~sidebar~~~~~~~~~~
 export interface SidebarMenuProps {
     id: string;
-    label: string;
+    label?: string;
+    labelKey?: string;
     icon?: string;
     href?: string;
     action?: string;

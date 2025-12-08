@@ -91,18 +91,18 @@ const FileUploadArea = () => {
         </div>
 
         <h3 className="text-xl font-bold text-gray-800 mb-2">
-          {dragOver ? 'Drop your file here' : 'You can drag and drop files here'}
+          {dragOver ? 'Thả tệp của bạn vào đây' : 'Bạn có thể kéo thả tệp vào đây hoặc nhấp để duyệt'}
         </h3>
 
-        <p className="text-gray-500 mb-4">Or if you prefer</p>
+        <p className="text-gray-500 mb-4">Hoặc nếu bạn thích</p>
 
         <div className="bg-[#386641] text-white font-semibold px-8 py-3 rounded-lg hover:bg-[#2d4f31] transition-colors duration-300 shadow-md hover:shadow-lg">
-          Browse files
+          Duyệt tệp
         </div>
 
         <div className="mt-4 text-xs text-gray-500 space-y-1">
-          <p>Supported formats: PDF, DOC, DOCX</p>
-          <p>Maximum size: 50MB per file</p>
+          <p>Định dạng được hỗ trợ: PDF, DOC, DOCX</p>
+          <p>Kích thước tối đa: 50MB mỗi tệp</p>
         </div>
       </div>
     </section>

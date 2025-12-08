@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateTagDto, UpdateTagDto } from './tag.dto';
 
 @Injectable()
 export class TagsService {
@@ -29,13 +30,60 @@ export class TagsService {
     });
   }
 
-  async create(createTagDto: { name: string; description?: string; levelId: string }) {
-    return this.prisma.tags.create({
-      data: {
-        name: createTagDto.name,
-        description: createTagDto.description,
-        level_id: createTagDto.levelId,
-      }
+  async findOne(id: string) {
+    return this.prisma.tags.findUnique({
+      where: { id },
+      include: { classification_levels: true }
     });
+  }
+
+  async create(createTagDto: CreateTagDto) {
+    try {
+      return await this.prisma.tags.create({
+        data: {
+          name: createTagDto.name,
+          description: createTagDto.description,
+          level_id: createTagDto.levelId,
+        }
+      });
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        throw new BadRequestException('Tag name already exists for this classification level');
+      }
+      throw error;
+    }
+  }
+
+  async update(id: string, updateTagDto: UpdateTagDto) {
+    try {
+      return await this.prisma.tags.update({
+        where: { id },
+        data: {
+          name: updateTagDto.name,
+          description: updateTagDto.description,
+        }
+      });
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        throw new BadRequestException('Tag name already exists for this classification level');
+      }
+      if (error.code === 'P2025') {
+        throw new BadRequestException('Tag not found');
+      }
+      throw error;
+    }
+  }
+
+  async delete(id: string) {
+    try {
+      return await this.prisma.tags.delete({
+        where: { id }
+      });
+    } catch (error: any) {
+      if (error.code === 'P2025') {
+        throw new BadRequestException('Tag not found');
+      }
+      throw error;
+    }
   }
 }

@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { moderationService } from '@/services/moderationService';
 import { AdminUploadItem, AdminUploadsQuery } from '@/types/moderation.types';
 
 export default function AdminUploadsPage() {
+  const { t } = useTranslation();
   const [uploads, setUploads] = useState<AdminUploadItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState<AdminUploadsQuery>({ page: 1, limit: 20 });
@@ -30,7 +32,7 @@ export default function AdminUploadsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this upload?')) return;
+    if (!confirm(t('admin.delete'))) return;
     try {
       await moderationService.deleteUpload(id);
       fetchUploads();
@@ -40,7 +42,7 @@ export default function AdminUploadsPage() {
   };
 
   const handleFlag = async (id: string) => {
-    const reason = prompt('Reason for flagging:');
+    const reason = prompt(t('admin.reason'));
     if (!reason) return;
     try {
       await moderationService.flagUpload(id, reason);
@@ -51,25 +53,25 @@ export default function AdminUploadsPage() {
   };
 
   const handleApprove = async (id: string) => {
-    if (!confirm('Approve this upload?')) return;
+    if (!confirm(t('common.confirm'))) return;
     try {
       await moderationService.approveUpload(id);
       fetchUploads();
     } catch (error) {
       console.error('Failed to approve upload:', error);
-      alert('Failed to approve upload');
+      alert(t('admin.error'));
     }
   };
 
   const handleReject = async (id: string) => {
-    const reason = prompt('Reason for rejection:');
+    const reason = prompt(t('admin.reason'));
     if (!reason) return;
     try {
       await moderationService.rejectUpload(id, reason);
       fetchUploads();
     } catch (error) {
       console.error('Failed to reject upload:', error);
-      alert('Failed to reject upload');
+      alert(t('admin.error'));
     }
   };
 
@@ -77,7 +79,7 @@ export default function AdminUploadsPage() {
     <div className="flex items-center justify-center h-screen bg-gray-50 text-[#386641]">
         <div className="flex flex-col items-center gap-3">
              <div className="w-8 h-8 border-4 border-[#F0F8F2] border-t-[#386641] rounded-full animate-spin"></div>
-             <span className="text-sm font-medium">Loading Data...</span>
+             <span className="text-sm font-medium">{t('common.loading')}</span>
         </div>
     </div>
   );
@@ -89,11 +91,11 @@ export default function AdminUploadsPage() {
         {/* Header Section */}
         <div className="flex justify-between items-end mb-4">
             <div>
-                <h1 className="text-xl font-bold text-[#386641] uppercase tracking-wide">Uploads Moderation</h1>
-                <p className="text-gray-500 text-xs mt-1">Manage and moderate user content efficiently.</p>
+                <h1 className="text-xl font-bold text-[#386641] uppercase tracking-wide">{t('admin.uploadModeration')}</h1>
+                <p className="text-gray-500 text-xs mt-1">{t('admin.recentActivity')}</p>
             </div>
             <div className="text-xs text-gray-500">
-                Total records: <span className="font-bold text-[#386641]">{total}</span>
+                {t('admin.pendingApprovals')}: <span className="font-bold text-[#386641]">{total}</span>
             </div>
         </div>
 
@@ -117,20 +119,20 @@ export default function AdminUploadsPage() {
                 className="px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-[#386641] focus:ring-1 focus:ring-[#386641] bg-white cursor-pointer hover:border-gray-400 transition-colors"
                 onChange={(e) => setQuery({ ...query, status: e.target.value as any, page: 1 })}
             >
-                <option value="">All Upload Status</option>
-                <option value="PENDING">Pending</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="FAILED">Failed</option>
+                <option value="">{t('admin.all')}</option>
+                <option value="PENDING">{t('common.pending')}</option>
+                <option value="COMPLETED">{t('resources.approvedStatus')}</option>
+                <option value="FAILED">{t('resources.rejectedStatus')}</option>
             </select>
 
             <select
                 className="px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-[#386641] focus:ring-1 focus:ring-[#386641] bg-white cursor-pointer hover:border-gray-400 transition-colors"
                 onChange={(e) => setQuery({ ...query, moderation_status: e.target.value as any, page: 1 })}
             >
-                <option value="">All Moderation Status</option>
-                <option value="PENDING_APPROVAL">Pending Approval</option>
-                <option value="APPROVED">Approved</option>
-                <option value="REJECTED">Rejected</option>
+                <option value="">{t('admin.all')}</option>
+                <option value="PENDING_APPROVAL">{t('admin.pendingApprovals')}</option>
+                <option value="APPROVED">{t('resources.approvedStatus')}</option>
+                <option value="REJECTED">{t('resources.rejectedStatus')}</option>
             </select>
             
             <button 
@@ -148,13 +150,13 @@ export default function AdminUploadsPage() {
                 <table className="w-full border-collapse text-left">
                     <thead>
                         <tr className="bg-[#386641] text-white text-xs uppercase tracking-wider font-semibold border-b border-[#2b4d32]">
-                            <th className="p-3 border-r border-[#4a7a53] w-[20%]">File Name</th>
-                            <th className="p-3 border-r border-[#4a7a53] w-[15%]">User</th>
-                            <th className="p-3 border-r border-[#4a7a53] w-[10%] text-right">Size</th>
-                            <th className="p-3 border-r border-[#4a7a53] w-[10%] text-center">Status</th>
-                            <th className="p-3 border-r border-[#4a7a53] w-[20%]">Moderation</th>
-                            <th className="p-3 border-r border-[#4a7a53] w-[15%]">Created</th>
-                            <th className="p-3 text-center w-[10%]">Actions</th>
+                            <th className="p-3 border-r border-[#4a7a53] w-[20%]">{t('upload.fileName')}</th>
+                            <th className="p-3 border-r border-[#4a7a53] w-[15%]">{t('admin.user')}</th>
+                            <th className="p-3 border-r border-[#4a7a53] w-[10%] text-right">{t('fileCard.download')}</th>
+                            <th className="p-3 border-r border-[#4a7a53] w-[10%] text-center">{t('admin.status')}</th>
+                            <th className="p-3 border-r border-[#4a7a53] w-[20%]">{t('admin.moderation')}</th>
+                            <th className="p-3 border-r border-[#4a7a53] w-[15%]">{t('profile.birth')}</th>
+                            <th className="p-3 text-center w-[10%]">{t('admin.actions')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -207,33 +209,33 @@ export default function AdminUploadsPage() {
                                     <div className="flex items-center justify-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
                                         {upload.moderation_status === 'PENDING_APPROVAL' && (
                                             <>
-                                                <button 
-                                                    onClick={() => handleApprove(upload.id)} 
-                                                    className="p-1.5 rounded-sm text-green-600 hover:bg-green-100 hover:text-green-700 transition-colors border border-transparent hover:border-green-200" 
-                                                    title="Approve"
+                                                <button
+                                                    onClick={() => handleApprove(upload.id)}
+                                                    className="p-1.5 rounded-sm text-green-600 hover:bg-green-100 hover:text-green-700 transition-colors border border-transparent hover:border-green-200"
+                                                    title={t('resources.approvedStatus')}
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                                                 </button>
-                                                <button 
-                                                    onClick={() => handleReject(upload.id)} 
-                                                    className="p-1.5 rounded-sm text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors border border-transparent hover:border-red-100" 
-                                                    title="Reject"
+                                                <button
+                                                    onClick={() => handleReject(upload.id)}
+                                                    className="p-1.5 rounded-sm text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors border border-transparent hover:border-red-100"
+                                                    title={t('resources.rejectedStatus')}
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                                                 </button>
                                             </>
                                         )}
-                                        <button 
-                                            onClick={() => handleFlag(upload.id)} 
-                                            className="p-1.5 rounded-sm text-yellow-500 hover:bg-yellow-50 hover:text-yellow-600 transition-colors border border-transparent hover:border-yellow-100" 
-                                            title="Flag"
+                                        <button
+                                            onClick={() => handleFlag(upload.id)}
+                                            className="p-1.5 rounded-sm text-yellow-500 hover:bg-yellow-50 hover:text-yellow-600 transition-colors border border-transparent hover:border-yellow-100"
+                                            title={t('common.view')}
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
                                         </button>
-                                        <button 
-                                            onClick={() => handleDelete(upload.id)} 
-                                            className="p-1.5 rounded-sm text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors border border-transparent hover:border-gray-300" 
-                                            title="Delete"
+                                        <button
+                                            onClick={() => handleDelete(upload.id)}
+                                            className="p-1.5 rounded-sm text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors border border-transparent hover:border-gray-300"
+                                            title={t('common.delete')}
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                                         </button>
@@ -246,7 +248,7 @@ export default function AdminUploadsPage() {
                                 <td colSpan={7} className="p-8 text-center text-gray-400 bg-white">
                                     <div className="flex flex-col items-center">
                                         <svg className="w-12 h-12 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                        No uploads found matching criteria.
+                                        {t('admin.noData')}
                                     </div>
                                 </td>
                              </tr>
@@ -258,7 +260,7 @@ export default function AdminUploadsPage() {
             {/* Pagination Footer */}
             <div className="bg-gray-50 p-4 border-t border-gray-200 flex items-center justify-between">
                 <span className="text-xs text-gray-500">
-                    Showing page <span className="font-semibold text-gray-900">{query.page}</span> of <span className="font-semibold text-gray-900">{totalPages}</span>
+                    {t('admin.pageInfo', { current: query.page, total: totalPages })}
                 </span>
                 <div className="flex items-center gap-1">
                     <button
@@ -266,7 +268,7 @@ export default function AdminUploadsPage() {
                         onClick={() => setQuery({ ...query, page: (query.page || 1) - 1 })}
                         className="px-3 py-1.5 border border-gray-300 rounded-sm text-xs bg-white text-gray-600 hover:bg-gray-50 hover:text-[#386641] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        Previous
+                        {t('upload.previous')}
                     </button>
                     <div className="px-3 py-1.5 bg-[#386641] text-white text-xs font-bold rounded-sm border border-[#386641]">
                         {query.page}
@@ -276,7 +278,7 @@ export default function AdminUploadsPage() {
                         onClick={() => setQuery({ ...query, page: (query.page || 1) + 1 })}
                         className="px-3 py-1.5 border border-gray-300 rounded-sm text-xs bg-white text-gray-600 hover:bg-gray-50 hover:text-[#386641] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        Next
+                        {t('upload.next')}
                     </button>
                 </div>
             </div>

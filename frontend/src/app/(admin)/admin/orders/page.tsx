@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { adminOrderService, Order, OrdersResponse, OrderStatsResponse } from '@/services/adminOrderService';
 import { shopService, CreateSouvenirDto } from '@/services/shopService';
 
 export default function AdminOrdersPage() {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<OrderStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -114,10 +116,10 @@ export default function AdminOrdersPage() {
       setCreateForm({ name: '', description: '', price: 0, stock: 0, image_url: '' });
       setSelectedImage(null);
       setImagePreview('');
-      alert('Souvenir created successfully!');
+      alert(t('common.success'));
     } catch (error) {
       console.error('Failed to create souvenir:', error);
-      alert('Failed to create souvenir');
+      alert(t('common.error'));
     } finally {
       setUploading(false);
     }
@@ -141,7 +143,7 @@ export default function AdminOrdersPage() {
     <div className="flex items-center justify-center h-screen bg-gray-100 text-[#386641]">
         <div className="flex flex-col items-center gap-3">
              <div className="w-8 h-8 border-4 border-[#F0F8F2] border-t-[#386641] rounded-full animate-spin"></div>
-             <span className="text-sm font-medium">Loading Orders...</span>
+             <span className="text-sm font-medium">{t('common.loading')}</span>
         </div>
     </div>
   );
@@ -149,19 +151,19 @@ export default function AdminOrdersPage() {
   return (
     <div className="min-h-screen bg-gray-100 p-6 font-sans text-sm">
       <div className="max-w-[1400px] mx-auto">
-        
+
         {/* Header Section */}
         <div className="flex justify-between items-end mb-6">
             <div>
-                <h1 className="text-xl font-bold text-[#386641] uppercase tracking-wide">Order Management</h1>
-                <p className="text-gray-500 text-xs mt-1">Track and manage customer orders efficiently.</p>
+                <h1 className="text-xl font-bold text-[#386641] uppercase tracking-wide">{t('admin.orderManagement')}</h1>
+                <p className="text-gray-500 text-xs mt-1">{t('admin.settings')}</p>
             </div>
             <button
                 onClick={() => setShowCreateModal(true)}
                 className="px-4 py-2 bg-[#386641] text-white text-sm font-medium rounded-sm hover:bg-[#2d5133] transition-colors flex items-center gap-2 shadow-sm"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                Create Souvenir
+                {t('admin.orders')}
             </button>
         </div>
 
@@ -170,25 +172,25 @@ export default function AdminOrdersPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {/* Total Orders */}
             <div className="bg-white p-4 rounded-sm shadow-sm border-t-4 border-[#386641] hover:shadow-md transition-shadow">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Orders</h3>
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('admin.orders')}</h3>
               <p className="text-2xl font-bold text-gray-900 mt-2">{stats.totalOrders}</p>
             </div>
-            
+
             {/* Total Revenue */}
             <div className="bg-white p-4 rounded-sm shadow-sm border-t-4 border-[#6A994E] hover:shadow-md transition-shadow">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Revenue</h3>
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('admin.export')}</h3>
               <p className="text-2xl font-bold text-[#386641] mt-2">{formatCurrency(stats.totalRevenue)}</p>
             </div>
-            
+
             {/* Recent Orders */}
             <div className="bg-white p-4 rounded-sm shadow-sm border-t-4 border-blue-400 hover:shadow-md transition-shadow">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Recent (7 Days)</h3>
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('admin.recentActivity')}</h3>
               <p className="text-2xl font-bold text-gray-900 mt-2">{stats.recentOrders}</p>
             </div>
-            
+
             {/* Status Breakdown */}
             <div className="bg-white p-3 rounded-sm shadow-sm border-t-4 border-gray-400 hover:shadow-md transition-shadow">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Status Breakdown</h3>
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{t('admin.status')}</h3>
               <div className="space-y-1 h-[60px] overflow-y-auto pr-1 custom-scrollbar">
                 {stats.ordersByStatus.map((s) => (
                   <div key={s.status} className="flex justify-between items-center text-xs">
@@ -205,7 +207,7 @@ export default function AdminOrdersPage() {
         <div className="bg-white p-4 rounded-sm shadow-sm mb-4 border border-gray-200 flex items-center gap-4">
              <div className="flex items-center gap-2">
                 <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
-                <label className="font-bold text-gray-700 text-xs uppercase tracking-wider">Filter Status:</label>
+                <label className="font-bold text-gray-700 text-xs uppercase tracking-wider">{t('admin.filterByStatus')}</label>
              </div>
              <select
                 value={selectedStatus}
@@ -215,7 +217,7 @@ export default function AdminOrdersPage() {
                 }}
                 className="border border-gray-300 rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:border-[#386641] focus:ring-1 focus:ring-[#386641] bg-white cursor-pointer transition-colors min-w-[200px]"
               >
-                <option value="">All Statuses</option>
+                <option value="">{t('admin.all')}</option>
                 {statusOptions.map((status) => (
                   <option key={status} value={status}>
                     {status}
@@ -230,12 +232,12 @@ export default function AdminOrdersPage() {
                 <table className="min-w-full border-collapse text-left">
                     <thead className="bg-[#386641] text-white">
                         <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border-r border-[#4a7a53] w-[12%]">Order ID</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border-r border-[#4a7a53] w-[20%]">User Info</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border-r border-[#4a7a53] w-[15%]">Amount</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border-r border-[#4a7a53] w-[15%]">Status</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border-r border-[#4a7a53] w-[18%]">Date</th>
-                            <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider w-[20%]">Actions</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border-r border-[#4a7a53] w-[12%]">{t('admin.orders')}</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border-r border-[#4a7a53] w-[20%]">{t('admin.user')}</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border-r border-[#4a7a53] w-[15%]">{t('upload.description')}</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border-r border-[#4a7a53] w-[15%]">{t('admin.status')}</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border-r border-[#4a7a53] w-[18%]">{t('profile.birth')}</th>
+                            <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider w-[20%]">{t('admin.actions')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -244,7 +246,7 @@ export default function AdminOrdersPage() {
                                 <td colSpan={6} className="px-6 py-10 text-center text-gray-500 bg-white">
                                     <div className="flex flex-col items-center">
                                         <svg className="w-12 h-12 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-                                        No orders found
+                                        {t('admin.noData')}
                                     </div>
                                 </td>
                             </tr>
@@ -276,7 +278,7 @@ export default function AdminOrdersPage() {
                                             <button
                                                 onClick={() => viewOrderDetails(order.id)}
                                                 className="p-1.5 rounded-sm text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-colors"
-                                                title="View Details"
+                                                title={t('admin.view')}
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                             </button>
@@ -304,7 +306,7 @@ export default function AdminOrdersPage() {
             {/* Pagination */}
             <div className="bg-gray-50 p-3 border-t border-gray-200 flex justify-between items-center">
                 <span className="text-xs text-gray-500">
-                    Showing page <span className="font-semibold text-gray-900">{page}</span> of <span className="font-semibold text-gray-900">{totalPages}</span>
+                    {t('admin.pageInfo', { current: page, total: totalPages })}
                 </span>
                 <div className="flex items-center gap-1">
                     <button
@@ -312,7 +314,7 @@ export default function AdminOrdersPage() {
                         disabled={page === 1}
                         className="px-3 py-1 border border-gray-300 rounded-sm text-xs bg-white text-gray-600 hover:bg-gray-50 hover:text-[#386641] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        Previous
+                        {t('upload.previous')}
                     </button>
                     <div className="px-3 py-1 bg-[#386641] text-white text-xs font-bold rounded-sm border border-[#386641]">
                         {page}
@@ -322,7 +324,7 @@ export default function AdminOrdersPage() {
                         disabled={page === totalPages}
                         className="px-3 py-1 border border-gray-300 rounded-sm text-xs bg-white text-gray-600 hover:bg-gray-50 hover:text-[#386641] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        Next
+                        {t('upload.next')}
                     </button>
                 </div>
             </div>
@@ -339,7 +341,7 @@ export default function AdminOrdersPage() {
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                              </div>
                              <div>
-                                <h2 className="text-lg font-bold text-gray-900">Order Details</h2>
+                                <h2 className="text-lg font-bold text-gray-900">{t('moderation.manage')}</h2>
                                 <p className="text-xs text-gray-500 font-mono">#{selectedOrder.id}</p>
                              </div>
                         </div>
@@ -353,35 +355,35 @@ export default function AdminOrdersPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                             {/* Customer Info Card */}
                             <div className="bg-gray-50 p-4 rounded-sm border border-gray-100">
-                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Customer Information</h3>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">{t('admin.user')}</h3>
                                 <div className="space-y-3">
                                     <div className="flex justify-between">
-                                        <span className="text-sm text-gray-500">Name:</span>
+                                        <span className="text-sm text-gray-500">{t('profile.displayName')}:</span>
                                         <span className="text-sm font-semibold text-gray-900">{selectedOrder.username || 'N/A'}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-sm text-gray-500">Email:</span>
+                                        <span className="text-sm text-gray-500">{t('admin.email')}:</span>
                                         <span className="text-sm font-medium text-gray-900">{selectedOrder.user_email}</span>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             {/* Order Info Card */}
                             <div className="bg-gray-50 p-4 rounded-sm border border-gray-100">
-                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Order Summary</h3>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">{t('admin.orders')}</h3>
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-500">Status:</span>
+                                        <span className="text-sm text-gray-500">{t('admin.status')}:</span>
                                         <span className={`px-2 py-0.5 text-[10px] font-bold rounded uppercase tracking-wide ${getStatusColor(selectedOrder.status)}`}>
                                             {selectedOrder.status}
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-500">Created At:</span>
+                                        <span className="text-sm text-gray-500">{t('admin.joined')}:</span>
                                         <span className="text-sm font-medium text-gray-900">{formatDate(selectedOrder.created_at)}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-500">Total Amount:</span>
+                                        <span className="text-sm text-gray-500">{t('resources.manage')}:</span>
                                         <span className="text-base font-bold text-[#386641]">{formatCurrency(selectedOrder.total_amount)}</span>
                                     </div>
                                 </div>
@@ -391,28 +393,28 @@ export default function AdminOrdersPage() {
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                              {/* Payment Info */}
                              <div className="border-t border-gray-100 pt-4">
-                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Payment Details</h3>
-                                <p className="text-sm"><span className="text-gray-500">Method:</span> <span className="font-medium">{selectedOrder.payment_method || 'N/A'}</span></p>
-                                <p className="text-sm mt-1"><span className="text-gray-500">Ref:</span> <span className="font-mono text-xs bg-gray-100 px-1 rounded">{selectedOrder.payment_ref || 'N/A'}</span></p>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{t('admin.orders')}</h3>
+                                <p className="text-sm"><span className="text-gray-500">{t('auth.confirmRequired')}:</span> <span className="font-medium">{selectedOrder.payment_method || 'N/A'}</span></p>
+                                <p className="text-sm mt-1"><span className="text-gray-500">{t('admin.reason')}:</span> <span className="font-mono text-xs bg-gray-100 px-1 rounded">{selectedOrder.payment_ref || 'N/A'}</span></p>
                              </div>
                              <div className="border-t border-gray-100 pt-4">
-                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Timeline</h3>
-                                <p className="text-sm"><span className="text-gray-500">Last Updated:</span> <span className="font-medium">{formatDate(selectedOrder.updated_at)}</span></p>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{t('admin.recentActivity')}</h3>
+                                <p className="text-sm"><span className="text-gray-500">{t('admin.disabledUntil')}:</span> <span className="font-medium">{formatDate(selectedOrder.updated_at)}</span></p>
                              </div>
                          </div>
 
                         {/* Order Items Table */}
                         {selectedOrder.order_items && selectedOrder.order_items.length > 0 && (
                             <div>
-                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Items Purchased</h3>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">{t('resources.manage')}</h3>
                                 <div className="border border-gray-200 rounded-sm overflow-hidden">
                                     <table className="min-w-full text-sm">
                                         <thead className="bg-[#386641] text-white">
                                             <tr>
-                                                <th className="px-4 py-2 text-left font-medium text-xs uppercase tracking-wider">Item</th>
-                                                <th className="px-4 py-2 text-center font-medium text-xs uppercase tracking-wider">Qty</th>
-                                                <th className="px-4 py-2 text-right font-medium text-xs uppercase tracking-wider">Price</th>
-                                                <th className="px-4 py-2 text-right font-medium text-xs uppercase tracking-wider">Subtotal</th>
+                                                <th className="px-4 py-2 text-left font-medium text-xs uppercase tracking-wider">{t('common.view')}</th>
+                                                <th className="px-4 py-2 text-center font-medium text-xs uppercase tracking-wider">{t('common.confirm')}</th>
+                                                <th className="px-4 py-2 text-right font-medium text-xs uppercase tracking-wider">{t('upload.description')}</th>
+                                                <th className="px-4 py-2 text-right font-medium text-xs uppercase tracking-wider">{t('admin.orderManagement')}</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-100">
@@ -427,7 +429,7 @@ export default function AdminOrdersPage() {
                                         </tbody>
                                         <tfoot className="bg-gray-50">
                                             <tr>
-                                                <td colSpan={3} className="px-4 py-2 text-right font-bold text-gray-600 text-xs uppercase">Total</td>
+                                                <td colSpan={3} className="px-4 py-2 text-right font-bold text-gray-600 text-xs uppercase">{t('common.all')}</td>
                                                 <td className="px-4 py-2 text-right font-bold text-[#386641] text-lg">{formatCurrency(selectedOrder.total_amount)}</td>
                                             </tr>
                                         </tfoot>
@@ -451,8 +453,8 @@ export default function AdminOrdersPage() {
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                             </div>
                             <div>
-                                <h2 className="text-lg font-bold text-gray-900">Create New Souvenir</h2>
-                                <p className="text-xs text-gray-500">Add a new item to the shop</p>
+                                <h2 className="text-lg font-bold text-gray-900">{t('upload.createNewFolder')}</h2>
+                                <p className="text-xs text-gray-500">{t('upload.step1Desc')}</p>
                             </div>
                         </div>
                         <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors">
@@ -465,31 +467,31 @@ export default function AdminOrdersPage() {
                         <div className="space-y-4">
                             {/* Name */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('upload.fileName')} *</label>
                                 <input
                                     type="text"
                                     value={createForm.name}
                                     onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
                                     className="w-full border border-gray-300 rounded-sm px-3 py-2 text-sm focus:outline-none focus:border-[#386641] focus:ring-1 focus:ring-[#386641]"
-                                    placeholder="Enter souvenir name"
+                                    placeholder={t('upload.folderNamePlaceholder')}
                                 />
                             </div>
 
                             {/* Description */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('upload.description')}</label>
                                 <textarea
                                     value={createForm.description}
                                     onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
                                     className="w-full border border-gray-300 rounded-sm px-3 py-2 text-sm focus:outline-none focus:border-[#386641] focus:ring-1 focus:ring-[#386641] min-h-[80px]"
-                                    placeholder="Enter description"
+                                    placeholder={t('upload.folderDescPlaceholder')}
                                 />
                             </div>
 
                             {/* Price and Stock */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (VND) *</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.export')} *</label>
                                     <input
                                         type="number"
                                         value={createForm.price}
@@ -500,7 +502,7 @@ export default function AdminOrdersPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Stock *</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('resources.manage')} *</label>
                                     <input
                                         type="number"
                                         value={createForm.stock}
@@ -514,7 +516,7 @@ export default function AdminOrdersPage() {
 
                             {/* Image Upload */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('fileCard.download')}</label>
                                 <div className="space-y-2">
                                     <input
                                         type="file"
@@ -538,14 +540,14 @@ export default function AdminOrdersPage() {
                             onClick={() => setShowCreateModal(false)}
                             className="px-4 py-2 border border-gray-300 rounded-sm text-sm text-gray-600 hover:bg-gray-100 transition-colors"
                         >
-                            Cancel
+                            {t('profile.cancel')}
                         </button>
                         <button
                             onClick={handleCreateSouvenir}
                             disabled={!createForm.name || createForm.price <= 0 || createForm.stock < 0 || uploading}
                             className="px-4 py-2 bg-[#386641] text-white text-sm font-medium rounded-sm hover:bg-[#2d5133] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {uploading ? 'Uploading...' : 'Create Souvenir'}
+                            {uploading ? t('common.loading') : t('upload.createNewFolder')}
                         </button>
                     </div>
                 </div>

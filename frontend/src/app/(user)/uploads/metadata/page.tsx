@@ -24,20 +24,28 @@ function MetadataPage() {
   const classificationLevels = useUploadStore((s) => s.classificationLevels);
   const availableTags = useUploadStore((s) => s.availableTags);
   const folders = useUploadStore((s) => s.folders);
-  const isLoadingClassifications = useUploadStore((s) => s.isLoadingClassifications);
+  const isLoadingClassifications = useUploadStore(
+    (s) => s.isLoadingClassifications
+  );
   const isLoadingTags = useUploadStore((s) => s.isLoadingTags);
   const isLoadingFolders = useUploadStore((s) => s.isLoadingFolders);
 
   // Actions
-  const fetchClassificationLevels = useUploadStore((s) => s.fetchClassificationLevels);
+  const fetchClassificationLevels = useUploadStore(
+    (s) => s.fetchClassificationLevels
+  );
   const fetchUserFolders = useUploadStore((s) => s.fetchUserFolders);
   const fetchTagsByLevel = useUploadStore((s) => s.fetchTagsByLevel);
-  const updateFolderManagement = useUploadStore((s) => s.updateFolderManagement);
+  const updateFolderManagement = useUploadStore(
+    (s) => s.updateFolderManagement
+  );
   const updateFileMetadata = useUploadStore((s) => s.updateFileMetadata);
   const submitUpload = useUploadStore((s) => s.submitUpload);
   const setCurrentStep = useUploadStore((s) => s.setCurrentStep);
   const setValidationErrors = useUploadStore((s) => s.setValidationErrors);
-  const clearAllDebouncedOperations = useUploadStore((s) => s.clearAllDebouncedOperations)
+  const clearAllDebouncedOperations = useUploadStore(
+    (s) => s.clearAllDebouncedOperations
+  );
 
   useEffect(() => {
     return () => {
@@ -50,7 +58,7 @@ function MetadataPage() {
     setCurrentStep(2);
     return () => {
       clearAllDebouncedOperations();
-    }
+    };
   }, [setCurrentStep, clearAllDebouncedOperations]);
 
   // Load base data
@@ -64,28 +72,37 @@ function MetadataPage() {
     if (folderManagement.newFolderData?.folderClassificationId) {
       fetchTagsByLevel(folderManagement.newFolderData.folderClassificationId);
     }
-  }, [folderManagement.newFolderData?.folderClassificationId, fetchTagsByLevel]);
+  }, [
+    folderManagement.newFolderData?.folderClassificationId,
+    fetchTagsByLevel,
+  ]);
 
-  const completedFiles = useMemo(() => files.filter((f) => f.status === "completed"), [files]);
+  const completedFiles = useMemo(
+    () => files.filter((f) => f.status === "completed"),
+    [files]
+  );
 
   // Validation
   const validationState = useMemo(() => {
     const missing: string[] = [];
 
     if (!folderManagement.selectedFolderId && !folderManagement.newFolderData) {
-      missing.push("Select or create a folder");
+      missing.push("Chọn hoặc tạo thư mục");
     }
 
     if (folderManagement.newFolderData) {
-      if (!folderManagement.newFolderData.name?.trim()) missing.push("Folder name");
-      if (!folderManagement.newFolderData.folderClassificationId) missing.push("Folder classification");
+      if (!folderManagement.newFolderData.name?.trim())
+        missing.push("Tên thư mục");
+      if (!folderManagement.newFolderData.folderClassificationId)
+        missing.push("Cấp độ phân loại thư mục");
     }
 
     const incomplete = completedFiles.filter((f) => {
       const meta = fileMetadata[f.id];
       return !meta?.title?.trim() || !meta?.description?.trim();
     });
-    if (incomplete.length > 0) missing.push(`${incomplete.length} file(s) need metadata`);
+    if (incomplete.length > 0)
+      missing.push(`${incomplete.length} tệp cần dữ liệu hoàn chỉnh`);
 
     return {
       isValid: missing.length === 0,
@@ -97,15 +114,18 @@ function MetadataPage() {
 
   const handleSubmit = useCallback(async () => {
     if (!validationState.canSubmit) {
-      if (validationState.missing.length > 0) setValidationErrors("submit", validationState.missing);
+      if (validationState.missing.length > 0)
+        setValidationErrors("submit", validationState.missing);
       return;
     }
     try {
       await submitUpload();
       router.push("/uploads/success");
     } catch {
-      console.error('Upload failed');
-      setValidationErrors("submit", ["Failed to complete upload. Please try again."]);
+      console.error("Upload failed");
+      setValidationErrors("submit", [
+        "Failed to complete upload. Please try again.",
+      ]);
     }
   }, [validationState, submitUpload, router, setValidationErrors]);
 
@@ -129,7 +149,10 @@ function MetadataPage() {
   );
 
   return (
-    <main className="max-w-5xl mx-auto px-6 py-10 space-y-8 bg-[#F8F9FA]" role="main">
+    <main
+      className="max-w-5xl mx-auto px-6 py-10 space-y-8 bg-[#F8F9FA]"
+      role="main"
+    >
       {/* Stepper */}
       <nav aria-label="Upload progress" className="mb-2">
         <UploadStepper />
@@ -139,14 +162,12 @@ function MetadataPage() {
       <header className="rounded-2xl border border-[#386641]/20 bg-white/90 backdrop-blur p-6 shadow-sm">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Document Organization</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+              Tổ chức tài liệu
+            </h1>
             <p className="mt-1 text-sm text-gray-600">
-              Step 1: Folder organization • Step 2: File details • Submit when complete
+              Bước 1: Quản lý thư mục • Bước 2: Thông tin tệp • Gửi khi hoàn tất
             </p>
-          </div>
-          <div className="hidden sm:flex items-center gap-2 text-[#6A994E]">
-            {getIcon("CheckCircle", 18, "text-[#6A994E]")}
-            <span className="text-xs">Brand UI applied</span>
           </div>
         </div>
       </header>
@@ -154,9 +175,11 @@ function MetadataPage() {
       {/* Folder Section */}
       <section className={`group ${cardClass} p-6`}>
         <div className={sectionHeaderClass}>
-          {headerTitle("Folder", "Step 1: Folder Management")}
+          {headerTitle("Folder", "Bước 1: Quản lý thư mục")}
           <span className="text-sm text-gray-500">
-            {folderManagement.selectedFolderId ? "Folder selected" : "Choose destination"}
+            {folderManagement.selectedFolderId
+              ? "Thư mục đã chọn"
+              : "Chọn đích đến cho tệp của bạn"}
           </span>
         </div>
         <FolderSection
@@ -174,9 +197,14 @@ function MetadataPage() {
       {/* File Metadata Section */}
       <section className={`group ${cardClass} p-6`}>
         <div className={sectionHeaderClass}>
-          {headerTitle("FileText", `Step 2: File Information (${completedFiles.length})`)}
+          {headerTitle(
+            "FileText",
+            `Bước 2: Thông tin tệp (${completedFiles.length})`
+          )}
           <span className="text-sm text-gray-500">
-            {completedFiles.length === 0 ? "No files uploaded yet" : `${completedFiles.length} file(s) ready`}
+            {completedFiles.length === 0
+              ? "Chưa có tệp nào được tải lên"
+              : `${completedFiles.length} tệp đã sẵn sàng để thêm  dữ liệu`}
           </span>
         </div>
         {completedFiles.length > 0 ? (
@@ -191,7 +219,7 @@ function MetadataPage() {
           <div className="text-center py-10 text-gray-500">
             <div className="flex flex-col items-center gap-3">
               {getIcon("Upload", 48, "text-gray-400")}
-              <p className="text-sm">Go back to upload files first</p>
+              <p className="text-sm">Quay lại để tải lên tệp trước</p>
             </div>
           </div>
         )}
@@ -207,7 +235,7 @@ function MetadataPage() {
             >
               <div className="flex items-center gap-2 font-medium mb-1">
                 {getIcon("AlertCircle", 18, "text-[#BC4749]")}
-                Missing requirements
+                Thiếu yêu cầu
               </div>
               <ul className="list-disc ml-5 space-y-0.5">
                 {validationState.missing.map((m) => (
@@ -218,7 +246,7 @@ function MetadataPage() {
           ) : (
             <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700 flex items-center gap-2 shadow-sm">
               {getIcon("CheckCircle", 18, "text-green-600")}
-              All metadata complete. Ready to submit!
+              Tất cả dữ liệu đã hoàn thành. Sẵn sàng gửi!
             </div>
           )}
         </div>
@@ -236,19 +264,20 @@ function MetadataPage() {
             type="button"
             onClick={handleSubmit}
             disabled={!validationState.canSubmit}
-            className={`px-5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50 disabled:opacity-60 disabled:cursor-not-allowed ${validationState.canSubmit
+            className={`px-5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50 disabled:opacity-60 disabled:cursor-not-allowed ${
+              validationState.canSubmit
                 ? "bg-[#386641] text-white hover:bg-[#2d4f31] shadow-md hover:shadow-lg"
                 : "bg-gray-300 text-white"
-              }`}
+            }`}
           >
             {isSubmitting ? (
               <>
                 {getIcon("Loader2", 16, "animate-spin")}
-                Submitting...
+                Đang gửi...
               </>
             ) : (
               <>
-                Complete Upload
+                Hoàn thành tải lên
                 {getIcon("ChevronRight", 16)}
               </>
             )}
