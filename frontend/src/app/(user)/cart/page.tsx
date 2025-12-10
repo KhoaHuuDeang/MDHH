@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 export default function CartPage() {
   const [cart, setCart] = useState<any>({ items: [], total: 0 });
   const [loading, setLoading] = useState(true);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const router = useRouter();
   const { t } = useTranslation();
 
@@ -56,16 +57,22 @@ export default function CartPage() {
   };
 
   const checkout = async () => {
+    if (isCheckingOut) return;
+
+    setIsCheckingOut(true);
     try {
       const res = await csrAxiosClient.post('/payment/orders', {
         payment_method: 'VNPAY',
       });
 
-      const { paymentUrl } = res.data.result;
-      window.location.href = paymentUrl;
-
+      if (res.data?.result?.paymentUrl) {
+        window.location.href = res.data.result.paymentUrl;
+      } else {
+        throw new Error('No payment URL returned');
+      }
     } catch (err: any) {
       alert(err.response?.data?.message || t('common.error'));
+      setIsCheckingOut(false);
     }
   }
 
@@ -152,18 +159,46 @@ export default function CartPage() {
               ))}
             </div>
 
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] p-4 z-40">
-                <div className="max-w-[1200px] mx-auto flex flex-col sm:flex-row justify-end items-center gap-6">
-                    <div className="flex items-center gap-2">
-                        <span className="text-gray-600 text-sm">{t('stats.progressBadge')} ({cart.items.length} {t('upload.title')}):</span>
-                        <span className="text-2xl font-bold text-[#386641]">₫{cart.total.toLocaleString()}</span>
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] p-4 z-40">
+                <div className="max-w-[1200px] mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div className="flex flex-col gap-1">
+                        <span className="text-gray-600 text-sm">{t('upload.title')}: {cart.items.length}</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-gray-600 text-sm">Total:</span>
+                            <span className="text-3xl font-bold text-[#386641]">₫{cart.total.toLocaleString()}</span>
+                        </div>
                     </div>
-                    <button
-                        onClick={checkout}
-                        className="w-full sm:w-auto bg-[#386641] text-white px-10 py-3 rounded hover:bg-[#2b4d32] transition-colors shadow-lg shadow-[#386641]/20 font-semibold"
-                    >
-                        {t('common.confirm')}
-                    </button>
+                    <div className="flex gap-3 w-full sm:w-auto">
+                        <button
+                            onClick={() => router.push('/')}
+                            disabled={isCheckingOut}
+                            className="flex-1 sm:flex-none bg-gray-200 text-gray-700 px-8 py-3 rounded hover:bg-gray-300 disabled:opacity-50 transition-colors font-medium"
+                        >
+                            Continue Shopping
+                        </button>
+                        <button
+                            onClick={checkout}
+                            disabled={isCheckingOut || cart.items.length === 0}
+                            className="flex-1 sm:flex-none bg-[#386641] text-white px-10 py-3 rounded hover:bg-[#2b4d32] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-lg shadow-[#386641]/20 font-semibold flex items-center justify-center gap-2"
+                        >
+                            {isCheckingOut ? (
+                                <>
+                                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Processing...
+                                </>
+                            ) : (
+                                <>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M6 9L3 6m0 0l3-3m-3 3h18v12c0 1-1 2-2 2H5c-1 0-2-1-2-2V9z"/>
+                                    </svg>
+                                    Checkout with VNPay
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
 
