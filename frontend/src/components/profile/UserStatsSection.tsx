@@ -1,6 +1,7 @@
 import React from 'react'
 import { getIcon } from '@/utils/getIcon'
 import useUserStats from '@/hooks/useUserStats'
+import useUserAchievements from '@/hooks/useUserAchievements'
 
 interface Achievement {
   title: string
@@ -15,14 +16,17 @@ interface UserStatsSectionProps {
 
 function UserStatsSection({ userId }: UserStatsSectionProps) {
   const { stats, isLoading } = useUserStats(userId);
+  const { achievements: realAchievements, isLoading: achievementsLoading } = useUserAchievements(userId);
 
-  // Keep mockdata for achievements as requested
-  const achievements: Achievement[] = [
-    { title: "First Upload", description: "Tải lên tài liệu đầu tiên", icon: "Upload", unlocked: true },
-    { title: "Popular Creator", description: "Nhận 50 upvotes cho tài liệu", icon: "Star", unlocked: true },
-    { title: "Active Contributor", description: "Tải lên 10 tài liệu", icon: "Award", unlocked: false },
-    { title: "Helper", description: "Bình luận giúp đỡ 25 lần", icon: "Heart", unlocked: false },
-  ];
+  // Transform real achievements to match component interface
+  const achievements: Achievement[] = realAchievements
+    ? realAchievements.map((a) => ({
+        title: a.title,
+        description: a.description,
+        icon: a.icon,
+        unlocked: a.unlocked,
+      }))
+    : [];
 
   // Transform real stats data to display format
   const statsDisplay = stats ? [

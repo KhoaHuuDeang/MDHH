@@ -2,10 +2,11 @@
 
 import React, { ChangeEvent, useRef, useState, useCallback } from "react";
 import Image from "next/image";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { getIcon } from "@/utils/getIcon";
 import FieldRow from "./FieldRow";
 import useUserProfile from "@/hooks/useUserProfile";
+import { userService } from "@/services/userService";
 
 interface UserProfileSectionProps {
     userId: string;
@@ -14,7 +15,8 @@ interface UserProfileSectionProps {
 function UserProfileSection({ userId }: UserProfileSectionProps) {
 
     const { optimisticData: userData, isLoading, updateProfile } = useUserProfile(userId);
-    
+    const { update: updateSession } = useSession();
+
     // Internal state management
     const [editingField, setEditingField] = useState<string | null>(null);
     const [tempValues, setTempValues] = useState<Record<string, string>>({});
@@ -64,19 +66,32 @@ function UserProfileSection({ userId }: UserProfileSectionProps) {
     const handleAvatarChange = useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file && userData) {
-            // For now, create a temporary URL
-            const tempUrl = URL.createObjectURL(file);
-            await updateProfile({ avatar: tempUrl });
+            try {
+                // Upload file and get real S3 URL
+                const publicUrl = await userService.uploadProfileImage(file, 'avatar');
+                // Update profile with real URL
+                await updateProfile({ avatar: publicUrl });
+                // Refresh session to sync avatar to header
+                await updateSession({ avatar: publicUrl });
+            } catch (error) {
+                console.error('Avatar upload failed:', error);
+            }
         }
-    }, [updateProfile]);
+    }, [userData, updateProfile, updateSession]);
 
     const handleBackgroundChange = useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file && userData) {
-            const tempUrl = URL.createObjectURL(file);
-            await updateProfile({ banner: tempUrl });
+            try {
+                // Upload file and get real S3 URL
+                const publicUrl = await userService.uploadProfileImage(file, 'banner');
+                // Update profile with real URL
+                await updateProfile({ banner: publicUrl });
+            } catch (error) {
+                console.error('Banner upload failed:', error);
+            }
         }
-    }, [updateProfile]);
+    }, [userData, updateProfile]);
 
     const maskEmail = useCallback((email: string) => {
         const [local, domain] = email.split("@");

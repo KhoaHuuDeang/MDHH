@@ -56,7 +56,7 @@ const FileUploadArea = () => {
   return (
     <section
       className={`relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300 ${dragOver
-          ? 'border-[#6A994E] bg-green-100 scale-105'
+          ? 'border-[#6A994E] bg-green-100 shadow-lg'
           : 'border-[#6A994E]/50 bg-green-50 hover:bg-green-100'
         }`}
       onDragOver={handleDragOver}
@@ -84,25 +84,25 @@ const FileUploadArea = () => {
       />
 
       <div className="flex flex-col items-center justify-center">
-        <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-all duration-300 ${dragOver ? 'bg-[#386641] scale-110' : 'bg-[#6A994E]/20'
+        <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-all duration-300 ${dragOver ? 'bg-[#386641] shadow-lg' : 'bg-[#6A994E]/20'
           }`}>
           {getIcon('CloudUpload', 32, `transition-colors duration-300 ${dragOver ? 'text-white' : 'text-[#386641]'
             }`)}
         </div>
 
         <h3 className="text-xl font-bold text-gray-800 mb-2">
-          {dragOver ? 'Drop your file here' : 'You can drag and drop files here'}
+          {dragOver ? 'Thả tệp của bạn vào đây' : 'Bạn có thể kéo thả tệp vào đây hoặc nhấp để duyệt'}
         </h3>
 
-        <p className="text-gray-500 mb-4">Or if you prefer</p>
+        <p className="text-gray-500 mb-4">Hoặc nếu bạn thích</p>
 
         <div className="bg-[#386641] text-white font-semibold px-8 py-3 rounded-lg hover:bg-[#2d4f31] transition-colors duration-300 shadow-md hover:shadow-lg">
-          Browse files
+          Duyệt tệp
         </div>
 
         <div className="mt-4 text-xs text-gray-500 space-y-1">
-          <p>Supported formats: PDF, DOC, DOCX</p>
-          <p>Maximum size: 50MB per file</p>
+          <p>Định dạng được hỗ trợ: PDF, DOC, DOCX</p>
+          <p>Kích thước tối đa: 50MB mỗi tệp</p>
         </div>
       </div>
     </section>

@@ -1,6 +1,6 @@
 
 
-import { DocumentCategory, FileMetadata, FileUploadInterface, FolderManagement, VisibilityType } from "@/types/FileUploadInterface";
+import { FileMetadata, FileUploadInterface, FolderManagement, VisibilityType } from "@/types/FileUploadInterface";
 
 export interface FolderManagementDto {
   selectedFolderId?: string;
@@ -19,7 +19,6 @@ export interface UploadCreationData {
   s3Key: string;
   title: string;
   description: string;
-  category: DocumentCategory;
   fileVisibility: VisibilityType;
 }
 
@@ -71,7 +70,6 @@ export function buildUploadCreationData(
         s3Key: file.s3Key!,
         title: meta.title,
         description: meta.description,
-        category: meta.category,
         fileVisibility: meta.visibility,
       };
     });

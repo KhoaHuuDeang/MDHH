@@ -12,6 +12,13 @@ import { HomepageModule } from './homepage/homepage.module';
 import { VotesModule } from './votes/votes.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
+import { CommentsModule } from './comments/comments.module';
+import { LogsModule } from './logs/logs.module';
+import { ShopModule } from './shop/shop.module';
+import { CartModule } from './cart/cart.module';
+import { PaymentModule } from './payment/payment.module';
+import { EmailModule } from './email/email.module';
+import { FilesModule } from './files/files.module';
 
 @Module({
 
@@ -32,7 +39,14 @@ import { HealthModule } from './health/health.module';
     HomepageModule,
     VotesModule,
     PrismaModule,
-    HealthModule
+    HealthModule,
+    CommentsModule,
+    LogsModule,
+    ShopModule,
+    CartModule,
+    PaymentModule,
+    EmailModule,
+    FilesModule
   ],
   controllers: [AppController],
   providers: [AppService],

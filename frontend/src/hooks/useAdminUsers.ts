@@ -27,6 +27,7 @@ interface UseAdminUsersReturn {
   goPrevious: () => void;
   disableUser: (userId: string, options: DisableUserOptions) => Promise<void>;
   enableUser: (userId: string) => Promise<void>;
+  updateUserRole: (userId: string, role: 'USER' | 'ADMIN') => Promise<void>;
   refresh: () => void;
   performSearch: () => void;
 }
@@ -229,6 +230,25 @@ export const useAdminUsers = (): UseAdminUsersReturn => {
     }
   }, [toast, startTransition, updateOptimisticUsers]);
 
+  const updateUserRole = useCallback(async (userId: string, role: 'USER' | 'ADMIN') => {
+    try {
+      await adminService.updateUserRole(userId, role);
+
+      setState(prev => ({
+        ...prev,
+        users: prev.users.map(user =>
+          user.id === userId ? { ...user, role_name: role } : user
+        )
+      }));
+
+      toast.success('User role updated successfully');
+    } catch (error) {
+      setState(prev => ({ ...prev, error: error instanceof Error ? error.message : 'Failed to update role' }));
+      toast.error('Failed to update role');
+      throw error;
+    }
+  }, [toast]);
+
   const setSearchTerm = useCallback((term: string) => {
     setState(prev => ({ ...prev, searchTerm: term }));
   }, []);
@@ -253,6 +273,7 @@ export const useAdminUsers = (): UseAdminUsersReturn => {
     goPrevious,
     disableUser,
     enableUser,
+    updateUserRole,
     refresh,
     performSearch
   };

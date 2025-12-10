@@ -124,11 +124,11 @@ const CategoryFilter: React.FC<CategoryFilterProps> = React.memo(({
       {/* Classification Level Filter */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-gray-700">Classification Level</h3>
+          <h3 className="text-sm font-medium text-gray-700">Cấp độ</h3>
           {levelsLoading && (
             <div className="flex items-center text-xs text-gray-400">
               {getIcons("Loader2", 12, "animate-spin mr-1")}
-              Loading...
+              Đang tải...
             </div>
           )}
         </div>
@@ -152,7 +152,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = React.memo(({
           >
             <div className="flex items-center space-x-2">
               {getIcons("Grid3X3", 16, !selectedClassification ? "text-white" : "text-gray-500")}
-              <span>All Classifications</span>
+              <span>Tất cả cấp độ</span>
             </div>
           </button>
 
@@ -216,7 +216,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = React.memo(({
               >
                 <div className="flex items-center space-x-2">
                   {getIcons("Tag", 16, selectedTags.length === 0 ? "text-blue-600" : "text-gray-500")}
-                  <span>All Tags</span>
+                  <span>Tất cả thẻ</span>
                 </div>
               </button>
 
@@ -251,7 +251,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = React.memo(({
             </div>
           ) : (
             <div className="text-sm text-gray-500 text-center py-4">
-              No tags available for this classification level
+              Không có thẻ nào cho cấp độ phân loại này
             </div>
           )}
         </div>
@@ -261,7 +261,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = React.memo(({
       {hasActiveFilters && (
         <div className="bg-gray-50 p-4 rounded-lg">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-medium text-gray-700">Active Filters</h4>
+            <h4 className="text-sm font-medium text-gray-700">Bộ lọc đang hoạt động</h4>
             <button
               onClick={clearFilters}
               className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
@@ -315,7 +315,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = React.memo(({
           }`}
         >
           {getIcons("Filter", 16, "mr-2")}
-          <span>Apply Filters</span>
+          <span>Áp dụng bộ lọc</span>
           {hasActiveFilters && (
             <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
               {selectedClassification ? 1 : 0}+{selectedTags.length}

@@ -1,14 +1,18 @@
 'use client'
 import * as LucideIcons from 'lucide-react';
-import { JSX } from 'react';
+import { JSX, forwardRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
+interface FooterProps {
+    style?: React.CSSProperties;
+}
 
+const Footer = forwardRef<HTMLElement, FooterProps>(({ style }, ref) => {
+    const { t } = useTranslation();
 
-
-export default function Footer() {
     const getIcons = (icon: string, size = 18, classname?: string): JSX.Element => {
         const IconComponent = LucideIcons[icon as keyof typeof LucideIcons] as LucideIcon;
         return IconComponent ?
@@ -23,14 +27,17 @@ export default function Footer() {
     ];
 
     const footerLinks = [
-        { name: 'Chính Sách Quyền Riêng Tư', href: '/privacy' },
-        { name: 'Điều Khoản Dịch Vụ', href: '/terms' },
-        { name: 'Trợ Năng', href: '/accessibility' },
-        { name: 'Liên Hệ', href: '/contact' }
+        { name: t('footer.privacy'), href: '/privacy' },
+        { name: t('footer.terms'), href: '/terms' },
+        { name: t('footer.about'), href: '/about' },
+        { name: t('footer.contact'), href: '/contact' }
     ];
 
     return (
-        <footer className="bg-gradient-to-t from-[#1a2e1a] via-[#2d4a2d] to-[#1a2e1a] 
+        <footer
+            ref={ref}
+            style={style}
+            className="bg-gradient-to-t from-[#1a2e1a] via-[#2d4a2d] to-[#1a2e1a]
                          border-t-2 border-[#386641]/30 py-8
                          relative
                          before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#386641] before:via-[#6A994E] before:to-[#386641] before:opacity-60">
@@ -55,14 +62,14 @@ export default function Footer() {
                                     MDHH
                                 </h3>
                                 <p className="text-sm text-gray-300 group-hover:text-[#6A994E]/80 transition-colors duration-300">
-                                    DK VÔ ĐỊCH WORLDS 2025
+                                    NỀN TẢNG HỌC TẬP SỐ 1 VN
                                 </p>
                             </div>
                         </Link>
 
                         {/* Mission Statement */}
                         <p className="text-sm text-gray-300 text-center md:text-left max-w-xs">
-                            DESCRIPTION FOR MDHH COMMUNITY
+                            {t('footer.mission') || 'HỌC TẬP TÍCH CỰC VẬN MAY SẼ ĐẾN'}
                         </p>
                     </div>
 
@@ -70,7 +77,7 @@ export default function Footer() {
 
                     {/* Social Media & Contact */}
                     <div className="flex flex-col items-center md:items-end space-y-4">
-                        <h4 className="text-lg font-semibold text-white">Kết Nối Với Chúng Tôi</h4>
+                        <h4 className="text-lg font-semibold text-white">{t('footer.connectWithUs') || 'Kết Nối Với Chúng Tôi'}</h4>
 
                         {/* Social Media Links */}
                         <div className="flex gap-3">
@@ -116,7 +123,7 @@ export default function Footer() {
                         {/* Copyright */}
                         <div className="text-center md:text-left">
                             <p className="text-sm text-gray-300">
-                                © 2025 MDHH Education Platform. Tất cả các quyền được bảo lưu.
+                                {t('footer.copyright')}
                             </p>
                         </div>
 
@@ -144,4 +151,8 @@ export default function Footer() {
             </div>
         </footer>
     );
-}
+})
+
+Footer.displayName = 'Footer'
+
+export default Footer

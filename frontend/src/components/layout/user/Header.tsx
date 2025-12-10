@@ -1,12 +1,23 @@
 'use client'
 import * as LucideIcons from 'lucide-react';
-import { JSX, useState, useRef, useEffect } from 'react';
+import { JSX, useState, useRef, useEffect, forwardRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { SidebarProfileMenuProps } from '@/types/user.types';
 import { LucideIcon } from 'lucide-react';
+import { useLogNotifications } from '@/hooks/useLogNotifications';
+import { getIconForLogType, formatRelativeTime, formatNotificationMessage } from '@/utils/notificationHelpers';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
-export default function Header({ userProps, HeaderItems }: { userProps: SidebarProfileMenuProps['mockUser'], HeaderItems: SidebarProfileMenuProps['items'] }) {
+interface HeaderProps {
+    userProps: SidebarProfileMenuProps['mockUser'];
+    HeaderItems: SidebarProfileMenuProps['items'];
+    style?: React.CSSProperties;
+}
+
+const Header = forwardRef<HTMLElement, HeaderProps>(({ userProps, HeaderItems, style }, ref) => {
+    const { t } = useTranslation();
 
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -23,55 +34,21 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
             : <></>
     }
 
-    // Mock data for notifications
-    const notifications = [
-        {
-            id: 1,
-            type: 'document',
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-            title: 'Tài liệu mới được tải lên',
-            content: 'Admin đã tải lên tài liệu "Bài tập Toán cao cấp A1" trong môn Toán',
-            time: '2 giờ trước',
-            isRead: false,
-            icon: 'Upload'
-        },
-        {
-            id: 2,
-            type: 'comment',
-            avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b5bc?w=100&h=100&fit=crop&crop=face',
-            title: 'Bình luận mới',
-            content: 'Nguyễn Thị Mai đã bình luận trong tài liệu "Giáo trình Lập trình Python"',
-            time: '5 giờ trước',
-            isRead: false,
-            icon: 'MessageCircle'
-        },
-        {
-            id: 3,
-            type: 'like',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-            title: 'Upvote mới',
-            content: 'Trần Văn Nam đã upvote tài liệu của bạn "Đề thi Vật lý đại cương"',
-            time: '1 ngày trước',
-            isRead: true,
-            icon: 'ThumbsUp'
-        },
-        {
-            id: 4,
-            type: 'achievement',
-            avatar: '/logo.svg',
-            title: 'Thành tích mới',
-            content: 'Chúc mừng! Bạn đã đạt được thành tích "Popular Creator"',
-            time: '2 ngày trước',
-            isRead: true,
-            icon: 'Award'
-        }
-    ];
+    // Fetch notifications from API
+    const { notifications: allNotifications, markAsRead, markAllAsRead } = useLogNotifications(false, true);
+    console.log("All Notifications:", allNotifications);
 
     const filteredNotifications = activeNotificationFilter === 'all'
-        ? notifications
-        : notifications.filter(n => !n.isRead);
+        ? allNotifications
+        : allNotifications.filter(n => !n.is_read);
 
-    const unreadCount = notifications.filter(n => !n.isRead).length;
+    const unreadCount = allNotifications.filter(n => !n.is_read).length;
+
+    const handleNotificationClick = async (notificationId: string, isRead: boolean) => {
+        if (!isRead) {
+            await markAsRead(notificationId);
+        }
+    };
 
     // Close dropdowns when clicking outside
     useEffect(() => {
@@ -85,8 +62,11 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
     }, []);
 
     return (
-        
-        <header className="sticky top-0 z-40 shadow-2xl border-b-2 border-[#386641]/30
+
+        <header
+            ref={ref}
+            style={style}
+            className="sticky top-0 z-40 shadow-2xl border-b-2 border-[#386641]/30
                          bg-gradient-to-r from-[#1a2e1a] via-[#2d4a2d] to-[#1a2e1a]
                          backdrop-blur-md
                          relative
@@ -124,8 +104,20 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
                             </Link>
                         </div>
 
-                        {/* Right Section - Notifications + Messages + User */}
+                        {/* Right Section - Cart + Notifications + Messages + User */}
                         <div className="flex items-center gap-3">
+                            {/* Cart Button */}
+                            <Link
+                                href="/cart"
+                                className="hidden sm:flex relative p-3 rounded-xl transition-all duration-300
+                                         text-white hover:text-[#6A994E] hover:bg-[#386641]/20
+                                         hover:shadow-lg hover:shadow-[#386641]/25 hover:scale-105
+                                         border border-transparent hover:border-[#386641]/30
+                                         focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50"
+                            >
+                                {getIcons('ShoppingCart', 20)}
+                            </Link>
+
                             {/* Notification Button */}
                             <div className="relative" ref={notificationRef}>
                                 <button
@@ -186,40 +178,48 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
                                         {/* Notification List */}
                                         <div className="max-h-[400px] overflow-y-auto">
                                             {filteredNotifications.length > 0 ? (
-                                                filteredNotifications.map((notification) => (
-                                                    <div
-                                                        key={notification.id}
-                                                        className={`flex items-start gap-3 p-4 hover:bg-[#386641]/20 cursor-pointer border-b border-[#386641]/20 transition-colors ${!notification.isRead ? 'bg-[#386641]/10' : ''
-                                                            }`}
-                                                    >
-                                                        <div className="relative flex-shrink-0">
-                                                            <Image
-                                                                src={notification.avatar}
-                                                                alt=""
-                                                                width={48}
-                                                                height={48}
-                                                                className="w-12 h-12 rounded-full object-cover"
-                                                            />
-                                                            <div className="absolute -bottom-1 -right-1 bg-[#6A994E] rounded-full p-1 border-2 border-[#2d4a2d]">
-                                                                {getIcons(notification.icon, 12, 'text-white')}
+                                                filteredNotifications.map((notification) => {
+                                                    const { title, content } = formatNotificationMessage(notification);
+                                                    const icon = getIconForLogType(notification.type);
+                                                    const avatar = notification.actor?.avatar || '/logo.svg';
+                                                    const timeAgo = formatRelativeTime(notification.created_at);
+
+                                                    return (
+                                                        <div
+                                                            key={notification.id}
+                                                            onClick={() => handleNotificationClick(notification.id, notification.is_read)}
+                                                            className={`flex items-start gap-3 p-4 hover:bg-[#386641]/20 cursor-pointer border-b border-[#386641]/20 transition-colors ${!notification.is_read ? 'bg-[#386641]/10' : ''
+                                                                }`}
+                                                        >
+                                                            <div className="relative flex-shrink-0">
+                                                                <Image
+                                                                    src={avatar}
+                                                                    alt=""
+                                                                    width={48}
+                                                                    height={48}
+                                                                    className="w-12 h-12 rounded-full object-cover"
+                                                                />
+                                                                <div className="absolute -bottom-1 -right-1 bg-[#6A994E] rounded-full p-1 border-2 border-[#2d4a2d]">
+                                                                    {getIcons(icon, 12, 'text-white')}
+                                                                </div>
                                                             </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-sm font-semibold text-white mb-1">
+                                                                    {title}
+                                                                </p>
+                                                                <p className="text-sm text-gray-300 mb-2 line-clamp-2">
+                                                                    {content}
+                                                                </p>
+                                                                <p className="text-xs text-[#6A994E] font-medium">
+                                                                    {timeAgo}
+                                                                </p>
+                                                            </div>
+                                                            {!notification.is_read && (
+                                                                <div className="w-2 h-2 bg-[#6A994E] rounded-full flex-shrink-0 mt-2"></div>
+                                                            )}
                                                         </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-semibold text-white mb-1">
-                                                                {notification.title}
-                                                            </p>
-                                                            <p className="text-sm text-gray-300 mb-2 line-clamp-2">
-                                                                {notification.content}
-                                                            </p>
-                                                            <p className="text-xs text-[#6A994E] font-medium">
-                                                                {notification.time}
-                                                            </p>
-                                                        </div>
-                                                        {!notification.isRead && (
-                                                            <div className="w-2 h-2 bg-[#6A994E] rounded-full flex-shrink-0 mt-2"></div>
-                                                        )}
-                                                    </div>
-                                                ))
+                                                    );
+                                                })
                                             ) : (
                                                 <div className="p-8 text-center">
                                                     <div className="w-16 h-16 mx-auto mb-4 bg-[#386641]/20 rounded-full flex items-center justify-center">
@@ -232,14 +232,36 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
 
                                         {/* Footer */}
                                         <div className="p-3 border-t border-[#386641]/30">
-                                            <button className="w-full bg-[#386641]/30 text-white text-sm font-semibold py-2 rounded-lg hover:bg-[#386641]/50 transition-colors">
-                                                Xem tất cả thông báo
+                                            <button
+                                                onClick={markAllAsRead}
+                                                className="w-full bg-[#386641]/30 text-white text-sm font-semibold py-2 rounded-lg hover:bg-[#386641]/50 transition-colors"
+                                            >
+                                                Đánh dấu tất cả đã đọc
                                             </button>
                                         </div>
                                     </div>
                                 )}
                             </div>
 
+
+                            {/* Language Switcher */}
+                            <LanguageSwitcher />
+
+                            {/* Admin Console Button - Only visible to admins */}
+                            {userProps.role === 'ADMIN' && (
+                                <Link
+                                    href="/admin/users"
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300
+                                             text-white hover:text-[#6A994E] hover:bg-[#386641]/20
+                                             hover:shadow-lg hover:shadow-[#386641]/25 hover:scale-105
+                                             border border-[#386641]/30 hover:border-[#6A994E]
+                                             focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50"
+                                    title="Admin Console"
+                                >
+                                    {getIcons('Settings', 20, 'transition-colors duration-300')}
+                                    <span className="hidden md:inline text-sm font-semibold">{t('header.admin')}</span>
+                                </Link>
+                            )}
 
                             {/* User Avatar Dropdown - Rest of existing code... */}
                             <div className="relative">
@@ -305,10 +327,10 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
                                 >
                                     <div className="relative">
                                         <Image
-                                            className="h-10 w-10 md:h-12 md:w-12 rounded-full object-cover 
+                                            className="h-10 w-10 md:h-12 md:w-12 rounded-full object-cover
                                                      border-2 border-[#6A994E]/60 hover:border-[#6A994E] transition-all duration-300
                                                      shadow-lg hover:shadow-xl hover:shadow-[#386641]/50"
-                                            src="https://lh3.googleusercontent.com/a/ACg8ocJjqTxlK60D1xNMf5mP2f4-wHDBzQkTZdHaNxLKLNGDjw=s96-c"
+                                            src={userProps.avatar || '/logo.svg'}
                                             alt="User avatar"
                                             width={48}
                                             height={48}
@@ -337,4 +359,8 @@ export default function Header({ userProps, HeaderItems }: { userProps: SidebarP
             </div>
         </header>
     );
-}
+})
+
+Header.displayName = 'Header'
+
+export default Header

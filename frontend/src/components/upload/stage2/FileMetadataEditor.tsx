@@ -1,58 +1,72 @@
 "use client";
 
-import React, { useCallback, useMemo } from 'react';
-import { getIcon } from '@/utils/getIcon';
-import { DocumentCategory, FileMetadata, FileUploadInterface, VisibilityType } from '@/types/FileUploadInterface';
-import EmptyState from '@/components/layout/EmptyState';
-import CompletionBadge from '@/components/layout/user/CompletionBadge';
-import FileMetadataCard from './sub-components/FileMetadataEditor/FileMetadataCard';
-import ProgressSummary from '@/components/layout/ProgressSummary';
+import React, { useCallback, useMemo } from "react";
+import { getIcon } from "@/utils/getIcon";
+import {
+  DocumentCategory,
+  FileMetadata,
+  FileUploadInterface,
+  VisibilityType,
+} from "@/types/FileUploadInterface";
+import EmptyState from "@/components/layout/EmptyState";
+import CompletionBadge from "@/components/layout/user/CompletionBadge";
+import FileMetadataCard from "./sub-components/FileMetadataEditor/FileMetadataCard";
+import ProgressSummary from "@/components/layout/ProgressSummary";
 interface FileMetadataEditorProps {
   files: FileUploadInterface[];
   fileMetadata: Record<string, FileMetadata>;
-  onFileMetadataChange: (fileId: string, field: keyof FileMetadata, value: string, options?: { debounce?: boolean }) => void;
+  onFileMetadataChange: (
+    fileId: string,
+    field: keyof FileMetadata,
+    value: string,
+    options?: { debounce?: boolean }
+  ) => void;
   className?: string;
   showCompletionStatus?: boolean;
   maxDescriptionLength?: number;
 }
 
 const DEFAULT_METADATA: FileMetadata = {
-  title: '',
-  description: '',
-  category: DocumentCategory.OTHER,
-  visibility: VisibilityType.PUBLIC
+  title: "",
+  description: "",
+  visibility: VisibilityType.PUBLIC,
 };
 
 function FileMetadataEditor({
   files,
   fileMetadata,
   onFileMetadataChange,
-  className = '',
+  className = "",
   showCompletionStatus = true,
-  maxDescriptionLength = 500
+  maxDescriptionLength = 500,
 }: FileMetadataEditorProps) {
-
-
   // Simplified field change handler for direct use by child components
-  const handleFieldChange = useCallback((fileId: string, field: keyof FileMetadata, value: string) => {
-    onFileMetadataChange(fileId, field, value);
-  }, [onFileMetadataChange]);
+  const handleFieldChange = useCallback(
+    (fileId: string, field: keyof FileMetadata, value: string) => {
+      onFileMetadataChange(fileId, field, value);
+    },
+    [onFileMetadataChange]
+  );
   //  Memoized metadata getter with defaults
-  const getFileMetadata = useCallback((fileId: string): FileMetadata => {
-    return fileMetadata[fileId] || DEFAULT_METADATA;
-  }, [fileMetadata]);
+  const getFileMetadata = useCallback(
+    (fileId: string): FileMetadata => {
+      return fileMetadata[fileId] || DEFAULT_METADATA;
+    },
+    [fileMetadata]
+  );
 
   //  Completion statistics
   const completionStats = useMemo(() => {
-    const completed = files.filter(file => {
+    const completed = files.filter((file) => {
       const meta = getFileMetadata(file.id);
-      return !!(meta.title?.trim() && meta.description?.trim() && meta.category);
+      return !!(meta.title?.trim() && meta.description?.trim());
     }).length;
 
     return {
       completed,
       total: files.length,
-      percentage: files.length > 0 ? Math.round((completed / files.length) * 100) : 0
+      percentage:
+        files.length > 0 ? Math.round((completed / files.length) * 100) : 0,
     };
   }, [files, getFileMetadata]);
 
@@ -60,12 +74,18 @@ function FileMetadataEditor({
     return <EmptyState className={className} />;
   }
   return (
-    <section className={`space-y-6 ${className}`} aria-labelledby="file-metadata-title">
+    <section
+      className={`space-y-6 ${className}`}
+      aria-labelledby="file-metadata-title"
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {getIcon('Files', 24, 'text-green-600')}
-          <h2 id="file-metadata-title" className="text-xl font-semibold text-gray-900">
-            Individual File Information
+          {getIcon("Files", 24, "text-green-600")}
+          <h2
+            id="file-metadata-title"
+            className="text-xl font-semibold text-gray-900"
+          >
+            Thông tin tệp cá nhân
           </h2>
         </div>
 
@@ -79,7 +99,7 @@ function FileMetadataEditor({
       </div>
 
       <p className="text-gray-600 text-sm">
-        Provide specific metadata for each file. This helps with organization and discoverability.
+        Cung cấp siêu dữ liệu cụ thể cho từng tệp. Giúp việc tìm kiếm dễ dàng hơn.
       </p>
 
       <div className="space-y-6">
@@ -95,13 +115,11 @@ function FileMetadataEditor({
         ))}
       </div>
 
-      {showCompletionStatus && (
-        <ProgressSummary stats={completionStats} />
-      )}
+      {showCompletionStatus && <ProgressSummary stats={completionStats} />}
     </section>
   );
 }
 
-FileMetadataEditor.displayName = 'FileMetadataEditor';
+FileMetadataEditor.displayName = "FileMetadataEditor";
 
 export default React.memo(FileMetadataEditor);
