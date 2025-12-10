@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { getSession } from 'next-auth/react';
+import { tokenCache } from './tokenCache';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!
 
@@ -26,12 +26,12 @@ class CSRAxiosClient {
    * Setup request/response interceptors
    */
   private setupInterceptors() {
-    // Request interceptor - auto-attach auth token
+    // Request interceptor - auto-attach auth token from cache
     this.instance.interceptors.request.use(
       async (config) => {
-        const session = await getSession();
-        if (session?.accessToken) {
-          config.headers.Authorization = `Bearer ${session.accessToken}`;
+        const token = await tokenCache.getToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
       },

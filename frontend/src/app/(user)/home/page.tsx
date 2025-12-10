@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useSessionContext } from "@/contexts/SessionContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Book,
@@ -114,7 +114,7 @@ const LoadingSkeleton = () => (
 import { useTranslation } from "react-i18next";
 
 export default function HomePage() {
-  const { data: session, status } = useSession();
+  const { session, status } = useSessionContext();
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useNotifications();

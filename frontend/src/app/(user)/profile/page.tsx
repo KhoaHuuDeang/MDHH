@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useSessionContext } from "@/contexts/SessionContext";
 import UserProfileSection from "@/components/profile/UserProfileSection";
 import UserStatsSection from "@/components/profile/UserStatsSection";
 import ActivityFeedSection from "@/components/profile/ActivityFeedSection";
@@ -9,7 +9,7 @@ import useUserActivities from "@/hooks/useUserActivities";
 import { useTranslation } from "react-i18next";
 
 export default function ProfilePage() {
-  const { data: session } = useSession();
+  const { session } = useSessionContext();
   const { t } = useTranslation();
   const { activities, isLoading } = useUserActivities(session!.user.id);
 

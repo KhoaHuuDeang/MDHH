@@ -1,12 +1,12 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
+import { useSessionContext } from '@/contexts/SessionContext';
 import { useTranslation } from 'react-i18next';
 import useUserActivities from '@/hooks/useUserActivities';
 import { getIcon } from '@/utils/getIcon';
 
 export default function ActivitiesPage() {
-  const { data: session } = useSession();
+  const { session } = useSessionContext();
   const { t } = useTranslation();
   const { activities, isLoading, pagination, fetchMore } = useUserActivities(session!.user.id);
 

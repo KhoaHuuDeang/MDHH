@@ -3,6 +3,7 @@ import { SessionProvider } from 'next-auth/react'
 import { ToastContainer } from 'react-toastify'
 import { ReactNode, useEffect, useState } from 'react'
 import I18nProvider from '@/providers/I18nProvider'
+import { tokenCache } from '@/utils/tokenCache'
 import 'react-toastify/dist/ReactToastify.css'
 
 interface ProvidersProps {
@@ -33,10 +34,26 @@ export default function Providers({ children }: ProvidersProps) {
     }
   }, [])
 
+  // Listen for session updates to keep token cache in sync
+  useEffect(() => {
+    const handleSessionUpdate = (event: StorageEvent) => {
+      if (event.key === 'nextauth.session-token') {
+        tokenCache.clearCache()
+      }
+    }
+
+    window.addEventListener('storage', handleSessionUpdate)
+    return () => window.removeEventListener('storage', handleSessionUpdate)
+  }, [])
+
   if (!mounted) return null
 
   return (
-    <SessionProvider>
+    <SessionProvider
+      refetchInterval={5 * 60}
+      refetchOnWindowFocus={false}
+      refetchWhenOffline={false}
+    >
       <I18nProvider>
         <ToastContainer position="top-right" autoClose={3000} />
         {children}

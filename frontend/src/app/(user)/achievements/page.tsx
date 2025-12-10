@@ -1,12 +1,12 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useSessionContext } from '@/contexts/SessionContext'
 import { useTranslation } from 'react-i18next'
 import useUserAchievements from '@/hooks/useUserAchievements'
 import { getIcon } from '@/utils/getIcon'
 
 export default function AchievementsPage() {
-  const { data: session } = useSession()
+  const { session } = useSessionContext()
   const { t } = useTranslation()
   const { achievements, isLoading, unlockedCount } = useUserAchievements(session!.user.id)
 

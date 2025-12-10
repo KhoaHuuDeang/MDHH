@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import DiscordProvider from "next-auth/providers/discord"
+import { statusCache } from "@/utils/statusCache"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL!
 
@@ -229,28 +230,20 @@ export const authOptions: NextAuthOptions = {
                 session.user.disabled_until = token.disabled_until as Date;
                 session.user.disabled_reason = token.disabled_reason as string;
 
-                // Optionally refresh disabled status from backend for real-time updates
-                // (This is useful if admin disables user while they're logged in)
+                // Refresh disabled status with 5-minute throttle
+                // (Reduces status check calls from 20-50 to 1-2 per 5-minute session)
                 try {
-                    const userStatusRes = await fetch(`${BACKEND_URL}/users/${session.user.id}/status`, {
-                        headers: {
-                            'Authorization': `Bearer ${token.accessToken}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
+                    const cachedStatus = await statusCache.getUserStatus(
+                        session.user.id,
+                        token.accessToken as string
+                    );
 
-                    if (userStatusRes.ok) {
-                        const statusData = await userStatusRes.json();
-                        // Handle both wrapped and unwrapped response formats
-                        const result = statusData.result || statusData;
-                        // Override with fresh backend data
-                        session.user.is_disabled = result.is_disabled ?? session.user.is_disabled;
-                        session.user.disabled_until = result.disabled_until ?? session.user.disabled_until;
-                        session.user.disabled_reason = result.disabled_reason ?? session.user.disabled_reason;
-                    }
+                    session.user.is_disabled = cachedStatus.is_disabled;
+                    session.user.disabled_until = cachedStatus.disabled_until;
+                    session.user.disabled_reason = cachedStatus.disabled_reason;
                 } catch (error) {
-                    console.error('Error refreshing user status from backend:', error);
-                    // Continue with token data if backend fails - don't break session
+                    console.error('Error refreshing user status:', error);
+                    // Continue with token data if cache/backend fails - don't break session
                 }
 
                 // Add Discord-specific data

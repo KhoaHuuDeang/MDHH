@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSessionContext } from '@/contexts/SessionContext';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +12,7 @@ import { getIcon } from '@/utils/getIcon';
 import ResourcesListSection from '@/components/uploads/ResourcesListSection';
 
 export default function UploadManagement() {
-    const { data: session, status } = useSession();
+    const { session, status } = useSessionContext();
     const router = useRouter();
     const toast = useNotifications();
     const { t } = useTranslation();
