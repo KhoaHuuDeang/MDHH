@@ -21,7 +21,7 @@
     "i18next": "^25.6.3",
     "immer": "^10.1.1",
     "lucide-react": "^0.525.0",
-    "next": "15.3.3",
+    "next": "^15.3.6",
     "next-auth": "^4.24.11",
     "next-i18next": "^15.4.2",
     "postcss-import": "^16.1.1",
