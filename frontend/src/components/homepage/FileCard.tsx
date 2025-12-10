@@ -4,9 +4,10 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import * as lucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 import { getMimeTypeIcon, getFileTypeDescription } from '@/utils/mimeTypeIcons';
-import { FileData } from '@/services/homepageService';
+import { FileData, homepageService } from '@/services/homepageService';
 import useFileActions from '@/hooks/useFileActions';
 import { VoteData } from '@/types/vote.types';
+import CommentModal from '@/components/modals/CommentModal';
 
 const getIcons = (iconName: string, size: number, className?: string) => {
   const IconComponent = lucideIcons[iconName as keyof typeof lucideIcons] as LucideIcon;
@@ -34,6 +35,12 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
     downvotes: 0,
     userVote: null
   });
+
+  // Comment modal state
+  const [commentModalOpen, setCommentModalOpen] = useState(false);
+
+  // Flag state
+  const [isFlagging, setIsFlagging] = useState(false);
 
   // Load vote data on mount
   useEffect(() => {
@@ -70,11 +77,29 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
     }
   }, [file.createdAt]);
 
-  // Handle file view
-  const handleView = useCallback(async () => {
-    await viewFile(file.id);
-    onView?.(file.id);
-  }, [file.id, viewFile, onView]);
+  // Handle file view - open comment modal
+  const handleView = useCallback((e?: React.MouseEvent | React.KeyboardEvent) => {
+    e?.stopPropagation();
+    setCommentModalOpen(true);
+  }, []);
+
+  // Handle flag file
+  const handleFlag = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const reason = prompt('Enter reason for flagging this file:');
+    if (!reason) return;
+
+    setIsFlagging(true);
+    try {
+      await homepageService.flagUpload(file.id, reason);
+      alert('File flagged successfully');
+    } catch (error) {
+      console.error('Failed to flag file:', error);
+      alert('Failed to flag file');
+    } finally {
+      setIsFlagging(false);
+    }
+  }, [file.id]);
 
   // Handle file download
   const handleDownload = useCallback(async (e: React.MouseEvent) => {
@@ -170,6 +195,18 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
               {typeDescription}
             </div>
 
+            {/* Moderation status badge */}
+            {file.moderation_status && (
+              <div className={`absolute bottom-2.5 left-2.5 px-2.5 py-0.5 text-xs font-medium rounded-full z-10 ${
+                file.moderation_status === 'APPROVED' ? 'bg-green-100 text-green-700' :
+                file.moderation_status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                file.moderation_status === 'FLAGGED' ? 'bg-yellow-100 text-yellow-700' :
+                'bg-blue-100 text-blue-700'
+              }`}>
+                {file.moderation_status.replace('_', ' ')}
+              </div>
+            )}
+
             {/* File preview/icon */}
             <div className="w-full h-full flex items-center justify-center">
               {showThumbnail ? (
@@ -211,7 +248,36 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
                   <span>{file.category}</span>
                 </div>
               )}
-              
+
+              {/* Classification Level */}
+              {file.classificationLevel && (
+                <div className="flex items-center text-sm text-gray-500">
+                  {getIcons("Shield", 14, "mr-1")}
+                  <span className="text-xs font-medium px-2 py-0.5 bg-[#6A994E]/10 text-[#386641] rounded-full">
+                    {file.classificationLevel}
+                  </span>
+                </div>
+              )}
+
+              {/* Tags */}
+              {file.tags && file.tags.length > 0 && (
+                <div className="flex items-start text-sm text-gray-500">
+                  {getIcons("Tags", 14, "mr-1 mt-0.5")}
+                  <div className="flex flex-wrap gap-1">
+                    {file.tags.slice(0, 3).map((tag, index) => (
+                      <span key={index} className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full">
+                        {tag}
+                      </span>
+                    ))}
+                    {file.tags.length > 3 && (
+                      <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full">
+                        +{file.tags.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Folder information */}
               {file.folderName && (
                 <div className="flex items-center text-sm text-gray-500 cursor-pointer hover:text-[#386641] transition-colors duration-200 px-2 py-1 hover:bg-gray-50 rounded-md -mx-2">
@@ -312,9 +378,31 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
                 getIcons("Bookmark", 14)
               )}
             </button>
+
+            {/* Flag button */}
+            <button
+              onClick={handleFlag}
+              disabled={isFlagging}
+              className="flex items-center text-gray-500 hover:text-yellow-500 text-xs font-medium transition-colors duration-200 px-2 py-1 border border-gray-200 rounded-md hover:border-yellow-300 hover:bg-yellow-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label={`Flag ${file.title}`}
+              title="Report inappropriate content"
+            >
+              {isFlagging ? (
+                getIcons("Loader2", 14, "animate-spin")
+              ) : (
+                getIcons("Flag", 14)
+              )}
+            </button>
           </div>
         </div>
       </div>
+
+      <CommentModal
+        isOpen={commentModalOpen}
+        onClose={() => setCommentModalOpen(false)}
+        resourceId={file.id}
+        title={file.title}
+      />
     </div>
   );
 });

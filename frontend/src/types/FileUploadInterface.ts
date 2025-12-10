@@ -15,7 +15,6 @@ export interface FileUploadInterface {
 export interface FileMetadata {
   title: string;
   description: string;
-  category: DocumentCategory;
   visibility: VisibilityType;
 }
 

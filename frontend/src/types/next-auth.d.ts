@@ -56,13 +56,14 @@ declare module "next-auth/jwt" {
     role: string
     username: string
     birth?: string
+    avatar?: string
     sessionToken?: string
     // Discord-specific fields
     discordId?: string
     discordGuilds?: string[]
     discordRoles?: int[]
     provider?: string
-    disabled_reason?: string 
+    disabled_reason?: string
     disabled_until?: Date
     is_disabled?: boolean
   }

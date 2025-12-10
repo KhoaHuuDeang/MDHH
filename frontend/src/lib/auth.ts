@@ -59,6 +59,11 @@ export const authOptions: NextAuthOptions = {
             },
             async authorize(credentials) {
                 try {
+                    if (!BACKEND_URL) {
+                        console.error('NEXT_PUBLIC_API_URL not configured')
+                        return null
+                    }
+
                     const res = await fetch(`${BACKEND_URL}/auth/login`, {
                         method: 'POST',
                         body: JSON.stringify({
@@ -69,24 +74,33 @@ export const authOptions: NextAuthOptions = {
                     })
 
                     const data = await res.json()
-                    if (res.ok && data.user) {
+
+                    // Handle standardized response format {message, status, result}
+                    if (res.ok && data.status === 200 && data.result?.user) {
                         return {
-                            id: data.user.id,
-                            email: data.user.email,
-                            name: data.user.displayname,
-                            username: data.user.username,
-                            role: data.user.role,
-                            birth: data.user.birth,
-                            accessToken: data.accessToken,
-                            sessionToken: data.sessionToken,
-                            is_disabled: data.user.is_disabled || false,
-                            disabled_until: data.user.disabled_until,
-                            disabled_reason: data.user.disabled_reason,
+                            id: data.result.user.id,
+                            email: data.result.user.email,
+                            name: data.result.user.displayname,
+                            username: data.result.user.username,
+                            role: data.result.user.role,
+                            birth: data.result.user.birth,
+                            avatar: data.result.user.avatar,
+                            accessToken: data.result.accessToken,
+                            sessionToken: data.result.sessionToken,
+                            is_disabled: data.result.user.is_disabled || false,
+                            disabled_until: data.result.user.disabled_until,
+                            disabled_reason: data.result.user.disabled_reason,
                         }
                     }
+
+                    // Log error message from standardized error response
+                    if (data.message) {
+                        console.error('Login failed:', data.message)
+                    }
+
                     return null
                 } catch (error) {
-                    console.error('Auth error:', error)
+                    console.error('Auth error - Backend may not be running:', error)
                     return null
                 }
             }
@@ -115,7 +129,6 @@ export const authOptions: NextAuthOptions = {
                         profile.id,
                         process.env.DISCORD_GUILD_ID! // ID của server Discord
                     );
-                    console.log("Fetched Discord roles:", discordRoles);
 
                     const payload = {
                         discordId: profile.id,
@@ -139,20 +152,24 @@ export const authOptions: NextAuthOptions = {
                         body: JSON.stringify(payload),
                     });
 
-                    if (!res.ok) {
-                        console.error("Backend sign-in failed:", await res.json());
+                    const data = await res.json();
+
+                    // Handle standardized response format {message, status, result}
+                    if (!res.ok || data.status !== 200 || !data.result) {
+                        console.error("Backend sign-in failed:", data.message || 'Unknown error');
                         return false;
                     }
-                    const data = await res.json();
-                    user.id = data.user.id;
-                    user.role = data.user.role;
-                    user.username = data.user.username;
-                    user.birth = data.user.birth;
-                    user.is_disabled = data.user.is_disabled || false;
-                    user.disabled_until = data.user.disabled_until;
-                    user.disabled_reason = data.user.disabled_reason;
+
+                    user.id = data.result.user.id;
+                    user.role = data.result.user.role;
+                    user.username = data.result.user.username;
+                    user.birth = data.result.user.birth;
+                    user.avatar = data.result.user.avatar;
+                    user.is_disabled = data.result.user.is_disabled || false;
+                    user.disabled_until = data.result.user.disabled_until;
+                    user.disabled_reason = data.result.user.disabled_reason;
                     user.accessToken = account.access_token!;
-                    user.backendToken = data.accessToken!;
+                    user.backendToken = data.result.accessToken!;
                     return true;
                 } catch (error) {
                     console.error("SignIn callback error:", error);
@@ -169,6 +186,7 @@ export const authOptions: NextAuthOptions = {
                 token.role = user.role
                 token.username = user.username
                 token.birth = user.birth
+                token.avatar = user.avatar
                 token.is_disabled = user.is_disabled
                 token.disabled_until = user.disabled_until
                 token.disabled_reason = user.disabled_reason
@@ -197,7 +215,7 @@ export const authOptions: NextAuthOptions = {
 
             return token
         },
-        async session({ session, token }) {
+        async session({ session, token, trigger }) {
             // Send properties from token to the client
             if (session.user) {
                 session.user.id = token.sub || token.id as string || ""
@@ -223,14 +241,16 @@ export const authOptions: NextAuthOptions = {
 
                     if (userStatusRes.ok) {
                         const statusData = await userStatusRes.json();
+                        // Handle both wrapped and unwrapped response formats
+                        const result = statusData.result || statusData;
                         // Override with fresh backend data
-                        session.user.is_disabled = statusData.is_disabled;
-                        session.user.disabled_until = statusData.disabled_until;
-                        session.user.disabled_reason = statusData.disabled_reason;
+                        session.user.is_disabled = result.is_disabled ?? session.user.is_disabled;
+                        session.user.disabled_until = result.disabled_until ?? session.user.disabled_until;
+                        session.user.disabled_reason = result.disabled_reason ?? session.user.disabled_reason;
                     }
                 } catch (error) {
                     console.error('Error refreshing user status from backend:', error);
-                    // Continue with token data if backend fails
+                    // Continue with token data if backend fails - don't break session
                 }
 
                 // Add Discord-specific data
@@ -242,8 +262,19 @@ export const authOptions: NextAuthOptions = {
                     session.user.avatar = token.image as string
                 } else {
                     session.user.provider = "credentials"
+                    session.user.avatar = token.avatar as string
                 }
             }
+
+            // Handle avatar update from trigger (when user uploads new avatar)
+            if (trigger === "update" && session?.user) {
+                const updatedAvatar = (session as any).avatar;
+                if (updatedAvatar) {
+                    token.avatar = updatedAvatar;
+                    session.user.avatar = updatedAvatar;
+                }
+            }
+
             session.accessToken = token.accessToken!;
             return session
         },
@@ -255,6 +286,9 @@ export const authOptions: NextAuthOptions = {
     pages: {
         signIn: '/auth',
     },
-    session: { strategy: "jwt" },
+    session: {
+        strategy: "jwt",
+        maxAge: 7 * 24 * 60 * 60, // 7 days (matches backend JWT_EXPIRES_IN)
+    },
     secret: process.env.NEXTAUTH_SECRET,
 }

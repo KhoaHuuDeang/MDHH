@@ -28,6 +28,18 @@ class AdminService {
     const response = await csrAxiosClient.post(`/admin/users/${userId}/enable`, {});
     return response.data;
   }
+
+
+  async updateUserRole(userId: string, role: 'USER' | 'ADMIN') {
+    const response = await csrAxiosClient.patch(`/admin/users/${userId}/role`, { role });
+    return response.data;
+  }
+
+
+  async getAnalytics() {
+    const response = await csrAxiosClient.get('/admin/users/analytics');
+    return response.data;
+  }
 }
 
 export const adminService = new AdminService();

@@ -25,13 +25,18 @@ import {
   GetUserResourcesQueryDto,
 } from './dto/user-resources.dto';
 import { UploadsService } from './upload.service';
+import { AdminModerationService } from '../users/admin-moderation.service';
+import { FlagUploadDto } from '../users/admin-moderation.dto';
 
 @ApiTags('uploads')
 @Controller('uploads')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UploadsController {
-  constructor(private readonly uploadsService: UploadsService) { }
+  constructor(
+    private readonly uploadsService: UploadsService,
+    private readonly moderationService: AdminModerationService
+  ) { }
 
   /**
    * Step 1: Request pre-signed URLs for file uploads
@@ -79,6 +84,26 @@ export class UploadsController {
   /**
    * Step 3: Complete upload process (optional verification)
    */
+  /**
+   * Flag an upload as inappropriate
+   */
+  @Post(':uploadId/flag')
+  @ApiOperation({ summary: 'Flag an upload as inappropriate' })
+  @ApiResponse({ status: 200, description: 'Upload flagged successfully' })
+  @ApiResponse({ status: 404, description: 'Upload not found' })
+  async flagUpload(
+    @Param('uploadId') uploadId: string,
+    @Body() dto: FlagUploadDto,
+    @Request() req: any
+  ): Promise<{ message: string; status: number; result: any }> {
+    const serviceResult = await this.moderationService.flagUpload(uploadId, dto.reason, req.user.userId);
+    return {
+      message: serviceResult.message,
+      status: HttpStatus.OK,
+      result: serviceResult.result,
+    };
+  }
+
   @Post('complete/:resourceId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -154,9 +179,13 @@ export class UploadsController {
   async generateDownloadUrl(
     @Param('uploadId') uploadId: string,
     @Request() req: any
-  ): Promise<{ downloadUrl: string }> {
+  ): Promise<{ message: string; status: number; result: { downloadUrl: string } }> {
     const downloadUrl = await this.uploadsService.generateDownloadUrl(uploadId, req.user.userId);
-    return { downloadUrl };
+    return {
+      message: 'Download URL generated successfully',
+      status: 200,
+      result: { downloadUrl }
+    };
   }
 
   /**
@@ -201,4 +230,45 @@ export class UploadsController {
   ): Promise<void> {
     return await this.uploadsService.deleteMultipleS3Files(deleteDto.s3Keys, req.user.userId);
   }
+
+  @Post('profile-image')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get presigned URL for profile image upload',
+    description: 'Returns presigned URL for uploading avatar or banner images'
+  })
+  @ApiResponse({ status: 200, description: 'Presigned URL generated successfully' })
+  async uploadProfileImage(
+    @Body() body: { filename: string; mimetype: string; fileSize: number; imageType: 'avatar' | 'banner' },
+    @Request() req: any
+  ) {
+    return await this.uploadsService.generateProfileImageUploadUrl(
+      req.user.userId,
+      body.filename,
+      body.mimetype,
+      body.fileSize,
+      body.imageType
+    );
+  }
+
+  @Post('souvenir-image')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get presigned URL for souvenir image upload',
+    description: 'Returns presigned URL for uploading souvenir product images'
+  })
+  @ApiResponse({ status: 200, description: 'Presigned URL generated successfully' })
+  async uploadSouvenirImage(
+    @Body() body: { filename: string; mimetype: string; fileSize: number },
+    @Request() req: any
+  ) {
+    return await this.uploadsService.generateSouvenirImageUploadUrl(
+      req.user.userId,
+      body.filename,
+      body.mimetype,
+      body.fileSize
+    );
+  }
+
+  
 }

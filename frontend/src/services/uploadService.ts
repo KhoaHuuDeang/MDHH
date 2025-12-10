@@ -64,7 +64,6 @@ interface FileWithMetadataDto {
   s3Key: string;
   title: string;
   description: string;
-  category: DocumentCategory;
   fileVisibility: VisibilityType;
 }
 export interface FolderManagementDto {
@@ -83,7 +82,6 @@ export interface UploadCreationData {
   s3Key: string;
   title: string;
   description: string;
-  category: string;
   fileVisibility: VisibilityType;
 }
 export interface ResourceCreationWithUploadDto {
@@ -208,10 +206,10 @@ class UploadService {
       visibility: payload.visibility?.toUpperCase() ,
       folderManagement: {}
     };
-    if (payload.folderManagement.selectedFolderId === undefined || !payload.folderManagement.newFolderData) {
-      body.folderManagement.newFolderData = payload.folderManagement.newFolderData;
-    }else{
+    if (payload.folderManagement.selectedFolderId) {
       body.folderManagement.selectedFolderId = payload.folderManagement.selectedFolderId;
+    } else if (payload.folderManagement.newFolderData) {
+      body.folderManagement.newFolderData = payload.folderManagement.newFolderData;
     }
     body.files = payload.files;
 
@@ -346,7 +344,7 @@ class UploadService {
     });
 
     if (status && status !== 'all') {
-      params.append('status', status);
+      params.append('status', status.toUpperCase());
     }
 
     if (search) {

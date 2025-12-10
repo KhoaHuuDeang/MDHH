@@ -95,18 +95,19 @@ function FolderSection({
     (folderId: string) => {
       const folder = availableFolders.find((f) => f.id === folderId);
       if (folder) {
-        const folderData = {
-          name: folder.name,
-          description: folder.description || "",
-          folderClassificationId: folder.classification_level_id!,
-          folderTagIds: folder.tags?.map((t) => t.id) || [],
-        };
-
-        // Immediate update cho folder selection (không cần debounce)
-        setLocalFolderData(folderData);
+        // When selecting existing folder, ONLY set selectedFolderId
+        // DO NOT set newFolderData - files inherit folder's classification automatically
         onFolderManagementChange({
           selectedFolderId: folderId,
-          newFolderData: folderData,
+          newFolderData: undefined,
+        });
+
+        // Clear local state to prevent form from showing
+        setLocalFolderData({
+          name: "",
+          description: "",
+          folderClassificationId: "",
+          folderTagIds: [],
         });
       }
     },
@@ -157,7 +158,7 @@ function FolderSection({
             ].join(" ")}
           >
             {getIcon("FolderOpen", 16)}
-            Select Existing
+            Chọn thư mục
             <span className="ml-1 text-xs text-gray-400">({availableFolders.length})</span>
           </button>
 
@@ -172,7 +173,7 @@ function FolderSection({
             ].join(" ")}
           >
             {getIcon("FolderPlus", 16)}
-            Create New
+            Tạo mới
           </button>
         </div>
       </div>
@@ -180,7 +181,7 @@ function FolderSection({
       {/* Status strip */}
       <div className="flex flex-wrap items-center gap-3 text-xs">
         <span className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1 text-gray-600">
-          {getIcon("Folder", 14, "text-gray-500")} {isLoadingFolders ? "Loading folders…" : `${availableFolders.length} folder(s)`}
+          {getIcon("Folder", 14, "text-gray-500")} {isLoadingFolders ? "Loading folders…" : `${availableFolders.length} Thư mục có sẵn`}
         </span>
       </div>
 

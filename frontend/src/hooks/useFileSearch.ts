@@ -62,9 +62,9 @@ export const useFileSearch = (initialQuery: string = '', initialFilters: SearchF
 
     return {
       query: debouncedQuery.trim(),
-      category: filters.category,
-      limit: 20,
-      offset: (page - 1) * 20
+      classificationLevelId: filters.category,
+      page: page,
+      limit: 20
     };
   }, [debouncedQuery, filters, page]);
 
@@ -98,7 +98,7 @@ export const useFileSearch = (initialQuery: string = '', initialFilters: SearchF
       
       // Handle successful search
       onSuccess: (data) => {
-        console.log(`Search completed: ${data.files.length} results for "${debouncedQuery}"`);
+        console.log(`Search completed: ${data.result.files.length} results for "${debouncedQuery}"`);
       },
       
       // Handle search errors
@@ -121,10 +121,10 @@ export const useFileSearch = (initialQuery: string = '', initialFilters: SearchF
 
   // Load more results (pagination)
   const loadMore = useCallback(() => {
-    if (data?.hasMore && !isLoading) {
+    if (data?.result.hasMore && !isLoading) {
       setPage(prev => prev + 1);
     }
-  }, [data?.hasMore, isLoading]);
+  }, [data?.result.hasMore, isLoading]);
 
   // Reset page when query or filters change
   useEffect(() => {
@@ -139,13 +139,13 @@ export const useFileSearch = (initialQuery: string = '', initialFilters: SearchF
   // Memoize results to prevent unnecessary re-renders
   const results = useMemo(() => {
     if (page === 1) {
-      return data?.files || [];
+      return data?.result.files || [];
     }
-    
+
     // For pagination, we need to accumulate results
     // This is a simplified version - in real app, you'd want to manage this differently
-    return data?.files || [];
-  }, [data?.files, page]);
+    return data?.result.files || [];
+  }, [data?.result.files, page]);
 
   return {
     query,
@@ -153,8 +153,8 @@ export const useFileSearch = (initialQuery: string = '', initialFilters: SearchF
     filters,
     setFilters: updateFilters,
     results,
-    totalCount: data?.total || 0,
-    hasMore: data?.hasMore || false,
+    totalCount: data?.result.total || 0,
+    hasMore: data?.result.hasMore || false,
     isLoading,
     error,
     isSearching,

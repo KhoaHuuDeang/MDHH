@@ -2,8 +2,8 @@ import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { DiscordService } from './discord.service';
-import { LoginDto, CreateUserDto } from '../users/user.dto';
-import { DiscordSignInDto } from '../users/user.dto';
+import { LoginDto, CreateUserDto, DiscordSignInDto } from '../users/user.dto';
+import { SendVerificationDto, VerifyEmailDto, ForgotPasswordDto, ResetPasswordDto } from './auth-email.dto';
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
@@ -36,6 +36,34 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Discord OAuth failed' })
   async handleDiscordOAuth(@Body() discordData: DiscordSignInDto) {
     return this.discordService.handleDiscordOAuth(discordData);
+  }
+
+  @Post('send-verification')
+  @ApiOperation({ summary: 'Send verification email' })
+  @ApiResponse({ status: 200, description: 'Verification email sent' })
+  async sendVerificationEmail(@Body() dto: SendVerificationDto) {
+    return this.authService.sendVerificationEmail(dto.email);
+  }
+
+  @Post('verify-email')
+  @ApiOperation({ summary: 'Verify email with token' })
+  @ApiResponse({ status: 200, description: 'Email verified' })
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmail(dto.token);
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Request password reset' })
+  @ApiResponse({ status: 200, description: 'Reset email sent if user exists' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Reset password with token' })
+  @ApiResponse({ status: 200, description: 'Password reset successfully' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.newPassword);
   }
 
 }

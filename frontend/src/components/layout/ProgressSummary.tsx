@@ -1,9 +1,9 @@
 "use client";
 
-import React from 'react';
+import React from "react";
 
 interface ProgressSummaryProps {
-  stats: { completed: number; total: number; percentage: number }; 
+  stats: { completed: number; total: number; percentage: number };
 }
 
 function ProgressSummary({ stats }: ProgressSummaryProps) {
@@ -11,10 +11,10 @@ function ProgressSummary({ stats }: ProgressSummaryProps) {
     <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium text-gray-700">
-          Completion Progress
+          Độ tiến tải lên
         </span>
         <span className="text-sm text-gray-600">
-          {stats.completed}/{stats.total} files
+          {stats.completed}/{stats.total} tệp
         </span>
       </div>
       <div className="w-full bg-gray-200 rounded-full h-2">
@@ -27,6 +27,6 @@ function ProgressSummary({ stats }: ProgressSummaryProps) {
   );
 }
 
-ProgressSummary.displayName = 'ProgressSummary';
+ProgressSummary.displayName = "ProgressSummary";
 
 export default React.memo(ProgressSummary);

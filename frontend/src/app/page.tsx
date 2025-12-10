@@ -1,10 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import useNotifications from "@/hooks/useNotifications";
+// Giả định utility này nhập các icon từ thư viện như lucide-react hoặc feather-icons
 import { getIcon } from "@/utils/getIcon";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { homepageService } from "@/services/homepageService";
+import { classificationService } from "@/services/classificationService";
 
 /**
  * MDHH Landing Page - Educational Document Management Platform
@@ -16,12 +19,16 @@ import { useRouter } from "next/navigation";
  * - Responsive typography scaling
  */
 
-export default function MDHHLandingPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+function MDHHLandingPageContent() {
+  const searchParams = useSearchParams();
+  const toast = useNotifications();
   const [scrollY, setScrollY] = useState(0);
   const [activeCategory, setActiveCategory] = useState('all');
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [classificationLevels, setClassificationLevels] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // State cho hiệu ứng đếm số
   const [counter, setCounter] = useState({
     documents: 0,
     users: 0,
@@ -29,58 +36,121 @@ export default function MDHHLandingPage() {
     discussions: 0
   });
 
-  // Redirect authenticated users to /home
+  // State rỗng để lưu vị trí ngẫu nhiên của các trang trí sau khi mount
+  const [heroDecorations, setHeroDecorations] = useState<Array<{
+    left: number;
+    top: number;
+    delay: number;
+    duration: number;
+  }>>([]);
+
+  const [ctaDecorations, setCtaDecorations] = useState<Array<{
+    left: number;
+    top: number;
+    delay: number;
+    duration: number;
+  }>>([]);
+
+  // --- EFFECTs CHẠY MỘT LẦN SAU KHI COMPONENT MOUNT (CLIENT-SIDE) ---
+
+  // Check for unauthorized error
   useEffect(() => {
-    if (status === "authenticated" && session?.accessToken) {
-      router.push("/home");
+    const error = searchParams.get('error');
+    if (error === 'unauthorized') {
+      toast.error('Access denied. Admin privileges required.');
     }
-  }, [status, session?.accessToken, router]);
+  }, [searchParams, toast]);
 
-  // Animated counter effect with easing
+  // Logic Parallax Scroll & Khởi tạo Decorations (chỉ chạy 1 lần)
   useEffect(() => {
-    const targets = {
-      documents: 15234,
-      users: 8567,
-      downloads: 45678,
-      discussions: 12890
-    };
-
-    const duration = 2000;
-    const steps = 60;
-    const interval = duration / steps;
-
-    let currentStep = 0;
-    const timer = setInterval(() => {
-      currentStep++;
-      const progress = currentStep / steps;
-      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-
-      setCounter({
-        documents: Math.floor(targets.documents * easeOutQuart),
-        users: Math.floor(targets.users * easeOutQuart),
-        downloads: Math.floor(targets.downloads * easeOutQuart),
-        discussions: Math.floor(targets.discussions * easeOutQuart)
-      });
-
-      if (currentStep >= steps) clearInterval(timer);
-    }, interval);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  // Parallax scroll effect (optimized)
-  useEffect(() => {
+    // Khởi tạo Parallax Scroll Listener
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // Khởi tạo các vị trí ngẫu nhiên cho Decorative elements
+    setHeroDecorations(
+      Array.from({ length: 15 }, () => ({
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        delay: Math.random() * 3,
+        duration: 2 + Math.random() * 3
+      }))
+    );
+
+    setCtaDecorations(
+      Array.from({ length: 20 }, () => ({
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        delay: Math.random() * 5,
+        duration: 5 + Math.random() * 10
+      }))
+    );
+    
+    // Cleanup function để loại bỏ listener khi component unmount
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []); // Dependency array rỗng đảm bảo chỉ chạy MỘT LẦN
+
+  // Fetch real classification levels and stats
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch classification levels
+        const levels = await classificationService.getClassificationLevels();
+        setClassificationLevels(levels);
+
+        // Fetch stats
+        const stats = await homepageService.getPublicStats();
+        const targets = {
+          documents: stats.documents || 0,
+          users: stats.users || 0,
+          downloads: stats.downloads || 0,
+          discussions: stats.discussions || 0
+        };
+
+        const duration = 2000;
+        const steps = 60;
+        const interval = duration / steps;
+
+        let currentStep = 0;
+        const timer = setInterval(() => {
+          currentStep++;
+          const progress = currentStep / steps;
+          const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+
+          setCounter({
+            documents: Math.floor(targets.documents * easeOutQuart),
+            users: Math.floor(targets.users * easeOutQuart),
+            downloads: Math.floor(targets.downloads * easeOutQuart),
+            discussions: Math.floor(targets.discussions * easeOutQuart)
+          });
+
+          if (currentStep >= steps) {
+            clearInterval(timer);
+            setCounter(targets);
+          }
+        }, interval);
+
+        setLoading(false);
+        return () => clearInterval(timer);
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
+  // --- DATA ---
+
+  // Transform classification levels into categories
   const categories = [
     { id: 'all', name: 'Tất cả', icon: 'Globe' },
-    { id: 'thcs', name: 'THCS', icon: 'BookOpen' },
-    { id: 'thpt', name: 'THPT', icon: 'GraduationCap' },
-    { id: 'university', name: 'Đại học', icon: 'Award' },
-    { id: 'english', name: 'IELTS/TOEIC', icon: 'Target' }
+    ...classificationLevels.map(level => ({
+      id: level.id,
+      name: level.name,
+      icon: 'FolderOpen'
+    }))
   ];
 
   const features = [
@@ -158,7 +228,7 @@ export default function MDHHLandingPage() {
     {
       id: 5,
       title: 'TOEIC 990 - Strategies & Practice Tests',
-      category: 'TOEIC',
+      category: 'english', // Đổi category để khớp với filter
       level: 'Expert',
       downloads: 2678,
       rating: 4.9,
@@ -203,32 +273,37 @@ export default function MDHHLandingPage() {
     }
   ];
 
+  // --- JSX RENDER ---
+
   return (
     <main className="min-h-screen bg-[#F8F9FA] overflow-hidden">
-      {/* Hero Section with Parallax */}
+      
+      {/* 1. Hero Section with Parallax */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#F8F9FA] to-white">
         {/* Animated Background */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-br from-[#6A994E]/10 via-[#386641]/5 to-[#6A994E]/10"></div>
-          <div
-            className="absolute inset-0"
-            style={{ transform: `translateY(${scrollY * 0.3}px)` }}
-          >
-            {[...Array(15)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute animate-pulse"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 3}s`,
-                  animationDuration: `${2 + Math.random() * 3}s`
-                }}
-              >
-                <div className="w-2 h-2 bg-[#6A994E] rounded-full opacity-40"></div>
-              </div>
-            ))}
-          </div>
+          {heroDecorations.length > 0 && (
+            <div
+              className="absolute inset-0"
+              style={{ transform: `translateY(${scrollY * 0.3}px)` }}
+            >
+              {heroDecorations.map((decoration, i) => (
+                <div
+                  key={i}
+                  className="absolute animate-pulse"
+                  style={{
+                    left: `${decoration.left}%`,
+                    top: `${decoration.top}%`,
+                    animationDelay: `${decoration.delay}s`,
+                    animationDuration: `${decoration.duration}s`
+                  }}
+                >
+                  <div className="w-2 h-2 bg-[#6A994E] rounded-full opacity-40"></div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Hero Content */}
@@ -257,18 +332,17 @@ export default function MDHHLandingPage() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center px-4">
-              <Link href={'/auth'}>
-                <button className=" min-h-[44px] min-w-[44px] px-8 py-4 bg-[#386641] text-white font-semibold rounded-xl shadow-lg hover:bg-[#2d4f31] hover:shadow-xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50">
-                  <span className="flex items-center justify-center">
-                    Khám phá ngay
-                    {getIcon('ArrowRight', 20, 'ml-2 group-hover:translate-x-1 transition-transform')}
-                  </span>
-                </button>
+              <Link href="/home" className="group min-h-[44px] min-w-[44px] px-8 py-4 bg-[#386641] text-white font-semibold rounded-xl shadow-lg hover:bg-[#2d4f31] hover:shadow-xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50 flex items-center justify-center">
+                <span className="flex items-center justify-center">
+                  Khám phá ngay
+                  {getIcon('ArrowRight', 20, 'ml-2 group-hover:translate-x-1 transition-transform')}
+                </span>
               </Link>
-              <button className="flex min-h-[44px] min-w-[44px] px-8 py-4 bg-white/80 backdrop-blur-sm text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl border border-gray-200 hover:border-[#6A994E]/30 transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
+
+              <Link href="/home" className="group min-h-[44px] min-w-[44px] px-8 py-4 bg-white/80 backdrop-blur-sm text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl border border-gray-200 hover:border-[#6A994E]/30 transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-300 flex items-center justify-center">
                 {getIcon('Play', 20, 'w-5 h-5 mr-2 text-[#6A994E] group-hover:scale-110 transition-transform')}
                 Xem Demo
-              </button>
+              </Link>
             </div>
           </div>
 
@@ -308,7 +382,7 @@ export default function MDHHLandingPage() {
         </div>
       </section>
 
-      {/* Categories Section */}
+      {/* 2. Categories Section */}
       <section className="py-12 sm:py-20 bg-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-8 sm:mb-12">
@@ -322,109 +396,85 @@ export default function MDHHLandingPage() {
 
           {/* Category Filters */}
           <div className="flex flex-wrap justify-center gap-3 mb-8 sm:mb-12">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`group flex items-center min-h-[44px] px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-medium transition-all duration-300 ${activeCategory === cat.id
-                    ? 'bg-[#386641] text-white shadow-lg scale-105'
-                    : 'bg-white text-gray-600 hover:text-gray-800 hover:shadow-md hover:scale-105 border border-gray-200 hover:border-[#6A994E]/30'
+            {loading ? (
+              <div className="text-gray-500">Đang tải...</div>
+            ) : (
+              categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={`group flex items-center min-h-[44px] px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-medium transition-all duration-300 ${
+                    activeCategory === cat.id
+                      ? 'bg-[#386641] text-white shadow-lg scale-105'
+                      : 'bg-white text-gray-600 hover:text-gray-800 hover:shadow-md hover:scale-105 border border-gray-200 hover:border-[#6A994E]/30'
                   }`}
-              >
-                {getIcon(cat.icon, 18, `mr-2 ${activeCategory === cat.id ? 'text-white' : 'text-gray-400 group-hover:text-[#6A994E]'
+                >
+                  {getIcon(cat.icon, 18, `mr-2 ${
+                    activeCategory === cat.id ? 'text-white' : 'text-gray-400 group-hover:text-[#6A994E]'
                   }`)}
-                <span className="text-sm sm:text-base">{cat.name}</span>
-              </button>
-            ))}
+                  <span className="text-sm sm:text-base">{cat.name}</span>
+                </button>
+              ))
+            )}
           </div>
 
-          {/* Document Grid */}
+          {/* Classification Levels Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {popularDocuments
-              .filter(doc => activeCategory === 'all' || doc.category.toLowerCase().includes(activeCategory))
-              .map((doc) => (
-                <div
-                  key={doc.id}
-                  className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden"
-                  onMouseEnter={() => setHoveredCard(doc.id)}
-                  onMouseLeave={() => setHoveredCard(null)}
+            {loading ? (
+              <div className="col-span-full text-center text-gray-500">Đang tải cấp độ phân loại...</div>
+            ) : (
+              (activeCategory === 'all' ? classificationLevels : classificationLevels.filter(l => l.id === activeCategory)).map((level) => (
+                <Link
+                  key={level.id}
+                  href="/home"
+                  className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden p-6"
                 >
-                  {/* Image with Overlay */}
-                  <div className="relative h-44 sm:h-48 overflow-hidden bg-gray-100">
-                    <img
-                      src={doc.image}
-                      alt={doc.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                    {/* Category Badge */}
-                    <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-semibold text-[#6A994E] shadow-md">
-                      {doc.category}
-                    </div>
-
-                    {/* Level Badge */}
-                    <div className="absolute top-4 right-4 px-3 py-1 bg-[#386641] text-white rounded-full text-xs font-semibold shadow-md">
-                      {doc.level}
-                    </div>
-
-                    {/* Hover Action */}
-                    {hoveredCard === doc.id && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <button className="min-h-[44px] px-6 py-3 bg-white/90 backdrop-blur-sm text-gray-800 font-semibold rounded-xl shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50">
-                          {getIcon('Eye', 20, 'w-5 h-5 inline mr-2')}
-                          Xem chi tiết
-                        </button>
-                      </div>
-                    )}
+                  {/* Icon */}
+                  <div className="inline-flex p-4 bg-gradient-to-br from-[#386641] to-[#6A994E] rounded-xl mb-4 shadow-lg group-hover:scale-110 transition-transform">
+                    {getIcon('FolderOpen', 32, 'text-white')}
                   </div>
 
                   {/* Content */}
-                  <div className="p-4 sm:p-6">
-                    <h3 className="font-bold text-base sm:text-lg text-gray-800 mb-2 line-clamp-2 group-hover:text-[#6A994E] transition-colors">
-                      {doc.title}
-                    </h3>
+                  <h3 className="font-bold text-xl text-gray-800 mb-2 group-hover:text-[#6A994E] transition-colors">
+                    {level.name}
+                  </h3>
 
-                    <p className="text-xs sm:text-sm text-gray-500 mb-4">
-                      Bởi {doc.author}
-                    </p>
+                  <p className="text-sm text-gray-600 mb-4">
+                    {level.description}
+                  </p>
 
-                    {/* Stats */}
-                    <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600 mb-4">
-                      <div className="flex items-center">
-                        {getIcon('Star', 16, 'text-yellow-500 mr-1')}
-                        <span className="font-semibold">{doc.rating}</span>
-                      </div>
-                      <div className="flex items-center">
-                        {getIcon('Download', 16, 'text-[#6A994E] mr-1')}
-                        <span>{doc.downloads.toLocaleString()}</span>
-                      </div>
-                      <div className="flex items-center">
-                        {getIcon('MessageSquare', 16, 'text-[#386641] mr-1')}
-                        <span>{doc.discussions}</span>
-                      </div>
+                  {/* Tags */}
+                  {level.tags && level.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {level.tags.slice(0, 3).map((tag: any) => (
+                        <span
+                          key={tag.id}
+                          className="px-3 py-1 bg-[#6A994E]/10 text-[#386641] text-xs font-medium rounded-full"
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                      {level.tags.length > 3 && (
+                        <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+                          +{level.tags.length - 3}
+                        </span>
+                      )}
                     </div>
+                  )}
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                      <button className="flex-1 min-h-[44px] px-4 py-2 bg-[#386641] text-white font-medium rounded-lg hover:bg-[#2d4f31] hover:shadow-lg transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50">
-                        Tải xuống
-                      </button>
-                      <button className="min-h-[44px] min-w-[44px] px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 hover:text-[#6A994E] transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                        {getIcon('Heart', 20)}
-                      </button>
-                      <button className="min-h-[44px] min-w-[44px] px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 hover:text-[#6A994E] transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                        {getIcon('Share2', 20)}
-                      </button>
-                    </div>
+                  {/* Arrow */}
+                  <div className="flex items-center text-[#6A994E] font-medium group-hover:text-[#386641] transition-colors mt-4">
+                    <span className="text-sm">Khám phá</span>
+                    {getIcon('ArrowRight', 16, 'ml-2 group-hover:translate-x-2 transition-transform')}
                   </div>
-                </div>
-              ))}
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* 3. Features Section */}
       <section className="py-12 sm:py-20 bg-[#F8F9FA]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-8 sm:mb-12">
@@ -468,7 +518,7 @@ export default function MDHHLandingPage() {
         </div>
       </section>
 
-      {/* How It Works Section */}
+      {/* 4. How It Works Section */}
       <section className="py-12 sm:py-20 bg-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-8 sm:mb-12">
@@ -490,7 +540,7 @@ export default function MDHHLandingPage() {
               <div key={index} className="relative">
                 {/* Connection Line - Hidden on mobile */}
                 {index < 3 && (
-                  <div className="hidden lg:block absolute top-12 left-1/2 w-full h-0.5 bg-gradient-to-r from-[#6A994E] to-[#386641] opacity-30"></div>
+                  <div className="hidden lg:block absolute top-12 left-[calc(50%+1rem)] w-[calc(100%-2rem)] h-0.5 bg-gradient-to-r from-[#6A994E] to-[#386641] opacity-30 -translate-x-1/2 -z-10"></div>
                 )}
 
                 <div className="relative group">
@@ -514,7 +564,7 @@ export default function MDHHLandingPage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
+      {/* 5. Testimonials Section */}
       <section className="py-12 sm:py-20 bg-[#F8F9FA]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-8 sm:mb-12">
@@ -571,31 +621,33 @@ export default function MDHHLandingPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* 6. CTA Section */}
       <section className="py-12 sm:py-20 bg-gradient-to-r from-[#386641] via-[#6A994E] to-[#386641] relative overflow-hidden">
         {/* Animated Background Elements */}
-        <div className="absolute inset-0">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute animate-pulse"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 5}s`,
-                animationDuration: `${5 + Math.random() * 10}s`
-              }}
-            >
-              <div className="w-1 h-1 bg-white/20 rounded-full"></div>
-            </div>
-          ))}
-        </div>
+        {ctaDecorations.length > 0 && (
+          <div className="absolute inset-0">
+            {ctaDecorations.map((decoration, i) => (
+              <div
+                key={i}
+                className="absolute animate-pulse"
+                style={{
+                  left: `${decoration.left}%`,
+                  top: `${decoration.top}%`,
+                  animationDelay: `${decoration.delay}s`,
+                  animationDuration: `${decoration.duration}s`
+                }}
+              >
+                <div className="w-1 h-1 bg-white/20 rounded-full"></div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 relative z-10 text-center">
           <div className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full mb-6">
             {getIcon('Rocket', 16, 'text-white mr-2')}
             <span className="text-sm font-medium text-white">
-              Tham gia cùng 8,500+ người dùng
+              Tham gia cùng {counter.users.toLocaleString()}+ người dùng
             </span>
           </div>
 
@@ -643,7 +695,7 @@ export default function MDHHLandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
+      {/* 7. Footer */}
       <footer className="bg-gray-900 text-white py-12 sm:py-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -658,11 +710,12 @@ export default function MDHHLandingPage() {
               </p>
               <div className="flex space-x-4">
                 {['facebook', 'twitter', 'linkedin', 'youtube'].map((social) => (
+                  // Giả định getIcon có thể nhận tên social hoặc bạn cần thay thế bằng icon thực tế
                   <button
                     key={social}
                     className="min-h-[44px] min-w-[44px] w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-[#6A994E] transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-white/40"
                   >
-                    {getIcon('Globe', 20)}
+                    {getIcon('Globe', 20)} 
                   </button>
                 ))}
               </div>
@@ -697,5 +750,13 @@ export default function MDHHLandingPage() {
         </div>
       </footer>
     </main>
+  );
+}
+
+export default function MDHHLandingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div>Loading...</div></div>}>
+      <MDHHLandingPageContent />
+    </Suspense>
   );
 }

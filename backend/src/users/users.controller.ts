@@ -1,12 +1,13 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
   Delete,
-  UseGuards 
+  UseGuards,
+  Request
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
@@ -32,6 +33,20 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Return all users' })
   findAll() {
     return this.usersService.findAll();
+  }
+
+  @Get('profile')
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: 200, description: 'Return current user profile' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getProfile(@Request() req: any) {
+    const userId = req.user.userId || req.user.user_id;
+    const user = await this.usersService.findOne(userId);
+    return {
+      message: 'Profile retrieved successfully',
+      status: 200,
+      result: user
+    };
   }
 
   @Get(':id')

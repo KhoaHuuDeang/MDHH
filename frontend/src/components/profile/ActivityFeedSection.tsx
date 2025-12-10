@@ -2,7 +2,7 @@ import React from 'react'
 import { getIcon } from '@/utils/getIcon'
 
 interface Activity {
-  id: number
+  id: string | number
   type: string
   title: string
   time: string
@@ -11,10 +11,12 @@ interface Activity {
 
 interface ActivityFeedSectionProps {
   activities: Activity[]
+  isLoading?: boolean
 }
 
 const ActivityFeedSection: React.FC<ActivityFeedSectionProps> = ({
-  activities
+  activities,
+  isLoading = false
 }) => {
   
   // ✅ UTILITY FUNCTIONS - Specific to activity rendering
@@ -51,7 +53,20 @@ const ActivityFeedSection: React.FC<ActivityFeedSectionProps> = ({
 
       {/* Activity Timeline */}
       <div className="space-y-4">
-        {activities.length > 0 ? (
+        {isLoading ? (
+          /* Loading skeleton */
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-start gap-4 p-3 animate-pulse">
+                <div className="w-12 h-12 rounded-full bg-gray-200"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : activities.length > 0 ? (
           activities.map((activity, index) => (
             <div key={activity.id} className="relative">
               {/* Timeline line */}
@@ -96,7 +111,10 @@ const ActivityFeedSection: React.FC<ActivityFeedSectionProps> = ({
       {/* View More Button */}
       {activities.length > 0 && (
         <div className="mt-6 pt-4 border-t border-gray-200">
-          <button className="w-full text-center text-[#6A994E] hover:text-[#386641] font-medium text-sm py-2 hover:bg-gray-50 rounded-lg transition-colors">
+          <button
+            onClick={() => window.location.href = '/activities'}
+            className="w-full text-center text-[#6A994E] hover:text-[#386641] font-medium text-sm py-2 hover:bg-gray-50 rounded-lg transition-colors"
+          >
             Xem tất cả hoạt động
             {getIcon('ChevronRight', 16, 'inline ml-1')}
           </button>

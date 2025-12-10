@@ -44,3 +44,4 @@ next-env.d.ts
 .DEVELOPMENT_GUIDELINES.md
 .CLAUDE.md
 .claude
+/src/generated/prisma

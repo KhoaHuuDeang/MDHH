@@ -15,9 +15,9 @@ function TagCard({ tag, isSelected, isDisabled, onToggle }: TagCardProps) {
       type="button"
       onClick={onToggle}
       disabled={isDisabled}
-      className={`p-3 border-2 rounded-lg text-left transition-all duration-200 
+      className={`p-3 border-2 rounded-lg text-left transition-all duration-200
                  focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50
-                 ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-md hover:scale-105'}
+                 ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'}
                  ${isSelected
                    ? 'border-[#6A994E] bg-green-50 shadow-md shadow-[#6A994E]/20'
                    : 'border-gray-200 hover:border-[#6A994E]/50'

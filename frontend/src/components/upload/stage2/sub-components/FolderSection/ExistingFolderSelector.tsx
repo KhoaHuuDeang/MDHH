@@ -49,7 +49,7 @@ function ExistingFolderSelector({
           type="button"
           onClick={() => onFolderSelect(folder.id)}
           className={`p-4 border-2 rounded-lg text-left transition-all duration-200
-                     hover:shadow-md hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500/50
+                     hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-500/50
                      ${selectedFolderId === folder.id 
                        ? 'border-green-500 bg-green-50 shadow-lg' 
                        : 'border-gray-200 hover:border-green-300'

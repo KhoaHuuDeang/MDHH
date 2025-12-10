@@ -4,17 +4,24 @@ import { useSession } from "next-auth/react";
 import UserProfileSection from "@/components/profile/UserProfileSection";
 import UserStatsSection from "@/components/profile/UserStatsSection";
 import ActivityFeedSection from "@/components/profile/ActivityFeedSection";
+import useUserActivities from "@/hooks/useUserActivities";
+
+import { useTranslation } from "react-i18next";
 
 export default function ProfilePage() {
-  // Authentication is handled at layout level - no need for guards here
   const { data: session } = useSession();
+  const { t } = useTranslation();
+  const { activities, isLoading } = useUserActivities(session!.user.id);
 
-  // Keep mockdata for activities as requested
-  const recentActivities = [
-    { id: 1, type: "upload", title: 'Tải lên "Đề thi Giải tích 1"', time: "2 giờ trước", icon: "Upload" },
-    { id: 2, type: "comment", title: 'Bình luận về "Bài tập Cấu trúc dữ liệu"', time: "1 ngày trước", icon: "MessageCircle" },
-    { id: 3, type: "upvote", title: 'Nhận upvote cho "Slide Java cơ bản"', time: "2 ngày trước", icon: "ThumbsUp" },
-  ];
+  const recentActivities = activities
+    ? activities.slice(0, 3).map((activity) => ({
+        id: activity.id,
+        type: activity.type.toLowerCase(),
+        title: activity.message || activity.type,
+        time: new Date(activity.created_at).toLocaleDateString(),
+        icon: activity.type === 'UPLOAD_SUCCESS' ? 'Upload' : activity.type === 'UPVOTE' ? 'ThumbsUp' : 'MessageCircle',
+      }))
+    : [];
 
   return (
     <div className="min-h-screen bg-[#F7F8FA] text-gray-800">
@@ -26,7 +33,7 @@ export default function ProfilePage() {
             <UserStatsSection userId={session!.user.id} />
           </div>
           <div className="lg:col-span-1">
-            <ActivityFeedSection activities={recentActivities} />
+            <ActivityFeedSection activities={recentActivities} isLoading={isLoading} />
           </div>
         </div>
       </main>

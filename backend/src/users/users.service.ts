@@ -349,15 +349,6 @@ export class UsersService {
         is_disabled: true,
         disabled_until: true,
         disabled_reason: true,
-        disabled_by: true,
-        disabled_at: true,
-        users: {
-          select: {
-            id: true,
-            username: true,
-            displayname: true
-          }
-        }
       }
     });
 
@@ -369,13 +360,6 @@ export class UsersService {
       is_disabled: user.is_disabled,
       disabled_until: user.disabled_until,
       disabled_reason: user.disabled_reason,
-      disabled_by: user.disabled_by,
-      disabled_at: user.disabled_at,
-      disabled_by_user: user.users ? {
-        id: user.users.id,
-        username: user.users.username,
-        displayname: user.users.displayname
-      } : null
     };
   }
 

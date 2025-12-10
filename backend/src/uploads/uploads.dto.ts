@@ -121,9 +121,6 @@ export class FileUploadDataDto {
   @IsString() @IsNotEmpty()
   description: string;
 
-  @IsEnum(DocumentCategory)
-  category: DocumentCategory;
-
   @IsEnum(VisibilityType)
   fileVisibility: VisibilityType;
 }

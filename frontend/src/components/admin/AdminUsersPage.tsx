@@ -20,6 +20,7 @@ function AdminUsersPage() {
     goPrevious,
     disableUser,
     enableUser,
+    updateUserRole,
     refresh,
     performSearch
   } = useAdminUsers();
@@ -80,6 +81,7 @@ function AdminUsersPage() {
                 isLoading={isLoading}
                 onDisableUser={disableUser}
                 onEnableUser={enableUser}
+                onUpdateRole={updateUserRole}
               />
               
               <AdminUsersPagination

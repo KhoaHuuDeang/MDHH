@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   console.log('🚀 Starting MDHH Backend...');
@@ -52,6 +53,9 @@ async function bootstrap() {
       enableImplicitConversion: true,
     },
   }));
+
+  // Global exception filter for standardized error responses
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   // Swagger setup
   const config = new DocumentBuilder()

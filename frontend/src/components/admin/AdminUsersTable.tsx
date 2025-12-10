@@ -8,13 +8,15 @@ interface AdminUsersTableProps {
   isLoading: boolean;
   onDisableUser: (userId: string, options: DisableUserOptions) => Promise<void>;
   onEnableUser: (userId: string) => Promise<void>;
+  onUpdateRole: (userId: string, role: 'USER' | 'ADMIN') => Promise<void>;
 }
 
-function AdminUsersTable({ 
-  users, 
-  isLoading, 
-  onDisableUser, 
-  onEnableUser 
+function AdminUsersTable({
+  users,
+  isLoading,
+  onDisableUser,
+  onEnableUser,
+  onUpdateRole
 }: AdminUsersTableProps) {
   const [selectedUser, setSelectedUser] = useState<AdminUserItem | null>(null);
   const [showDisableModal, setShowDisableModal] = useState(false);
@@ -144,9 +146,14 @@ function AdminUsersTable({
                     <div className="text-sm text-gray-900">{user.email}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {user.role_name}
-                    </span>
+                    <select
+                      value={user.role_name}
+                      onChange={(e) => onUpdateRole(user.id, e.target.value as 'USER' | 'ADMIN')}
+                      className="text-xs font-medium px-2.5 py-1 rounded border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="USER">USER</option>
+                      <option value="ADMIN">ADMIN</option>
+                    </select>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col space-y-1">

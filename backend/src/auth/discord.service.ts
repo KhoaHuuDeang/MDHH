@@ -269,26 +269,32 @@ export class DiscordService {
       const session = await this.sessionService.createSession(user.id, expiresAt, tx);
 
       const payload = {
-        sub: user.id,              
+        sub: user.id,
         email: user.email,
         role: user.roles.name,
         displayname: user.displayname || user.username,
-        sessionToken: session.session_token, //sessionToken to JWT payload
+        sessionToken: session.session_token,
       };
 
       const accessToken = this.jwtService.sign(payload);
-      console.log('Access Token created:', accessToken);
+      this.logger.log('Discord OAuth token created successfully');
+
       return {
-        user: {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          role: user.roles.name,
-          displayname: user.displayname,
+        message: 'Discord authentication successful',
+        status: 200,
+        result: {
+          user: {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            role: user.roles.name,
+            displayname: user.displayname,
+            avatar: user.avatar,
+          },
+          accessToken,
+          sessionToken: session.session_token,
+          expires: session.expires,
         },
-        accessToken,
-        sessionToken: session.session_token, // Add sessionToken to response
-        expires: session.expires, //  Add session expiry for consistency
       };
     } catch (error) {
       this.logger.error('Token creation failed:', error);

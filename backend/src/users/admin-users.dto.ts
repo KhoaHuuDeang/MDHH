@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNumber, IsBoolean, IsDateString } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsBoolean, IsDateString, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -100,4 +100,48 @@ export class EnableUserDto {
   @IsOptional()
   @IsString()
   note?: string;
+}
+
+
+export class UpdateUserRoleDto {
+  @ApiProperty({ 
+    description: 'New role for the user',
+    enum: ['USER', 'ADMIN']
+  })
+  @IsEnum(['USER', 'ADMIN'])
+  role: 'USER' | 'ADMIN';
+}
+
+
+export class AdminAnalyticsDto {
+  @ApiProperty({ description: 'Total number of users' })
+  totalUsers: number;
+
+  @ApiProperty({ description: 'Total number of uploads/resources' })
+  totalUploads: number;
+
+  @ApiProperty({ description: 'Total number of comments' })
+  totalComments: number;
+
+  @ApiProperty({ description: 'Total number of folders' })
+  totalFolders: number;
+
+  @ApiProperty({ description: 'Number of active users (last 30 days)' })
+  activeUsers: number;
+
+  @ApiProperty({ description: 'Number of disabled users' })
+  disabledUsers: number;
+
+  @ApiProperty({ description: 'Statistics by user role' })
+  usersByRole: {
+    role: string;
+    count: number;
+  }[];
+
+  @ApiProperty({ description: 'Recent activity counts (last 7 days)' })
+  recentActivity: {
+    newUsers: number;
+    newUploads: number;
+    newComments: number;
+  };
 }

@@ -11,6 +11,9 @@ export interface FileData {
   fileType: string;
   downloadCount: number;
   folderName?: string;
+  classificationLevel?: string;
+  tags?: string[];
+  moderation_status?: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'FLAGGED';
 }
 
 export interface FolderData {
@@ -27,34 +30,58 @@ export interface HomepageData {
   folders: FolderData[];
 }
 
+export interface PublicStats {
+  documents: number;
+  users: number;
+  downloads: number;
+  discussions: number;
+}
+
 export interface SearchFilesParams {
   query?: string;
-  category?: string;
+  classificationLevelId?: string;
+  tags?: string; // Comma-separated tag IDs
+  page?: number;
   limit?: number;
-  offset?: number;
 }
 
 export interface SearchFilesResponse {
-  files: FileData[];
-  total: number;
-  hasMore: boolean;
+  message: string;
+  status: number;
+  result: {
+    files: FileData[];
+    total: number;
+    hasMore: boolean;
+    page: number;
+    limit: number;
+  };
 }
 
 // Homepage services
 export const homepageService = {
-  getHomepageData: async (): Promise<HomepageData> => {
-    const response = await apiClient.get('/homepage');
+  getHomepageData: async (recentLimit?: number, popularLimit?: number, folderLimit?: number): Promise<HomepageData> => {
+    const params = new URLSearchParams();
+    if (recentLimit) params.append('recentLimit', recentLimit.toString());
+    if (popularLimit) params.append('popularLimit', popularLimit.toString());
+    if (folderLimit) params.append('folderLimit', folderLimit.toString());
+
+    const response = await apiClient.get(`/homepage${params.toString() ? '?' + params.toString() : ''}`);
+    return response.data;
+  },
+
+  getPublicStats: async (): Promise<PublicStats> => {
+    const response = await apiClient.get('/homepage/stats');
     return response.data;
   },
 
   searchFiles: async (params: SearchFilesParams): Promise<SearchFilesResponse> => {
-    const response = await apiClient.get('/files/search', { params });
+    const response = await apiClient.get('/homepage/search', { params });
     return response.data;
   },
 
   downloadFile: async (fileId: string): Promise<{ downloadUrl: string }> => {
-    const response = await apiClient.post(`/files/${fileId}/download`);
-    return response.data;
+    const response = await apiClient.get(`/files/${fileId}/download`);
+    return response.data.result;
   },
 
   rateFile: async (fileId: string, rating: number): Promise<void> => {
@@ -120,6 +147,12 @@ export const homepageService = {
   getFolderVotes: async (folderId: string, includeUserVote: boolean = false): Promise<VoteData> => {
     const params = includeUserVote ? { includeUserVote: 'true' } : {};
     const response = await apiClient.get(`/votes/folders/${folderId}`, { params });
+    return response.data;
+  },
+
+  // Flag upload
+  flagUpload: async (uploadId: string, reason: string): Promise<{ message: string; status: number; result: any }> => {
+    const response = await apiClient.post(`/uploads/${uploadId}/flag`, { reason });
     return response.data;
   }
 };
