@@ -160,9 +160,10 @@ export default function CartPage() {
                     </div>
                     <button
                         onClick={checkout}
-                        className="w-full sm:w-auto bg-[#386641] text-white px-10 py-3 rounded hover:bg-[#2b4d32] transition-colors shadow-lg shadow-[#386641]/20 font-semibold"
+                        disabled={cart.items.length === 0}
+                        className="w-full sm:w-auto bg-[#386641] text-white px-10 py-3 rounded hover:bg-[#2b4d32] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-lg shadow-[#386641]/20 font-semibold"
                     >
-                        {t('common.confirm')}
+                        🛒 Checkout with VNPay
                     </button>
                 </div>
             </div>
