@@ -41,7 +41,7 @@ jspm_packages/
 .env.production.local
 
 # Logs
-logs
+logs/*.log
 *.log
 
 # Git
