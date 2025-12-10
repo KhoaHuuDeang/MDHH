@@ -39,6 +39,7 @@ export default function CartPage() {
     try {
       await csrAxiosClient.put(`/cart/${itemId}`, { quantity });
       fetchCart();
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
     } catch (err: any) {
       alert(err.response?.data?.message || t('common.error'));
     }
@@ -48,6 +49,7 @@ export default function CartPage() {
     try {
       await csrAxiosClient.delete(`/cart/${itemId}`);
       fetchCart();
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
     } catch (err) {
       alert(t('moderation.error'));
     }

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { SidebarProfileMenuProps } from '@/types/user.types';
 import { LucideIcon } from 'lucide-react';
 import { useLogNotifications } from '@/hooks/useLogNotifications';
+import useCartCount from '@/hooks/useCartCount';
 import { getIconForLogType, formatRelativeTime, formatNotificationMessage } from '@/utils/notificationHelpers';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -18,6 +19,7 @@ interface HeaderProps {
 
 const Header = forwardRef<HTMLElement, HeaderProps>(({ userProps, HeaderItems, style }, ref) => {
     const { t } = useTranslation();
+    const { count: cartCount } = useCartCount();
 
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -116,6 +118,9 @@ const Header = forwardRef<HTMLElement, HeaderProps>(({ userProps, HeaderItems, s
                                          focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50"
                             >
                                 {getIcons('ShoppingCart', 20)}
+                                {cartCount > 0 && (
+                                    <span className="absolute top-2 right-2 w-2 h-2 bg-white rounded-full border border-gray-300 shadow-md" />
+                                )}
                             </Link>
 
                             {/* Notification Button */}
