@@ -51,15 +51,10 @@ export default function ShopPage() {
     <div className="min-h-screen bg-gray-100 py-8">
       <div className="max-w-[1200px] mx-auto px-4">
 
-        <div className="bg-white p-6 rounded-lg shadow-sm mb-6 flex flex-col md:flex-row justify-between items-center border-l-4 border-[#386641]">
+        <div className="bg-white p-6 rounded-lg shadow-sm mb-6 border-l-4 border-[#386641]">
             <div>
                 <h1 className="text-2xl font-bold text-[#386641]">{t('sidebar.souvenir')}</h1>
                 <p className="text-gray-500 text-sm mt-1">{t('resources.manage')}</p>
-            </div>
-            <div className="mt-4 md:mt-0 flex gap-2 text-sm">
-                <span className="bg-[#386641] text-white px-3 py-1 rounded-full cursor-pointer shadow-sm">{t('common.all')}</span>
-                <span className="bg-white text-gray-600 px-3 py-1 rounded-full border border-gray-200 cursor-pointer hover:border-[#386641] hover:text-[#386641] transition-colors">{t('home.popularFiles')}</span>
-                <span className="bg-white text-gray-600 px-3 py-1 rounded-full border border-gray-200 cursor-pointer hover:border-[#386641] hover:text-[#386641] transition-colors">{t('upload.next')}</span>
             </div>
         </div>
 

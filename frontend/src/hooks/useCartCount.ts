@@ -39,5 +39,8 @@ export default function useCartCount() {
     }
   }, [])
 
-  return { count, refetch: fetchCount }
+  // Clear count when navigating to cart (user has seen the notification)
+  const clearCount = () => setCount(0)
+
+  return { count, refetch: fetchCount, clear: clearCount }
 }

@@ -19,7 +19,7 @@ interface HeaderProps {
 
 const Header = forwardRef<HTMLElement, HeaderProps>(({ userProps, HeaderItems, style }, ref) => {
     const { t } = useTranslation();
-    const { count: cartCount } = useCartCount();
+    const { count: cartCount, clear: clearCartCount } = useCartCount();
 
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -111,6 +111,7 @@ const Header = forwardRef<HTMLElement, HeaderProps>(({ userProps, HeaderItems, s
                             {/* Cart Button */}
                             <Link
                                 href="/cart"
+                                onClick={clearCartCount}
                                 className="hidden sm:flex relative p-3 rounded-xl transition-all duration-300
                                          text-white hover:text-[#6A994E] hover:bg-[#386641]/20
                                          hover:shadow-lg hover:shadow-[#386641]/25 hover:scale-105
