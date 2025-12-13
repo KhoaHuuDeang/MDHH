@@ -33,5 +33,7 @@ export const AdminSidebarItems = [
             { id: 'moderation-folders', labelKey: 'sidebar.moderationFolders', href: '/admin/moderation/folders' },
         ],
     },
+    { id: 'admin-classifications', labelKey: 'sidebar.classifications', icon: 'Layers', href: '/admin/classifications' },
+    { id: 'admin-tags', labelKey: 'sidebar.tags', icon: 'Tag', href: '/admin/tags' },
     { id: 'admin-orders', labelKey: 'sidebar.adminOrders', icon: 'ShoppingCart', href: '/admin/orders' },
 ];

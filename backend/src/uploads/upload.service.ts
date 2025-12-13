@@ -849,7 +849,7 @@ export class UploadsService {
 
       const whereClause = conditions.join(' AND ');
 
-      // Query with folder classification and tags
+      // Query with folder classification and tags - only show user's own folders
       const dataQueryString = `
         SELECT
           u.id as upload_id,
@@ -881,7 +881,7 @@ export class UploadsService {
         FROM uploads u
         INNER JOIN resources r ON u.resource_id = r.id
         LEFT JOIN folder_files ff ON u.resource_id = ff.resource_id
-        LEFT JOIN folders fo ON ff.folder_id = fo.id
+        LEFT JOIN folders fo ON ff.folder_id = fo.id AND fo.user_id = $1::uuid
         LEFT JOIN classification_levels cl ON fo.classification_level_id = cl.id
         WHERE ${whereClause}
         ORDER BY u.created_at DESC

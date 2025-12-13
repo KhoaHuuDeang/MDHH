@@ -166,7 +166,7 @@ function ResourcesListSection({ userId, accessToken }: ResourcesListSectionProps
           </div>
         ) : resources.length > 0 ? (
           resources.map((upload) => (
-            <div key={upload.id} className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition-shadow duration-300 border border-gray-200">
+          <div key={upload.id} className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition-shadow duration-300 border border-gray-200">
               <div className="flex flex-col md:flex-row gap-6">
                 {/* Left Part */}
                 <div className="flex-1">

@@ -2,7 +2,8 @@ import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { DiscordService } from './discord.service';
-import { LoginDto, CreateUserDto, DiscordSignInDto } from '../users/user.dto';
+import { GoogleService } from './google.service';
+import { LoginDto, CreateUserDto, DiscordSignInDto, GoogleSignInDto } from '../users/user.dto';
 import { SendVerificationDto, VerifyEmailDto, ForgotPasswordDto, ResetPasswordDto } from './auth-email.dto';
 @ApiTags('Authentication')
 @Controller('auth')
@@ -10,6 +11,7 @@ export class AuthController {
   constructor(
     private authService: AuthService,
     private discordService: DiscordService,
+    private googleService: GoogleService,
   ) { }
 
   @Post('login')
@@ -36,6 +38,15 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Discord OAuth failed' })
   async handleDiscordOAuth(@Body() discordData: DiscordSignInDto) {
     return this.discordService.handleDiscordOAuth(discordData);
+  }
+
+  @Post('google/signin')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Google OAuth handler' })
+  @ApiResponse({ status: 200, description: 'Google OAuth successful' })
+  @ApiResponse({ status: 400, description: 'Google OAuth failed' })
+  async handleGoogleOAuth(@Body() googleData: GoogleSignInDto) {
+    return this.googleService.handleGoogleOAuth(googleData);
   }
 
   @Post('send-verification')

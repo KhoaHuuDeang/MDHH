@@ -1,14 +1,14 @@
 import { Injectable, ConflictException, InternalServerErrorException, UnauthorizedException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { DiscordSignInDto } from 'src/users/user.dto';
+import { GoogleSignInDto } from 'src/users/user.dto';
 import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { SessionService } from './session.service';
 import { EmailService } from '../email/email.service';
 
 @Injectable()
-export class DiscordService {
-  private readonly logger = new Logger(DiscordService.name);
+export class GoogleService {
+  private readonly logger = new Logger(GoogleService.name);
 
   constructor(
     private prisma: PrismaService,
@@ -18,48 +18,47 @@ export class DiscordService {
     private readonly emailService: EmailService
   ) { }
 
-  async handleDiscordOAuth(dto: DiscordSignInDto) {
-   
-    this.validateDiscordDto(dto);
+  async handleGoogleOAuth(dto: GoogleSignInDto) {
+    this.validateGoogleDto(dto);
 
     try {
       return await this.prisma.$transaction(async (tx) => {
-        const existingAccount = await this.findExistingDiscordAccount(tx, dto);
+        const existingAccount = await this.findExistingGoogleAccount(tx, dto);
         if (existingAccount) {
-          this.logger.log(`Existing Discord user login: ${dto.email}`);
-          return await this.handleExistingDiscordUser(tx, existingAccount, dto);
+          this.logger.log(`Existing Google user login: ${dto.email}`);
+          return await this.handleExistingGoogleUser(tx, existingAccount, dto);
         }
 
         const userByEmail = await this.findUserByEmail(tx, dto.email);
         if (userByEmail) {
-          this.logger.log(`Linking Discord to existing user: ${dto.email}`);
-          return await this.linkDiscordToExistingUser(tx, userByEmail, dto);
+          this.logger.log(`Linking Google to existing user: ${dto.email}`);
+          return await this.linkGoogleToExistingUser(tx, userByEmail, dto);
         }
 
-        this.logger.log(`Creating new Discord user: ${dto.email}`);
-        return await this.createNewDiscordUser(tx, dto);
+        this.logger.log(`Creating new Google user: ${dto.email}`);
+        return await this.createNewGoogleUser(tx, dto);
       });
     } catch (error) {
-      this.logger.error(`Discord OAuth failed for ${dto.email}:`, error);
-      throw new InternalServerErrorException('Discord authentication failed');
+      this.logger.error(`Google OAuth failed for ${dto.email}:`, error);
+      throw new InternalServerErrorException('Google authentication failed');
     }
   }
 
-  private validateDiscordDto(dto: DiscordSignInDto): void {
-    if (!dto.discordId || !dto.provider) {
-      throw new UnauthorizedException('Discord ID and provider are required');
+  private validateGoogleDto(dto: GoogleSignInDto): void {
+    if (!dto.googleId || !dto.provider) {
+      throw new UnauthorizedException('Google ID and provider are required');
     }
     if (!dto.email) {
-      throw new UnauthorizedException('Email is required for Discord authentication');
+      throw new UnauthorizedException('Email is required for Google authentication');
     }
   }
 
-  private async findExistingDiscordAccount(tx: any, dto: DiscordSignInDto) {
+  private async findExistingGoogleAccount(tx: any, dto: GoogleSignInDto) {
     return await tx.accounts.findUnique({
       where: {
         provider_provider_account_id: {
           provider: dto.provider,
-          provider_account_id: dto.discordId,
+          provider_account_id: dto.googleId,
         },
       },
       include: {
@@ -91,13 +90,12 @@ export class DiscordService {
     });
   }
 
-  private async handleExistingDiscordUser(tx: any, existingAccount: any, dto: DiscordSignInDto) {
+  private async handleExistingGoogleUser(tx: any, existingAccount: any, dto: GoogleSignInDto) {
     let user = existingAccount.users;
 
     if (!user) {
       throw new InternalServerErrorException('Account exists but user data is missing');
     }
-
 
     const needsUpdate = this.shouldUpdateUserProfile(user, dto);
 
@@ -113,18 +111,16 @@ export class DiscordService {
     return this._createTokensAndSession(user, tx);
   }
 
-
-  private async linkDiscordToExistingUser(tx: any, userByEmail: any, dto: DiscordSignInDto) {
-
-    const existingDiscordLink = await tx.accounts.findFirst({
+  private async linkGoogleToExistingUser(tx: any, userByEmail: any, dto: GoogleSignInDto) {
+    const existingGoogleLink = await tx.accounts.findFirst({
       where: {
         provider: dto.provider,
-        provider_account_id: dto.discordId,
+        provider_account_id: dto.googleId,
       }
     });
 
-    if (existingDiscordLink) {
-      throw new ConflictException('This Discord account is already linked to another user');
+    if (existingGoogleLink) {
+      throw new ConflictException('This Google account is already linked to another user');
     }
 
     await tx.accounts.create({
@@ -132,7 +128,7 @@ export class DiscordService {
         user_id: userByEmail.id,
         type: dto.type || 'oauth',
         provider: dto.provider,
-        provider_account_id: dto.discordId,
+        provider_account_id: dto.googleId,
         access_token: dto.access_token,
         refresh_token: dto.refresh_token,
         expires_at: dto.expires_at,
@@ -140,6 +136,7 @@ export class DiscordService {
         scope: dto.scope,
       },
     });
+
     let updatedUser = userByEmail;
     if (this.shouldUpdateUserProfile(userByEmail, dto)) {
       updatedUser = await this.updateUserProfile(tx, userByEmail.id, dto);
@@ -148,8 +145,7 @@ export class DiscordService {
     return this._createTokensAndSession(updatedUser, tx);
   }
 
-
-  private async createNewDiscordUser(tx: any, dto: DiscordSignInDto) {
+  private async createNewGoogleUser(tx: any, dto: GoogleSignInDto) {
     const userRole = await tx.roles.findUnique({
       where: { name: 'USER' },
       select: { id: true, name: true }
@@ -159,13 +155,12 @@ export class DiscordService {
       throw new InternalServerErrorException('Default user role not found');
     }
 
-    const uniqueUsername = await this.generateUniqueUsername(tx, dto.username);
-
+    const uniqueUsername = await this.generateUniqueUsername(tx, dto.username || dto.email.split('@')[0]);
 
     const newUser = await tx.users.create({
       data: {
         email: dto.email,
-        displayname: dto.global_name || dto.username,
+        displayname: dto.name || dto.given_name || dto.email.split('@')[0],
         username: uniqueUsername,
         avatar: dto.avatar,
         email_verified: true,
@@ -174,7 +169,7 @@ export class DiscordService {
           create: {
             type: dto.type || 'oauth',
             provider: dto.provider,
-            provider_account_id: dto.discordId,
+            provider_account_id: dto.googleId,
             access_token: dto.access_token,
             refresh_token: dto.refresh_token,
             expires_at: dto.expires_at,
@@ -205,28 +200,22 @@ export class DiscordService {
       }
     }
 
-    console.log('New user created aaaa:', newUser);
     return this._createTokensAndSession(newUser, tx);
   }
 
-
-  private shouldUpdateUserProfile(user: any, dto: DiscordSignInDto): boolean {
+  private shouldUpdateUserProfile(user: any, dto: GoogleSignInDto): boolean {
     return (
-      user.displayname !== (dto.global_name || dto.username) ||
-      user.avatar !== dto.avatar ||
-      user.username !== dto.username
+      user.displayname !== (dto.name || dto.given_name) ||
+      user.avatar !== dto.avatar
     );
   }
 
-
-  private async updateUserProfile(tx: any, userId: string, dto: DiscordSignInDto) {
+  private async updateUserProfile(tx: any, userId: string, dto: GoogleSignInDto) {
     return await tx.users.update({
       where: { id: userId },
       data: {
-        displayname: dto.global_name || dto.username,
-        username: dto.username,
+        displayname: dto.name || dto.given_name,
         avatar: dto.avatar,
-
         updated_at: new Date(),
       },
       include: {
@@ -240,8 +229,7 @@ export class DiscordService {
     });
   }
 
-
-  private async updateAccountTokens(tx: any, accountId: string, dto: DiscordSignInDto) {
+  private async updateAccountTokens(tx: any, accountId: string, dto: GoogleSignInDto) {
     return await tx.accounts.update({
       where: { id: accountId },
       data: {
@@ -251,7 +239,6 @@ export class DiscordService {
       },
     });
   }
-
 
   private async generateUniqueUsername(tx: any, baseUsername: string): Promise<string> {
     if (!baseUsername) {
@@ -280,7 +267,6 @@ export class DiscordService {
 
     try {
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
-      // Truyền transaction context vào SessionService
       const session = await this.sessionService.createSession(user.id, expiresAt, tx);
 
       const payload = {
@@ -292,10 +278,10 @@ export class DiscordService {
       };
 
       const accessToken = this.jwtService.sign(payload);
-      this.logger.log('Discord OAuth token created successfully');
+      this.logger.log('Google OAuth token created successfully');
 
       return {
-        message: 'Discord authentication successful',
+        message: 'Google authentication successful',
         status: 200,
         result: {
           user: {
@@ -314,48 +300,6 @@ export class DiscordService {
     } catch (error) {
       this.logger.error('Token creation failed:', error);
       throw new InternalServerErrorException('Failed to create authentication tokens');
-    }
-  }
-
-
-  private determineRoleFromDiscordRoles(discordRoles: string[]): string {
-
-    const roleMapping: Record<string, string> = {
-      [process.env.DISCORD_ADMIN_ROLE_ID || '']: 'ADMIN',
-      [process.env.DISCORD_MOD_ROLE_ID || '']: 'MODERATOR',
-      [process.env.DISCORD_PREMIUM_ROLE_ID || '']: 'PREMIUM',
-    };
-
-
-    const rolePriority = ['ADMIN', 'MODERATOR', 'PREMIUM'];
-
-    for (const priority of rolePriority) {
-      for (const roleId of discordRoles) {
-        if (roleMapping[roleId] === priority) {
-          return priority;
-        }
-      }
-    }
-
-
-    return 'USER';
-  }
-
-  async cleanupExpiredSessions(): Promise<void> {
-    try {
-      const result = await this.prisma.sessions.deleteMany({
-        where: {
-          expires: {
-            lt: new Date(),
-          },
-        },
-      });
-
-      if (result.count > 0) {
-        this.logger.log(`Cleaned up ${result.count} expired sessions`);
-      }
-    } catch (error) {
-      this.logger.error('Failed to cleanup expired sessions:', error);
     }
   }
 }

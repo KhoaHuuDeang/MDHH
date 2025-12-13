@@ -372,10 +372,11 @@ class UploadService {
    * Matches backend GET /uploads/download/:uploadId
    */
   async generateDownloadUrl(uploadId: string): Promise<{ downloadUrl: string }> {
-    return this.makeRequest<{ downloadUrl: string }>(
+    const response = await this.makeRequest<{ result: { downloadUrl: string } }>(
       `${this.baseUrl}/uploads/download/${uploadId}`,
       { method: 'GET' }
     );
+    return response.result;
   }
 
 

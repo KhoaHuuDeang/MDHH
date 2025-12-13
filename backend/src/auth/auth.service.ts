@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SessionService } from './session.service';
 import * as bcrypt from 'bcryptjs';
 import { CreateUserDto, LoginDto } from '../users/user.dto';
-
+import { EmailService } from '../email/email.service';
 import { Logger } from '@nestjs/common';
 
 @Injectable()
@@ -33,6 +33,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private sessionService: SessionService,
+    private emailService: EmailService,
   ) {
     setInterval(() => this.cleanupRateLimits(), 30 * 60 * 1000);
   }
@@ -283,6 +284,18 @@ export class AuthService {
       this.registerAttempts.delete(createUserDto.email);
 
       this.logger.log(`User registered successfully: ${newUser.email}`);
+
+      // Send welcome email
+      if (newUser.email) {
+        try {
+          await this.emailService.sendAccountCreationEmail(
+            newUser.email,
+            newUser.displayname || newUser.username || 'User'
+          );
+        } catch (error) {
+          this.logger.error('Failed to send welcome email:', error);
+        }
+      }
 
       return {
         message: 'User created successfully',

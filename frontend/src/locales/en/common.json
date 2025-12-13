@@ -28,6 +28,8 @@
     "moderationUploads": "Uploads",
     "moderationComments": "Comments",
     "moderationFolders": "Folders",
+    "classifications": "Classifications Management",
+    "tags": "Tags Management",
     "adminOrders": "Order Management"
   },
   "footer": {
@@ -150,7 +152,29 @@
     "allTags": "All tags",
     "noTagsForLevel": "No tags available for this classification level",
     "activeFilters": "Active Filters",
-    "clearAll": "Clear all"
+    "clearAll": "Clear all",
+    "metadata": {
+      "pageTitle": "Organize Documents",
+      "pageSubtitle": "Step 1: Folder Management • Step 2: File Info • Submit when complete",
+      "step1Title": "Step 1: Folder Management",
+      "folderSelected": "Folder selected",
+      "chooseDestination": "Choose destination for your files",
+      "step2Title": "Step 2: File Information",
+      "noFilesUploaded": "No files uploaded yet",
+      "filesReady": "files ready for metadata",
+      "goBackToUpload": "Go back to upload files first",
+      "missingRequirements": "Missing Requirements",
+      "allDataComplete": "All data complete. Ready to submit!",
+      "back": "Back",
+      "submitting": "Submitting...",
+      "completeUpload": "Complete Upload",
+      "validation": {
+        "selectOrCreateFolder": "Select or create folder",
+        "folderName": "Folder name",
+        "folderClassification": "Folder classification level",
+        "filesNeedData": "files need complete data"
+      }
+    }
   },
   "common": {
     "loading": "Loading...",

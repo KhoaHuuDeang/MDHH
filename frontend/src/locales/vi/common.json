@@ -28,6 +28,8 @@
     "moderationUploads": "Tải lên",
     "moderationComments": "Bình luận",
     "moderationFolders": "Thư mục",
+    "classifications": "Quản lý Phân loại",
+    "tags": "Quản lý Thẻ",
     "adminOrders": "Quản lý Đơn hàng"
   },
   "footer": {
@@ -150,7 +152,29 @@
     "allTags": "Tất cả thẻ",
     "noTagsForLevel": "Không có thẻ nào cho cấp độ phân loại này",
     "activeFilters": "Bộ lọc đang hoạt động",
-    "clearAll": "Xóa tất cả"
+    "clearAll": "Xóa tất cả",
+    "metadata": {
+      "pageTitle": "Tổ chức tài liệu",
+      "pageSubtitle": "Bước 1: Quản lý thư mục • Bước 2: Thông tin tệp • Gửi khi hoàn tất",
+      "step1Title": "Bước 1: Quản lý thư mục",
+      "folderSelected": "Thư mục đã chọn",
+      "chooseDestination": "Chọn đích đến cho tệp của bạn",
+      "step2Title": "Bước 2: Thông tin tệp",
+      "noFilesUploaded": "Chưa có tệp nào được tải lên",
+      "filesReady": "tệp đã sẵn sàng để thêm dữ liệu",
+      "goBackToUpload": "Quay lại để tải lên tệp trước",
+      "missingRequirements": "Thiếu yêu cầu",
+      "allDataComplete": "Tất cả dữ liệu đã hoàn thành. Sẵn sàng gửi!",
+      "back": "Quay lại",
+      "submitting": "Đang gửi...",
+      "completeUpload": "Hoàn thành tải lên",
+      "validation": {
+        "selectOrCreateFolder": "Chọn hoặc tạo thư mục",
+        "folderName": "Tên thư mục",
+        "folderClassification": "Cấp độ phân loại thư mục",
+        "filesNeedData": "tệp cần dữ liệu hoàn chỉnh"
+      }
+    }
   },
   "common": {
     "loading": "Đang tải...",
