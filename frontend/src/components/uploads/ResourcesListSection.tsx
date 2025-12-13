@@ -4,7 +4,8 @@ import React from 'react';
 import Image from 'next/image';
 import { getIcon } from '@/utils/getIcon';
 import { useFilteredResources } from '@/hooks/useFilteredResources';
-// import { ResourceListItem } from '@/types/uploads.types';
+import { uploadService } from '@/services/uploadService';
+import useNotifications from '@/hooks/useNotifications';
 
 interface ResourcesListSectionProps {
   userId: string;
@@ -12,6 +13,7 @@ interface ResourcesListSectionProps {
 }
 
 function ResourcesListSection({ userId, accessToken }: ResourcesListSectionProps) {
+  const toast = useNotifications();
   const {
     resources,
     isLoading,
@@ -31,6 +33,27 @@ function ResourcesListSection({ userId, accessToken }: ResourcesListSectionProps
     accessToken,
     enabled: true
   });
+
+  const handleDownload = async (uploadId: string, fileName: string) => {
+    try {
+      const { downloadUrl } = await uploadService.generateDownloadUrl(uploadId);
+      window.open(downloadUrl, '_blank');
+      toast.success(`Đang tải xuống ${fileName}`);
+    } catch (error: any) {
+      toast.error(error.message || 'Không thể tải xuống');
+    }
+  };
+
+  const handleDelete = async (resourceId: string, title: string) => {
+    if (!confirm(`Xác nhận xóa "${title}"?`)) return;
+    try {
+      await uploadService.deleteUpload(resourceId);
+      toast.success('Đã xóa tài liệu');
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || 'Không thể xóa');
+    }
+  };
 
   const getStatusBadge = (status: string, rejectionReason?: string) => {
     const statusConfig = {
@@ -173,11 +196,11 @@ function ResourcesListSection({ userId, accessToken }: ResourcesListSectionProps
                       <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-gray-500 border-b border-gray-200 pb-3 mb-3">
                         <span className="flex items-center gap-1.5">
                           {getIcon('BookOpen', 14)}
-                          {upload.subject}
+                          {upload.subject || 'Chưa phân loại'}
                         </span>
                         <span className="flex items-center gap-1.5">
                           {getIcon('Tag', 14)}
-                          {upload.category}
+                          {upload.folderTags || 'Không có tag'}
                         </span>
                         <span className="flex items-center gap-1.5">
                           {getIcon('Folder', 14)}
@@ -194,16 +217,12 @@ function ResourcesListSection({ userId, accessToken }: ResourcesListSectionProps
                       </div>
                       <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-600">
                         <div className="flex items-center gap-1 font-medium">
-                          {getIcon('Eye', 16, 'text-blue-500')}
-                          {upload.views.toLocaleString()}
+                          {getIcon('ThumbsUp', 16, 'text-blue-500')}
+                          {upload.upvotes}
                         </div>
                         <div className="flex items-center gap-1 font-medium">
                           {getIcon('Download', 16, 'text-green-500')}
                           {upload.downloads}
-                        </div>
-                        <div className="flex items-center gap-1 font-medium">
-                          {getIcon('Star', 16, 'text-purple-500')}
-                          {upload.ratingCount} Ratings
                         </div>
                       </div>
                     </div>
@@ -214,10 +233,19 @@ function ResourcesListSection({ userId, accessToken }: ResourcesListSectionProps
                 <div className="flex flex-col justify-between items-start md:items-end gap-4 md:w-48">
                   {getStatusBadge(upload.status)}
                   <div className="flex gap-2">
-                    <button className="flex items-center justify-center gap-2 px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm">
-                      Xem
+                    <button
+                      onClick={() => handleDownload(upload.uploadId, upload.title)}
+                      disabled={upload.status !== 'approved'}
+                      className="flex items-center justify-center gap-2 px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {getIcon('Download', 14)}
+                      Tải
                     </button>
-                    <button className="flex items-center justify-center gap-2 px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm">
+                    <button
+                      onClick={() => handleDelete(upload.id, upload.title)}
+                      className="flex items-center justify-center gap-2 px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
+                    >
+                      {getIcon('Trash2', 14)}
                       Xóa
                     </button>
                   </div>

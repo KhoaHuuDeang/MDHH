@@ -167,22 +167,23 @@ export function transformResourcesResponse(response: UserResourcesResponse): Res
     const fileTypeInfo = getFileTypeInfo(item.mime_type);
     
     return {
+      uploadId: item.upload_id,
       id: item.resource_id,
       title: item.resource_details.title,
       description: item.resource_details.description,
       category: item.resource_details.category,
       visibility: item.resource_details.visibility,
       folderName: item.resource_details.folder_name,
+      folderClassification: item.resource_details.folder_classification,
+      folderTags: item.resource_details.folder_tags,
       fileType: fileTypeInfo.extension,
       fileSize: formatFileSize(item.file_size),
       uploadDate: formatUploadDate(item.created_at),
       upvotes: item.resource_details.upvotes_count,
       downloads: item.resource_details.downloads_count,
       views: 0,
-      ratings: item.resource_details.upvotes_count,
-      ratingCount: item.resource_details.upvotes_count,
       status: mapModerationStatusToStatus(item.moderation_status),
-      subject: item.resource_details.category,
+      subject: item.resource_details.folder_classification,
       thumbnail: generateThumbnail(item.mime_type)
     };
   });
