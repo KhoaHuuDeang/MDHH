@@ -30,10 +30,18 @@ export default function FolderListSection({ userId, accessToken }: FolderListSec
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/folders`, {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Failed to fetch folders');
+      }
+
       const data = await res.json();
       setFolders(Array.isArray(data) ? data : []);
-    } catch (error) {
-      toast.error('Không thể tải danh sách thư mục');
+    } catch (error: any) {
+      console.error('Folder fetch error:', error);
+      toast.error(error.message || 'Không thể tải danh sách thư mục');
+      setFolders([]);
     } finally {
       setIsLoading(false);
     }
