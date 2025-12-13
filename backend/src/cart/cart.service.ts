@@ -22,7 +22,7 @@ export class CartService {
 
     return {
       message: 'Cart retrieved successfully',
-      status: 'success',
+      status: 200,
       result: { items: cartItems, total, count: cartItems.length },
     };
   }
@@ -107,7 +107,7 @@ export class CartService {
     if (!cartItem) {
       return {
         message: 'Cart item not found',
-        status: 'error',
+        status: 404,
         result: null,
       };
     }
@@ -115,7 +115,7 @@ export class CartService {
     if (cartItem.souvenirs.stock < dto.quantity) {
       return {
         message: 'Insufficient stock',
-        status: 'error',
+        status: 400,
         result: null,
       };
     }
@@ -128,7 +128,7 @@ export class CartService {
 
     return {
       message: 'Cart item updated successfully',
-      status: 'success',
+      status: 200,
       result: { cartItem: updated },
     };
   }
@@ -141,7 +141,7 @@ export class CartService {
     if (!cartItem) {
       return {
         message: 'Cart item not found',
-        status: 'error',
+        status: 404,
         result: null,
       };
     }
@@ -152,7 +152,7 @@ export class CartService {
 
     return {
       message: 'Item removed from cart successfully',
-      status: 'success',
+      status: 200,
       result: null,
     };
   }
@@ -164,7 +164,7 @@ export class CartService {
 
     return {
       message: 'Cart cleared successfully',
-      status: 'success',
+      status: 200,
       result: null,
     };
   }

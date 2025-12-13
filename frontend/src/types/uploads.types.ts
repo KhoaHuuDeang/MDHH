@@ -13,6 +13,8 @@ export interface ResourceItemResponse {
   file_size: number;
   mime_type: string;
   created_at: string; // ISO string from API
+  moderation_status: 'APPROVED' | 'PENDING_APPROVAL' | 'REJECTED';
+  moderation_reason?: string | null;
   resource_details: ResourceDetailsResponse;
 }
 

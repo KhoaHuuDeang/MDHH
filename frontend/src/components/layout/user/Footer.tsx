@@ -38,7 +38,7 @@ const Footer = forwardRef<HTMLElement, FooterProps>(({ style }, ref) => {
             ref={ref}
             style={style}
             className="bg-gradient-to-t from-[#1a2e1a] via-[#2d4a2d] to-[#1a2e1a]
-                         border-t-2 border-[#386641]/30 py-8
+                         border-t-2 border-[#386641]/30 py-4
                          relative
                          before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#386641] before:via-[#6A994E] before:to-[#386641] before:opacity-60">
             <div className="container mx-auto px-4 md:px-6">

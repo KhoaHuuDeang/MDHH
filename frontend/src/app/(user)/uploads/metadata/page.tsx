@@ -278,7 +278,6 @@ function MetadataPage() {
             ) : (
               <>
                 Hoàn thành tải lên
-                {getIcon("ChevronRight", 16)}
               </>
             )}
           </button>

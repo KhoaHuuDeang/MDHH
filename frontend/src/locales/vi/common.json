@@ -23,11 +23,11 @@
     "achievements": "Thành tích",
     "souvenir": "Quà lưu niệm",
     "adminDashboard": "Bảng Quản trị",
-    "adminUsers": "Quản lý Người dùng",
+    "users": "Quản lý người dùng",
     "adminModeration": "Kiểm Soát Nội dung",
-    "moderationUploads": "Uploads",
-    "moderationComments": "Comments",
-    "moderationFolders": "Folders",
+    "moderationUploads": "Tải lên",
+    "moderationComments": "Bình luận",
+    "moderationFolders": "Thư mục",
     "adminOrders": "Quản lý Đơn hàng"
   },
   "footer": {

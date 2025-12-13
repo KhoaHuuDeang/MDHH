@@ -262,8 +262,6 @@ export default function HomePage() {
     );
   }
 
-  if (!session?.user?.id) return null;
-
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">

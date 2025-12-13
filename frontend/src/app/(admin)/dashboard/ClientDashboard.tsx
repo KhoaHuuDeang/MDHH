@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminService } from '@/services/adminService.csr';
+import AdminStatsDisplay from '@/components/admin/AdminStatsDisplay';
 
 export default function ClientDashboard() {
   const { t } = useTranslation();
@@ -33,6 +34,8 @@ export default function ClientDashboard() {
   return (
     <div className="flex-1 p-4 sm:p-8">
       <h1 className="text-3xl font-bold mb-8">{t('admin.dashboard')}</h1>
+
+      <AdminStatsDisplay />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow">

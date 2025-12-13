@@ -53,7 +53,12 @@ export class HomepageController {
     status: 200,
     description: 'Return public statistics for landing page'
   })
-  async getPublicStats() {
-    return this.homepageService.getPublicStats();
+  async getPublicStats(): Promise<any> {
+    const stats = await this.homepageService.getPublicStats();
+    return {
+      message: 'Public statistics retrieved successfully',
+      status: 200,
+      result: stats
+    };
   }
 }

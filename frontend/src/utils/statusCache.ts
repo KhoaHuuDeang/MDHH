@@ -1,5 +1,3 @@
-'use client'
-
 interface CachedStatus {
   is_disabled: boolean;
   disabled_until?: Date;
@@ -93,19 +91,3 @@ class StatusCacheManager {
 
 // Export singleton instance
 export const statusCache = new StatusCacheManager();
-
-// Listen for logout to clear cache
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'nextauth.message') {
-      try {
-        const message = JSON.parse(e.newValue || '{}');
-        if (message.event === 'session' && message.data === null) {
-          statusCache.clearCache();
-        }
-      } catch (err) {
-        // Ignore parse errors
-      }
-    }
-  });
-}

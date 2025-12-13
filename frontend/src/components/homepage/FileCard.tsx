@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import * as lucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 import { getMimeTypeIcon, getFileTypeDescription } from '@/utils/mimeTypeIcons';
@@ -27,6 +28,7 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
   showThumbnail = true,
   className = ''
 }) => {
+  const { data: session } = useSession();
   const { downloadFile, voteFile, getFileVotes, bookmarkFile, isDownloading, isVoting, isBookmarking } = useFileActions();
 
   // Vote data state
@@ -35,6 +37,7 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
     downvotes: 0,
     userVote: null
   });
+  const [voteError, setVoteError] = useState(false);
 
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [isFlagging, setIsFlagging] = useState(false);
@@ -42,10 +45,14 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
   useEffect(() => {
     const loadVoteData = async () => {
       try {
+        setVoteError(false);
         const data = await getFileVotes(file.id);
         setVoteData(data);
       } catch (error) {
         console.error('Failed to load vote data:', error);
+        setVoteError(true);
+        // Set default data for unauthenticated users
+        setVoteData({ upvotes: 0, downvotes: 0, userVote: null });
       }
     };
     loadVoteData();
@@ -182,10 +189,19 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
               )}
             </div>
 
-            <div className="absolute top-3 right-3 z-10">
+            <div className="absolute top-3 right-3 z-10 flex gap-2 items-center">
               <span className="bg-white/95 backdrop-blur-sm text-gray-700 px-2.5 py-1 text-[11px] font-medium rounded-md shadow-sm border border-gray-100">
                 {typeDescription}
               </span>
+              {/* Flag Icon */}
+              <button
+                onClick={handleFlag}
+                disabled={isFlagging}
+                className="h-8 w-8 flex items-center justify-center rounded-lg bg-yellow-400/90 hover:bg-yellow-500 shadow-md transition-all"
+                title="Report"
+              >
+                {isFlagging ? getIcons("Loader2", 13, "animate-spin text-white") : getIcons("Flag", 13, "text-white")}
+              </button>
             </div>
 
             {/* Icon/Thumbnail Centered */}
@@ -314,17 +330,15 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
             >
               {isBookmarking ? getIcons("Loader2", 14, "animate-spin") : getIcons("Bookmark", 14)}
             </button>
-
-            <button
-              onClick={handleFlag}
-              disabled={isFlagging}
-              className="h-9 w-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-400 hover:text-yellow-600 hover:border-yellow-400 transition-all"
-              title="Report"
-            >
-              {isFlagging ? getIcons("Loader2", 14, "animate-spin") : getIcons("Flag", 14)}
-            </button>
           </div>
         </div>
+
+        {/* Authentication hint for votes */}
+        {voteError && !session && (
+          <div className="px-4 py-2 bg-yellow-50 dark:bg-yellow-900/20 border-t border-yellow-100 dark:border-yellow-800 text-xs text-yellow-700 dark:text-yellow-400 text-center">
+            Sign in to see and add votes
+          </div>
+        )}
       </div>
 
       <CommentModal
@@ -339,4 +353,4 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
 
 FileCard.displayName = 'FileCard';
 
-export default FileCard;
+export default FileCard;  

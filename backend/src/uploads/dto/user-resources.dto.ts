@@ -76,6 +76,15 @@ export class ResourceItemDto {
   @IsDate()
   created_at: Date;
 
+  @ApiProperty({ description: 'Moderation status of upload', enum: ['APPROVED', 'PENDING_APPROVAL', 'REJECTED'] })
+  @IsString()
+  moderation_status: string;
+
+  @ApiPropertyOptional({ description: 'Reason for rejection if rejected' })
+  @IsOptional()
+  @IsString()
+  moderation_reason?: string | null;
+
   @ApiProperty({ description: 'Resource details with social metrics', type: ResourceDetailsDto })
   resource_details: ResourceDetailsDto;
 }

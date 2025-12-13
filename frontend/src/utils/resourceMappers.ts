@@ -112,12 +112,25 @@ export function formatUploadDate(dateString: string): string {
 /**
  * Map visibility to status for UI display
  */
+export function mapModerationStatusToStatus(moderationStatus: string): 'approved' | 'pending' | 'rejected' {
+  switch (moderationStatus) {
+    case 'APPROVED':
+      return 'approved';
+    case 'PENDING_APPROVAL':
+      return 'pending';
+    case 'REJECTED':
+      return 'rejected';
+    default:
+      return 'pending';
+  }
+}
+
 export function mapVisibilityToStatus(visibility: 'PUBLIC' | 'PRIVATE'): 'approved' | 'pending' | 'rejected' {
   switch (visibility) {
     case 'PUBLIC':
       return 'approved';
     case 'PRIVATE':
-      return 'pending'; // Temporary mapping
+      return 'pending';
     default:
       return 'pending';
   }
@@ -165,11 +178,11 @@ export function transformResourcesResponse(response: UserResourcesResponse): Res
       uploadDate: formatUploadDate(item.created_at),
       upvotes: item.resource_details.upvotes_count,
       downloads: item.resource_details.downloads_count,
-      views: 0, // Will be implemented later
-      ratings: item.resource_details.upvotes_count, // Same as upvotes for now
-      ratingCount: item.resource_details.upvotes_count, // Same as upvotes for now
-      status: mapVisibilityToStatus(item.resource_details.visibility),
-      subject: item.resource_details.category, // Use category as subject
+      views: 0,
+      ratings: item.resource_details.upvotes_count,
+      ratingCount: item.resource_details.upvotes_count,
+      status: mapModerationStatusToStatus(item.moderation_status),
+      subject: item.resource_details.category,
       thumbnail: generateThumbnail(item.mime_type)
     };
   });

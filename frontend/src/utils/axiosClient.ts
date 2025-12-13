@@ -45,7 +45,15 @@ class CSRAxiosClient {
       (response: AxiosResponse) => response,
       (error) => {
         if (error.response?.status === 401) {
-          // window.location.href = '/auth';  // ← Commented for debugging
+          // Only redirect for protected resources, not public endpoints
+          const publicEndpoints = ['/homepage', '/homepage/stats', '/homepage/search'];
+          const isPublicEndpoint = publicEndpoints.some(endpoint =>
+            error.config?.url?.includes(endpoint)
+          );
+
+          if (!isPublicEndpoint && typeof window !== 'undefined') {
+            window.location.href = '/auth';
+          }
         }
         return Promise.reject(error);
       }

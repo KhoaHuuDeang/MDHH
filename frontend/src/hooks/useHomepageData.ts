@@ -17,14 +17,12 @@ const fetcher = async (): Promise<HomepageData> => {
 /**
  * Custom hook for fetching homepage data with SWR
  * Provides caching, automatic revalidation, and optimistic updates
- * Only fetches when user is authenticated
+ * Fetches for all users - homepage endpoint is public
  */
 export const useHomepageData = (): UseHomepageDataReturn => {
   const { data: session, status } = useSession();
-  // Conditional SWR key - only fetch if authenticated and has access token
-  const swrKey = status === "authenticated" && session?.accessToken 
-    ? 'homepage-data' 
-    : null;
+  // Always fetch homepage data - backend endpoint is public
+  const swrKey = 'homepage-data';
 
   const { data, error, mutate, isLoading } = useSWR<HomepageData>(
     swrKey, // null = no fetch
@@ -58,15 +56,16 @@ export const useHomepageData = (): UseHomepageDataReturn => {
         folders: []
       },
       
-      // Conditional fetching - only fetch if we're in browser environment
+      // Conditional fetching - don't retry on client errors
       shouldRetryOnError: (error) => {
         // Don't retry on 4xx errors (client errors)
         if (error?.status >= 400 && error?.status < 500) {
+          console.warn(`Homepage data fetch returned ${error.status}, not retrying`);
           return false;
         }
         return true;
       },
-      
+
       // Transform data if needed
       onSuccess: (data) => {
         console.log('Homepage data loaded successfully:', {
@@ -75,10 +74,10 @@ export const useHomepageData = (): UseHomepageDataReturn => {
           folders: data.folders?.length || 0
         });
       },
-      
+
       // Handle errors
       onError: (error) => {
-        console.error('Failed to load homepage data:', error);
+        console.error('Error fetching homepage data:', error);
       }
     }
   );
