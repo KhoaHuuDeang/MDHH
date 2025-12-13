@@ -882,7 +882,7 @@ export class UploadsService {
         INNER JOIN resources r ON u.resource_id = r.id
         LEFT JOIN folder_files ff ON u.resource_id = ff.resource_id
         LEFT JOIN folders fo ON ff.folder_id = fo.id
-        LEFT JOIN classification_levels cl ON fo.level_id = cl.id
+        LEFT JOIN classification_levels cl ON fo.classification_level_id = cl.id
         WHERE ${whereClause}
         ORDER BY u.created_at DESC
         LIMIT $${paramIndex}
