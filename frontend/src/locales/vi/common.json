@@ -57,7 +57,21 @@
     "download": "Tải xuống",
     "downloads": "Lượt tải",
     "uploadedBy": "Tải lên bởi",
-    "by": "Bởi"
+    "by": "Bởi",
+    "searchResults": "Kết quả tìm kiếm",
+    "noRecentFiles": "Không tìm thấy tệp gần đây",
+    "noSearchResults": "Không tìm thấy tệp phù hợp với tìm kiếm",
+    "loadMore": "Xem thêm",
+    "mostDownloaded": "Được tải nhiều nhất",
+    "noPopularFiles": "Không tìm thấy tệp phổ biến",
+    "popularFolders": "Thư mục phổ biến",
+    "noPopularFolders": "Không tìm thấy thư mục phổ biến",
+    "exploreCourses": "Khám phá thêm các khóa học",
+    "exploreCoursesCTA": "Khám phá các khóa học",
+    "expandKnowledge": "Mở rộng kiến thức của bạn với tài liệu học tập phong phú của website",
+    "cannotLoadData": "Không thể tải dữ liệu",
+    "reloadPage": "Tải lại trang",
+    "accessDenied": "Truy cập bị từ chối. Cần quyền quản trị viên."
   },
   "profile": {
     "title": "Hồ sơ",

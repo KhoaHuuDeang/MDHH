@@ -57,7 +57,21 @@
     "download": "Download",
     "downloads": "Downloads",
     "uploadedBy": "Uploaded by",
-    "by": "By"
+    "by": "By",
+    "searchResults": "Search Results",
+    "noRecentFiles": "No recent files found",
+    "noSearchResults": "No files found matching your search",
+    "loadMore": "Load More",
+    "mostDownloaded": "Most Downloaded",
+    "noPopularFiles": "No popular files found",
+    "popularFolders": "Popular Folders",
+    "noPopularFolders": "No popular folders found",
+    "exploreCourses": "Explore More Courses",
+    "exploreCoursesCTA": "Explore Courses",
+    "expandKnowledge": "Expand your knowledge with our rich learning materials",
+    "cannotLoadData": "Cannot load data",
+    "reloadPage": "Reload Page",
+    "accessDenied": "Access denied. Admin privileges required."
   },
   "profile": {
     "title": "Profile",

@@ -31,7 +31,7 @@ export default function FolderListSection({ userId, accessToken }: FolderListSec
         headers: { Authorization: `Bearer ${accessToken}` }
       });
       const data = await res.json();
-      setFolders(data.result || []);
+      setFolders(Array.isArray(data) ? data : []);
     } catch (error) {
       toast.error('Không thể tải danh sách thư mục');
     } finally {
