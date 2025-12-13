@@ -129,4 +129,27 @@ export class FoldersService {
       });
     });
   }
+
+  async delete(id: string, userId: string) {
+    const folder = await this.findOne(id, userId);
+    
+    return this.prisma.$transaction(async (tx) => {
+      // Delete folder tags
+      await tx.folder_tags.deleteMany({
+        where: { folder_id: id }
+      });
+
+      // Delete folder files associations
+      await tx.folder_files.deleteMany({
+        where: { folder_id: id }
+      });
+
+      // Delete folder
+      await tx.folders.delete({
+        where: { id }
+      });
+
+      return { message: 'Folder deleted successfully' };
+    });
+  }
 }

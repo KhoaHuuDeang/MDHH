@@ -35,4 +35,10 @@ export class FoldersController {
     return this.foldersService.update(id, updateFolderDto, req.user.userId);
   }
 
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete user folder' })
+  async delete(@Param('id') id: string, @Request() req) {
+    return this.foldersService.delete(id, req.user.userId);
+  }
+
 }

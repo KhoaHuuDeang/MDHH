@@ -10,6 +10,7 @@ import SpinnerLoading from '@/components/layout/spinner';
 import { useUserResources } from '@/hooks/useUserResources';
 import { getIcon } from '@/utils/getIcon';
 import ResourcesListSection from '@/components/uploads/ResourcesListSection';
+import FolderListSection from '@/components/uploads/FolderListSection';
 
 export default function UploadManagement() {
     const { session, status } = useSessionContext();
@@ -97,10 +98,16 @@ export default function UploadManagement() {
                 </section>
 
                 {session?.user?.id && session?.accessToken && (
-                    <ResourcesListSection
-                        userId={session.user.id}
-                        accessToken={session.accessToken}
-                    />
+                    <>
+                        <FolderListSection
+                            userId={session.user.id}
+                            accessToken={session.accessToken}
+                        />
+                        <ResourcesListSection
+                            userId={session.user.id}
+                            accessToken={session.accessToken}
+                        />
+                    </>
                 )}
 
                 <div className="fixed bottom-8 right-8">
