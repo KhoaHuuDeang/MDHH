@@ -1,0 +1,11 @@
+# Files to ignore during Render deployment
+# Note: dist/ is gitignored but should be included in Render builds
+
+node_modules
+.env.*
+coverage/
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
