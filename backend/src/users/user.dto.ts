@@ -131,6 +131,63 @@ export class DiscordSignInDto {
   global_name: string; // Tên này sẽ hiện cho người khác thấy 
 }
 
+export class GoogleSignInDto {
+  @IsString()
+  @IsNotEmpty()
+  googleId: string;
+
+  @IsString()
+  @IsOptional()
+  username: string;
+
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @IsString()
+  @IsOptional()
+  avatar: string;
+
+  @IsString()
+  @IsOptional()
+  provider: string;
+
+  @IsString()
+  @IsOptional()
+  type: string;
+
+  @IsString()
+  @IsOptional()
+  token_type: string;
+
+  @IsString()
+  @IsOptional()
+  access_token: string;
+
+  @IsOptional()
+  expires_at: number;
+
+  @IsString()
+  @IsOptional()
+  refresh_token: string;
+
+  @IsString()
+  @IsOptional()
+  scope: string;
+
+  @IsString()
+  @IsOptional()
+  given_name: string;
+
+  @IsString()
+  @IsOptional()
+  family_name: string;
+
+  @IsString()
+  @IsOptional()
+  name: string;
+}
+
 
 //session_token can be null, user can delete accessToken -> cant access sessionToken after decoded 
 export type SessionUser = {

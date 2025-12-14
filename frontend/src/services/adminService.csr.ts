@@ -40,6 +40,12 @@ class AdminService {
     const response = await csrAxiosClient.get('/admin/users/analytics');
     return response.data;
   }
+
+
+  async getGraphData() {
+    const response = await csrAxiosClient.get('/admin/users/graph-data');
+    return response.data;
+  }
 }
 
 export const adminService = new AdminService();

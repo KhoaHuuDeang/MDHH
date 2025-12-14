@@ -43,6 +43,17 @@ export class AdminController {
     return this.adminService.getAnalytics();
   }
 
+
+  @Get('graph-data')
+  @ApiOperation({ summary: 'Get graph data for dashboard' })
+  @ApiResponse({
+    status: 200,
+    description: 'Graph data retrieved successfully'
+  })
+  async getGraphData() {
+    return this.adminService.getGraphData();
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get users with hybrid pagination' })
   @ApiResponse({

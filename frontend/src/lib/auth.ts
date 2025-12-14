@@ -1,6 +1,8 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import DiscordProvider from "next-auth/providers/discord"
+import GoogleProvider from "next-auth/providers/google"
+import { statusCache } from "@/utils/statusCache"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL!
 
@@ -113,6 +115,15 @@ export const authOptions: NextAuthOptions = {
                     scope: "identify email guilds"
                 }
             }
+        }),
+        GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+            authorization: {
+                params: {
+                    scope: "openid email profile"
+                }
+            }
         })
     ], callbacks: {
         async signIn({ user, account, profile }) {
@@ -176,6 +187,57 @@ export const authOptions: NextAuthOptions = {
                     return false;
                 }
             }
+
+            // Handle Google OAuth
+            if (account?.provider === 'google' && profile) {
+                try {
+                    const googleProfile = profile as any;
+                    const payload = {
+                        googleId: googleProfile.sub,
+                        email: googleProfile.email,
+                        name: googleProfile.name,
+                        given_name: googleProfile.given_name,
+                        family_name: googleProfile.family_name,
+                        avatar: googleProfile.picture,
+                        provider: account.provider,
+                        type: account.type,
+                        token_type: account.token_type,
+                        access_token: account.access_token,
+                        expires_at: account.expires_at,
+                        refresh_token: account.refresh_token,
+                        scope: account.scope,
+                    };
+
+                    const res = await fetch(`${BACKEND_URL}/auth/google/signin`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+
+                    const data = await res.json();
+
+                    if (!res.ok || data.status !== 200 || !data.result) {
+                        console.error("Google sign-in failed:", data.message || 'Unknown error');
+                        return false;
+                    }
+
+                    user.id = data.result.user.id;
+                    user.role = data.result.user.role;
+                    user.username = data.result.user.username;
+                    user.birth = data.result.user.birth;
+                    user.avatar = data.result.user.avatar;
+                    user.is_disabled = data.result.user.is_disabled || false;
+                    user.disabled_until = data.result.user.disabled_until;
+                    user.disabled_reason = data.result.user.disabled_reason;
+                    user.accessToken = account.access_token!;
+                    user.backendToken = data.result.accessToken!;
+                    return true;
+                } catch (error) {
+                    console.error("Google signIn callback error:", error);
+                    return false;
+                }
+            }
+
             return false
         },
         async jwt({ token, user, account }) {
@@ -208,9 +270,24 @@ export const authOptions: NextAuthOptions = {
                 token.is_disabled = user.is_disabled
                 token.disabled_until = user.disabled_until
                 token.disabled_reason = user.disabled_reason
-                //accessToken ở đây là của accessToken, nên ta cần phải 
+                //accessToken ở đây là của accessToken, nên ta cần phải
                 //rạch ròi giữa 2 cái (1 của app 1 của discord)
                 token.accessToken = user.backendToken!
+            }
+
+            // Handle Google OAuth
+            if (user && account?.provider === "google") {
+                token.id = user.id
+                token.role = user.role
+                token.username = user.username
+                token.birth = user.birth
+                token.avatar = user.avatar
+                token.is_disabled = user.is_disabled
+                token.disabled_until = user.disabled_until
+                token.disabled_reason = user.disabled_reason
+                token.accessToken = user.backendToken!
+                token.provider = "google"
+                token.image = user.avatar
             }
 
             return token
@@ -229,28 +306,20 @@ export const authOptions: NextAuthOptions = {
                 session.user.disabled_until = token.disabled_until as Date;
                 session.user.disabled_reason = token.disabled_reason as string;
 
-                // Optionally refresh disabled status from backend for real-time updates
-                // (This is useful if admin disables user while they're logged in)
+                // Refresh disabled status with 5-minute throttle
+                // (Reduces status check calls from 20-50 to 1-2 per 5-minute session)
                 try {
-                    const userStatusRes = await fetch(`${BACKEND_URL}/users/${session.user.id}/status`, {
-                        headers: {
-                            'Authorization': `Bearer ${token.accessToken}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
+                    const cachedStatus = await statusCache.getUserStatus(
+                        session.user.id,
+                        token.accessToken as string
+                    );
 
-                    if (userStatusRes.ok) {
-                        const statusData = await userStatusRes.json();
-                        // Handle both wrapped and unwrapped response formats
-                        const result = statusData.result || statusData;
-                        // Override with fresh backend data
-                        session.user.is_disabled = result.is_disabled ?? session.user.is_disabled;
-                        session.user.disabled_until = result.disabled_until ?? session.user.disabled_until;
-                        session.user.disabled_reason = result.disabled_reason ?? session.user.disabled_reason;
-                    }
+                    session.user.is_disabled = cachedStatus.is_disabled;
+                    session.user.disabled_until = cachedStatus.disabled_until;
+                    session.user.disabled_reason = cachedStatus.disabled_reason;
                 } catch (error) {
-                    console.error('Error refreshing user status from backend:', error);
-                    // Continue with token data if backend fails - don't break session
+                    console.error('Error refreshing user status:', error);
+                    // Continue with token data if cache/backend fails - don't break session
                 }
 
                 // Add Discord-specific data

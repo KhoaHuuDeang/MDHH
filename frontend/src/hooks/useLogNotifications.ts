@@ -96,7 +96,7 @@ export function useLogNotifications(
     fetchNotifications();
 
     if (autoRefresh) {
-      const interval = setInterval(fetchNotifications, 30000); // Refresh every 30 seconds
+      const interval = setInterval(fetchNotifications, 5000); // Refresh every 5 seconds
       return () => clearInterval(interval);
     }
   }, [fetchNotifications, autoRefresh]);

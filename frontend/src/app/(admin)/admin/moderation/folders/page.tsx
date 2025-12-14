@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moderationService } from '@/services/moderationService';
 import { AdminFolderItem, AdminFoldersQuery } from '@/types/moderation.types';
+import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
+import { PromptDialog } from '@/components/dialogs/PromptDialog';
 
 export default function AdminFoldersPage() {
   const { t } = useTranslation();
@@ -12,6 +14,23 @@ export default function AdminFoldersPage() {
   const [query, setQuery] = useState<AdminFoldersQuery>({ page: 1, limit: 20 });
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [searchInput, setSearchInput] = useState('');
+
+  // Dialog states
+  const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; step: 'reason' | 'confirm'; folderId: string | null; reason: string }>({
+    isOpen: false,
+    step: 'reason',
+    folderId: null,
+    reason: ''
+  });
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setQuery(prev => ({ ...prev, search: searchInput || undefined, page: 1 }));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   useEffect(() => {
     fetchFolders();
@@ -31,13 +50,30 @@ export default function AdminFoldersPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    const reason = prompt(t('admin.reason'));
-    if (!reason) return;
-    if (!confirm(t('admin.confirm'))) return;
+  const handleDeleteClick = (id: string) => {
+    setDeleteDialog({
+      isOpen: true,
+      step: 'reason',
+      folderId: id,
+      reason: ''
+    });
+  };
+
+  const handleReasonConfirm = (reason: string) => {
+    if (!reason.trim()) return;
+    setDeleteDialog(prev => ({
+      ...prev,
+      reason: reason.trim(),
+      step: 'confirm'
+    }));
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteDialog.folderId || !deleteDialog.reason) return;
     try {
-      await moderationService.deleteFolder(id, reason);
+      await moderationService.deleteFolder(deleteDialog.folderId, deleteDialog.reason);
       fetchFolders();
+      setDeleteDialog({ isOpen: false, step: 'reason', folderId: null, reason: '' });
     } catch (error) {
       console.error('Failed to delete folder:', error);
     }
@@ -76,8 +112,9 @@ export default function AdminFoldersPage() {
                 <input
                     type="text"
                     placeholder={t('upload.folderNamePlaceholder')}
+                    value={searchInput}
                     className="pl-9 pr-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-[#386641] focus:ring-1 focus:ring-[#386641] w-64 transition-all text-sm"
-                    onChange={(e) => setQuery({ ...query, search: e.target.value, page: 1 })}
+                    onChange={(e) => setSearchInput(e.target.value)}
                 />
             </div>
 
@@ -107,19 +144,18 @@ export default function AdminFoldersPage() {
                 <table className="min-w-full border-collapse text-left">
                     <thead className="bg-[#386641] text-white">
                         <tr>
-                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[25%]">{t('upload.folder')}</th>
-                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[20%]">{t('admin.user')}</th>
-                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[10%] text-center">{t('upload.visibility')}</th>
+                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[30%]">{t('upload.folder')}</th>
+                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[20%]">{t('admin.creator')}</th>
+                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[15%] text-center">{t('upload.visibility')}</th>
                             <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[10%] text-center">{t('home.noFiles')}</th>
-                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[10%] text-center">{t('folderCard.followers')}</th>
-                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[15%]">{t('profile.birth')}</th>
+                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[15%]">{t('admin.createdAt')}</th>
                             <th className="p-3 text-xs font-medium uppercase tracking-wider w-[10%] text-center">{t('admin.actions')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                         {folders.length === 0 ? (
                              <tr>
-                                <td colSpan={7} className="p-8 text-center text-gray-400 bg-white">
+                                <td colSpan={6} className="p-8 text-center text-gray-400 bg-white">
                                     <div className="flex flex-col items-center">
                                         <svg className="w-12 h-12 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
                                         {t('admin.noData')}
@@ -163,12 +199,6 @@ export default function AdminFoldersPage() {
                                             {folder._count?.folder_files || 0}
                                         </span>
                                     </td>
-                                    {/* Followers Count */}
-                                    <td className="p-3 border-r border-gray-100 text-center">
-                                        <span className="text-xs font-semibold text-gray-700">
-                                            {folder._count?.follows || 0}
-                                        </span>
-                                    </td>
                                     {/* Created At */}
                                     <td className="p-3 border-r border-gray-100 text-gray-500 text-xs whitespace-nowrap">
                                         {folder.created_at ? new Date(folder.created_at).toLocaleString() : 'N/A'}
@@ -176,7 +206,7 @@ export default function AdminFoldersPage() {
                                     {/* Actions */}
                                     <td className="p-3 text-center">
                                         <button
-                                            onClick={() => handleDelete(folder.id)}
+                                            onClick={() => handleDeleteClick(folder.id)}
                                             className="p-1.5 rounded-sm text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors border border-transparent hover:border-red-100 opacity-80 group-hover:opacity-100"
                                             title={t('common.delete')}
                                         >
@@ -217,6 +247,30 @@ export default function AdminFoldersPage() {
             </div>
         </div>
       </div>
+
+      {/* Delete Reason Prompt */}
+      <PromptDialog
+        isOpen={deleteDialog.isOpen && deleteDialog.step === 'reason'}
+        title={t('admin.reason')}
+        message={t('admin.reasonPlaceholder')}
+        defaultValue={deleteDialog.reason}
+        onConfirm={handleReasonConfirm}
+        onCancel={() => setDeleteDialog({ isOpen: false, step: 'reason', folderId: null, reason: '' })}
+        confirmText={t('upload.next')}
+        cancelText={t('common.cancel')}
+        placeholder={t('admin.reasonPlaceholder')}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen && deleteDialog.step === 'confirm'}
+        title={t('common.delete')}
+        message={t('common.confirm')}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteDialog({ isOpen: false, step: 'reason', folderId: null, reason: '' })}
+        confirmText={t('common.yes')}
+        cancelText={t('common.no')}
+      />
     </div>
   );
 }

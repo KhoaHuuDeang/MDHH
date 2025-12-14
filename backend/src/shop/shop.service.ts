@@ -14,10 +14,15 @@ export class ShopService {
       orderBy: { created_at: 'desc' },
     });
 
+    const souvenirDtos = souvenirs.map((s) => ({
+      ...s,
+      price: Number(s.price),
+    }));
+
     return {
       message: 'Souvenirs retrieved successfully',
       status: 'success',
-      result: { souvenirs, count: souvenirs.length },
+      result: { souvenirs: souvenirDtos, count: souvenirDtos.length },
     };
   }
 
@@ -37,7 +42,7 @@ export class ShopService {
     return {
       message: 'Souvenir retrieved successfully',
       status: 'success',
-      result: { souvenir },
+      result: { souvenir: { ...souvenir, price: Number(souvenir.price) } },
     };
   }
 
@@ -49,7 +54,7 @@ export class ShopService {
     return {
       message: 'Souvenir created successfully',
       status: 'success',
-      result: { souvenir },
+      result: { souvenir: { ...souvenir, price: Number(souvenir.price) } },
     };
   }
 
@@ -62,7 +67,7 @@ export class ShopService {
     return {
       message: 'Souvenir updated successfully',
       status: 'success',
-      result: { souvenir },
+      result: { souvenir: { ...souvenir, price: Number(souvenir.price) } },
     };
   }
 

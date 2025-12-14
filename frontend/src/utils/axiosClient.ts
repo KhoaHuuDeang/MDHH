@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { getSession } from 'next-auth/react';
+import { tokenCache } from './tokenCache';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!
 
@@ -26,12 +26,12 @@ class CSRAxiosClient {
    * Setup request/response interceptors
    */
   private setupInterceptors() {
-    // Request interceptor - auto-attach auth token
+    // Request interceptor - auto-attach auth token from cache
     this.instance.interceptors.request.use(
       async (config) => {
-        const session = await getSession();
-        if (session?.accessToken) {
-          config.headers.Authorization = `Bearer ${session.accessToken}`;
+        const token = await tokenCache.getToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
       },
@@ -45,7 +45,15 @@ class CSRAxiosClient {
       (response: AxiosResponse) => response,
       (error) => {
         if (error.response?.status === 401) {
-          // window.location.href = '/auth';  // ← Commented for debugging
+          // Only redirect for protected resources, not public endpoints
+          const publicEndpoints = ['/homepage', '/homepage/stats', '/homepage/search'];
+          const isPublicEndpoint = publicEndpoints.some(endpoint =>
+            error.config?.url?.includes(endpoint)
+          );
+
+          if (!isPublicEndpoint && typeof window !== 'undefined') {
+            window.location.href = '/auth';
+          }
         }
         return Promise.reject(error);
       }

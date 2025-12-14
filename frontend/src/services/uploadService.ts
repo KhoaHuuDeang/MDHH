@@ -8,7 +8,7 @@ import {
   VisibilityType,
 } from '@/types/FileUploadInterface';
 import { UserResourcesResponse } from '@/types/uploads.types';
-import { getSession } from 'next-auth/react';
+import { tokenCache } from '@/utils/tokenCache';
 
 
 // Backend API response types (matching uploadsService.md patterns)
@@ -372,10 +372,11 @@ class UploadService {
    * Matches backend GET /uploads/download/:uploadId
    */
   async generateDownloadUrl(uploadId: string): Promise<{ downloadUrl: string }> {
-    return this.makeRequest<{ downloadUrl: string }>(
+    const response = await this.makeRequest<{ result: { downloadUrl: string } }>(
       `${this.baseUrl}/uploads/download/${uploadId}`,
       { method: 'GET' }
     );
+    return response.result;
   }
 
 
@@ -409,12 +410,11 @@ class UploadService {
   }
 
   /**
-   * Get JWT token from NextAuth session
-   * Uses fresh session data for each request
+   * Get JWT token from cache (5-minute expiry)
+   * Reduces session API calls significantly
    */
   private async getToken(): Promise<string> {
-    const session = await getSession();
-    return session?.accessToken || '';
+    return await tokenCache.getToken();
   }
 }
 

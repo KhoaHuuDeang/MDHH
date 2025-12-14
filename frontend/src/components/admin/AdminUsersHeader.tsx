@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface AdminUsersHeaderProps {
   searchTerm: string;
@@ -8,13 +9,14 @@ interface AdminUsersHeaderProps {
   isLoading: boolean;
 }
 
-function AdminUsersHeader({ 
-  searchTerm, 
-  onSearchChange, 
-  onRefresh, 
-  onSearch, 
-  isLoading 
+function AdminUsersHeader({
+  searchTerm,
+  onSearchChange,
+  onRefresh,
+  onSearch,
+  isLoading
 }: AdminUsersHeaderProps) {
+  const { t } = useTranslation();
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       onSearch();
@@ -25,9 +27,9 @@ function AdminUsersHeader({
       <div className="px-4 py-5 sm:px-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('adminUsers.title')}</h1>
             <p className="mt-1 text-sm text-gray-500">
-              Manage users, search, and control access permissions
+              {t('adminUsers.description')}
             </p>
           </div>
           <button
@@ -43,7 +45,7 @@ function AdminUsersHeader({
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            Refresh
+            {t('adminUsers.refresh')}
           </button>
         </div>
         
@@ -61,14 +63,14 @@ function AdminUsersHeader({
                 onChange={(e) => onSearchChange(e.target.value)}
                 onKeyPress={handleKeyPress}
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-l-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Search users by username, email, or display name..."
+                placeholder={t('adminUsers.searchPlaceholder')}
               />
             </div>
             <button
               onClick={onSearch}
               className="inline-flex items-center px-4 py-2 border border-l-0 border-gray-300 rounded-r-md bg-gray-50 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
             >
-              Search
+              {t('adminUsers.search')}
             </button>
           </div>
         </div>

@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto, ViettelPayCallbackDto } from './payment.dto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class PaymentService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService
+  ) {}
 
   async createOrder(userId: string, dto: CreateOrderDto, ipAddr: string) {
     const cartItems = await this.prisma.cart_items.findMany({
@@ -32,7 +36,7 @@ export class PaymentService {
     }
 
     const totalAmount = cartItems.reduce(
-      (sum, item) => sum + item.souvenirs.price * item.quantity,
+      (sum, item) => sum + Number(item.souvenirs.price) * item.quantity,
       0
     );
 
@@ -127,6 +131,7 @@ export class PaymentService {
 
     const order = await this.prisma.orders.findUnique({
       where: { id: orderId },
+      include: { users: true },
     });
 
     if (!order) {
@@ -150,6 +155,7 @@ export class PaymentService {
           order_items: {
             include: { souvenirs: true },
           },
+          users: true,
         },
       });
 
@@ -167,6 +173,21 @@ export class PaymentService {
 
       return updated;
     });
+
+    // Send order confirmation email
+    if (updatedOrder.users.email) {
+      try {
+        await this.emailService.sendOrderConfirmationEmail(
+          updatedOrder.users.email,
+          updatedOrder.id,
+          Number(updatedOrder.total_amount),
+          updatedOrder.order_items,
+          updatedOrder.users.displayname || updatedOrder.users.username || 'Customer'
+        );
+      } catch (error) {
+        console.error('Failed to send order confirmation email:', error);
+      }
+    }
 
     return {
       message: 'Payment processed successfully',

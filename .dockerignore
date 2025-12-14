@@ -1,0 +1,42 @@
+# Build output and dependencies
+backend/node_modules
+backend/dist
+frontend/node_modules
+frontend/.next
+node_modules
+
+# Source control
+.git
+.gitignore
+
+# Environment and secrets
+.env*
+!.env.example
+
+# Logs (keep source, exclude .log files)
+**/*.log
+logs/*.log
+*.log
+
+# OS and IDE
+.DS_Store
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Testing
+backend/test
+backend/coverage
+*.spec.ts
+
+# Package manager
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+tmp
+temp
+*.tmp

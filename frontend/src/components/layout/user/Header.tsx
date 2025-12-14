@@ -6,9 +6,11 @@ import Link from 'next/link';
 import { SidebarProfileMenuProps } from '@/types/user.types';
 import { LucideIcon } from 'lucide-react';
 import { useLogNotifications } from '@/hooks/useLogNotifications';
+import useCartCount from '@/hooks/useCartCount';
 import { getIconForLogType, formatRelativeTime, formatNotificationMessage } from '@/utils/notificationHelpers';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { signOut } from 'next-auth/react';
 
 interface HeaderProps {
     userProps: SidebarProfileMenuProps['mockUser'];
@@ -18,6 +20,7 @@ interface HeaderProps {
 
 const Header = forwardRef<HTMLElement, HeaderProps>(({ userProps, HeaderItems, style }, ref) => {
     const { t } = useTranslation();
+    const { count: cartCount, clear: clearCartCount } = useCartCount();
 
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -48,6 +51,10 @@ const Header = forwardRef<HTMLElement, HeaderProps>(({ userProps, HeaderItems, s
         if (!isRead) {
             await markAsRead(notificationId);
         }
+    };
+
+    const handleSignOut = async () => {
+        await signOut({ callbackUrl: '/auth' });
     };
 
     // Close dropdowns when clicking outside
@@ -109,6 +116,7 @@ const Header = forwardRef<HTMLElement, HeaderProps>(({ userProps, HeaderItems, s
                             {/* Cart Button */}
                             <Link
                                 href="/cart"
+                                onClick={clearCartCount}
                                 className="hidden sm:flex relative p-3 rounded-xl transition-all duration-300
                                          text-white hover:text-[#6A994E] hover:bg-[#386641]/20
                                          hover:shadow-lg hover:shadow-[#386641]/25 hover:scale-105
@@ -116,6 +124,9 @@ const Header = forwardRef<HTMLElement, HeaderProps>(({ userProps, HeaderItems, s
                                          focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50"
                             >
                                 {getIcons('ShoppingCart', 20)}
+                                {cartCount > 0 && (
+                                    <span className="absolute top-2 right-2 w-2 h-2 bg-white rounded-full border border-gray-300 shadow-md" />
+                                )}
                             </Link>
 
                             {/* Notification Button */}
@@ -300,6 +311,7 @@ const Header = forwardRef<HTMLElement, HeaderProps>(({ userProps, HeaderItems, s
                                                         </Link>
                                                     ) : item.action && (
                                                         <button
+                                                            onClick={item.action === 'signout' ? handleSignOut : undefined}
                                                             className='flex items-center gap-4 w-full rounded-xl transition-all duration-300
                                                                      text-sm h-11 px-4 text-white font-medium
                                                                      hover:bg-gradient-to-r hover:from-[#386641]/20 hover:to-[#2d4a2d]/50

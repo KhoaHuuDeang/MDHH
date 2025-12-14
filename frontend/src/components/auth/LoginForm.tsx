@@ -8,6 +8,7 @@ import { loginSchema } from "@/lib/validations/auth";
 import Link from "next/link";
 import { useState } from "react";
 import DiscordAuth from "./DiscordAuth";
+import GoogleAuth from "./GoogleAuth";
 export default function LoginForm({ onSubmit, isLoading, onSwitchMode }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -101,6 +102,10 @@ export default function LoginForm({ onSubmit, isLoading, onSwitchMode }: LoginFo
 
       <div className="pt-2">
         <DiscordAuth />
+      </div>
+
+      <div className="">
+        <GoogleAuth />
       </div>
     </form>
   );

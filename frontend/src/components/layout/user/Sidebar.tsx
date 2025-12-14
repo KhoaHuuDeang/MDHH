@@ -105,7 +105,7 @@ const Sidebar = forwardRef<HTMLElement, SidebarProps>(({
           {/* Navigation */}
           <nav className="flex-grow overflow-y-auto overflow-x-hidden px-3 py-4 space-y-3 scrollbar-thin scrollbar-thumb-[#386641]/50">
             {/* Search Button */}
-            <div className="px-1">
+            {/* <div className="px-1">
               <button
                 type="button" // FIX: Added type="button"
                 onClick={() => handleAction('open-search')}
@@ -124,7 +124,7 @@ const Sidebar = forwardRef<HTMLElement, SidebarProps>(({
                   {!isCollapsed && <span className="font-semibold tracking-wide whitespace-nowrap">{t('home.search')}</span>}
                 </div>
               </button>
-            </div>
+            </div> */}
 
             {/* Main Menu Items */}
             <ul className={`flex flex-col space-y-2 ${isCollapsed ? 'items-center' : ''}`}>

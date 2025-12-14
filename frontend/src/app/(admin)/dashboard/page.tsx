@@ -6,7 +6,7 @@ import ClientDashboard from './ClientDashboard'; // Import the client component
 
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!session || session.user.role !== 'ADMIN') {
     redirect('/auth');
   }
 

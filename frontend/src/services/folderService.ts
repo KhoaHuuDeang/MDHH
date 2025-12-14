@@ -1,5 +1,5 @@
 import { ClassificationLevel, Folder, Tag, CreateFolderDto } from '@/types/FolderInterface';
-import { getSession } from 'next-auth/react';
+import { tokenCache } from '@/utils/tokenCache';
 
 // interface ApiResponse<T> {
 //     data: T;
@@ -114,8 +114,7 @@ class FolderService {
         return errors;
     }
     private async getToken(): Promise<string> {
-            const session = await getSession();
-            return session?.accessToken || '';
+            return await tokenCache.getToken();
     }
 }
 

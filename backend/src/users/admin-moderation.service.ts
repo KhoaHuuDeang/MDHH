@@ -35,8 +35,7 @@ export class AdminModerationService {
     if (query.search) {
       where.OR = [
         { file_name: { contains: query.search, mode: 'insensitive' } },
-        { user: { username: { contains: query.search, mode: 'insensitive' } } },
-        { user: { email: { contains: query.search, mode: 'insensitive' } } },
+        { resources: { title: { contains: query.search, mode: 'insensitive' } } },
       ];
     }
     if (query.status) {
@@ -502,6 +501,38 @@ export class AdminModerationService {
       throw new NotFoundException('Folder not found');
     }
 
+    // Delete all related data in the correct order to avoid foreign key constraints
+    // 1. Delete notification targets related to this folder
+    await this.prisma.notification_targets.deleteMany({
+      where: { folder_id: dto.folderId },
+    });
+
+    // 2. Delete ratings for this folder (ratings_folders has Cascade, but let's be explicit)
+    await this.prisma.ratings_folders.deleteMany({
+      where: { folder_id: dto.folderId },
+    });
+
+    // 3. Delete follows for this folder
+    await this.prisma.follows.deleteMany({
+      where: { folder_id: dto.folderId },
+    });
+
+    // 4. Delete comments on this folder
+    await this.prisma.comments.deleteMany({
+      where: { folder_id: dto.folderId },
+    });
+
+    // 5. Delete folder-file associations
+    await this.prisma.folder_files.deleteMany({
+      where: { folder_id: dto.folderId },
+    });
+
+    // 6. Delete folder-tag associations
+    await this.prisma.folder_tags.deleteMany({
+      where: { folder_id: dto.folderId },
+    });
+
+    // 7. Finally, delete the folder itself
     await this.prisma.folders.delete({
       where: { id: dto.folderId },
     });

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useSessionContext } from "@/contexts/SessionContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Book,
@@ -11,7 +11,6 @@ import {
   ChevronRight,
   FileX,
   TrendingDown,
-  FolderX,
   Plus,
   LucideIcon,
 } from "lucide-react";
@@ -19,7 +18,6 @@ import useNotifications from "@/hooks/useNotifications";
 
 import SearchSection from "@/components/homepage/SearchSection";
 import FileCard from "@/components/homepage/FileCard";
-import FolderCard from "@/components/homepage/FolderCard";
 import useHomepageData from "@/hooks/useHomepageData";
 import { FilterChangeParams } from "@/components/homepage/CategoryFilter";
 import {
@@ -114,7 +112,8 @@ const LoadingSkeleton = () => (
 import { useTranslation } from "react-i18next";
 
 export default function HomePage() {
-  const { data: session, status } = useSession();
+  const { t } = useTranslation();
+  const { session, status } = useSessionContext();
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useNotifications();
@@ -132,7 +131,7 @@ export default function HomePage() {
   // Load more state
   const [recentCount, setRecentCount] = useState(4);
   const [popularCount, setPopularCount] = useState(4);
-  const [folderCount, setFolderCount] = useState(5);
+  const [mostDownloadedCount, setMostDownloadedCount] = useState(5);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Dynamic homepage data
@@ -145,9 +144,9 @@ export default function HomePage() {
   useEffect(() => {
     const error = searchParams.get("error");
     if (error === "unauthorized") {
-      toast.error("Access denied. Admin privileges required.");
+      toast.error(t("home.accessDenied"));
     }
-  }, [searchParams, toast]);
+  }, [searchParams, toast, t]);
 
   // Fetch homepage data with custom limits
   useEffect(() => {
@@ -156,7 +155,7 @@ export default function HomePage() {
         const response = await homepageService.getHomepageData(
           recentCount,
           popularCount,
-          folderCount
+          mostDownloadedCount
         );
         setDynamicHomepageData(response);
       } catch (err) {
@@ -164,13 +163,13 @@ export default function HomePage() {
       }
     };
 
-    if (recentCount > 4 || popularCount > 4 || folderCount > 5) {
+    if (recentCount > 4 || popularCount > 4 || mostDownloadedCount > 5) {
       setIsLoadingMore(true);
       fetchHomepageData().finally(() => setIsLoadingMore(false));
     } else {
       setDynamicHomepageData(homepageData);
     }
-  }, [recentCount, popularCount, folderCount, homepageData]);
+  }, [recentCount, popularCount, mostDownloadedCount, homepageData]);
 
   // Unified search/filter handler
   const performSearch = useCallback(
@@ -245,7 +244,7 @@ export default function HomePage() {
   const {
     recentFiles = [],
     popularFiles = [],
-    folders = [],
+    mostDownloadedFiles = [],
   } = dynamicHomepageData || homepageData || {};
 
   // Determine which files to display
@@ -262,20 +261,18 @@ export default function HomePage() {
     );
   }
 
-  if (!session?.user?.id) return null;
-
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
           <h2 className="mb-4 text-2xl font-bold text-gray-800">
-            Không thể tải dữ liệu
+            {t("home.cannotLoadData")}
           </h2>
           <button
             onClick={() => window.location.reload()}
             className="rounded-lg bg-[#386641] px-6 py-3 text-white transition-colors hover:bg-[#2d4f31]"
           >
-            Tải lại trang
+            {t("home.reloadPage")}
           </button>
         </div>
       </div>
@@ -292,7 +289,7 @@ export default function HomePage() {
 
         {/* Recent Files / Search Results */}
         <SectionHeader
-          title={hasSearched ? "Kết quả tìm kiếm" : "Tệp gần đây"}
+          title={hasSearched ? t("home.searchResults") : t("home.recentFiles")}
           hasNav={!hasSearched}
         />
         <ContentGrid
@@ -301,8 +298,8 @@ export default function HomePage() {
           icon={FileX}
           emptyText={
             hasSearched
-              ? "No files found matching your search"
-              : "No recent files found"
+              ? t("home.noSearchResults")
+              : t("home.noRecentFiles")
           }
         >
           {displayFiles.map((file: any) => (
@@ -318,7 +315,7 @@ export default function HomePage() {
               disabled={isLoadingMore}
               className="rounded-lg bg-[#386641] px-8 py-3 text-white transition-colors hover:bg-[#2d4f31] disabled:opacity-50"
             >
-              {isLoadingMore ? "Loading..." : "Load More"}
+              {isLoadingMore ? t("common.loading") : t("home.loadMore")}
             </button>
           </div>
         )}
@@ -326,12 +323,12 @@ export default function HomePage() {
         {/* Popular Files - Hide when searching */}
         {!hasSearched && (
           <div className="mt-20">
-            <SectionHeader title="Được tải nhiều nhất" />
+            <SectionHeader title={t("home.mostDownloaded")} />
             <ContentGrid
               isLoading={isLoading && !dynamicHomepageData}
               isEmpty={popularFiles.length === 0}
               icon={TrendingDown}
-              emptyText="Không tìm thấy tệp phổ biến"
+              emptyText={t("home.noPopularFiles")}
             >
               {popularFiles.map((file: any) => (
                 <FileCard key={file.id} file={file} onView={() => {}} />
@@ -346,59 +343,39 @@ export default function HomePage() {
                   disabled={isLoadingMore}
                   className="rounded-lg bg-[#386641] px-8 py-3 text-white transition-colors hover:bg-[#2d4f31] disabled:opacity-50"
                 >
-                  {isLoadingMore ? "Loading..." : "Load More"}
+                  {isLoadingMore ? t("common.loading") : t("home.loadMore")}
                 </button>
               </div>
             )}
           </div>
         )}
 
-        {/* Popular Folders - Hide when searching */}
+        {/* Most Downloaded Files - Hide when searching */}
         {!hasSearched && (
           <div className="mt-20">
-            <h2 className="mb-10 text-4xl font-bold text-gray-800">
-              Thư mục phổ biến
-            </h2>
-            {isLoading && !dynamicHomepageData ? (
-              /* Skeleton Folders */
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-60 rounded-xl bg-gray-200 animate-pulse"
-                  />
-                ))}
-              </div>
-            ) : folders.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                  {folders.map((folder: any) => (
-                    <FolderCard
-                      key={folder.id}
-                      folder={folder}
-                      onView={() => {}}
-                    />
-                  ))}
-                </div>
+            <SectionHeader title={t("home.popularFiles")} />
+            <ContentGrid
+              isLoading={isLoading && !dynamicHomepageData}
+              isEmpty={mostDownloadedFiles.length === 0}
+              icon={TrendingDown}
+              emptyText={t("home.noPopularFiles")}
+            >
+              {mostDownloadedFiles.map((file: any) => (
+                <FileCard key={file.id} file={file} onView={() => {}} />
+              ))}
+            </ContentGrid>
 
-                {/* Load More Folders */}
-                {folders.length === folderCount && (
-                  <div className="mt-6 text-center">
-                    <button
-                      onClick={() => setFolderCount(folderCount + 5)}
-                      disabled={isLoadingMore}
-                      className="rounded-lg bg-[#386641] px-8 py-3 text-white transition-colors hover:bg-[#2d4f31] disabled:opacity-50"
-                    >
-                      {isLoadingMore ? "Loading..." : "Load More"}
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <EmptyState
-                icon={FolderX}
-                text="Không tìm thấy thư mục phổ biến"
-              />
+            {/* Load More Most Downloaded Files */}
+            {mostDownloadedFiles.length === mostDownloadedCount && (
+              <div className="mt-6 text-center">
+                <button
+                  onClick={() => setMostDownloadedCount(mostDownloadedCount + 5)}
+                  disabled={isLoadingMore}
+                  className="rounded-lg bg-[#386641] px-8 py-3 text-white transition-colors hover:bg-[#2d4f31] disabled:opacity-50"
+                >
+                  {isLoadingMore ? t("common.loading") : t("home.loadMore")}
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -407,18 +384,17 @@ export default function HomePage() {
         <section className="relative mt-20 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
           <div className="p-16 text-center">
             <h2 className="mb-6 text-4xl font-bold text-gray-800">
-              Khám phá thêm các khóa học
+              {t("home.exploreCourses")}
             </h2>
             <p className="mx-auto mb-10 max-w-2xl text-lg text-gray-600">
-              Mở rộng kiến thức của bạn với tài liệu học tập phong phú của
-              website
+              {t("home.expandKnowledge")}
             </p>
             <button className="group inline-flex items-center justify-center rounded-xl bg-[#386641] px-12 py-5 text-xl font-semibold text-white shadow-lg transition-all hover:bg-[#2d4f31] hover:shadow-xl">
               <Plus
                 size={22}
                 className="mr-4 transition-transform duration-300 group-hover:rotate-90"
               />
-              Khám phá các khóa học
+              {t("home.exploreCoursesCTA")}
             </button>
           </div>
         </section>
@@ -439,12 +415,12 @@ const SectionHeader = ({
     <h2 className="text-3xl font-bold text-gray-800">{title}</h2>
     {hasNav && (
       <div className="flex space-x-2">
-        <button className="rounded-md border border-gray-200 bg-gray-100 p-2 text-gray-600 transition-colors hover:bg-[#6A994E] hover:text-white">
+        {/* <button className="rounded-md border border-gray-200 bg-gray-100 p-2 text-gray-600 transition-colors hover:bg-[#6A994E] hover:text-white">
           <ChevronLeft size={20} />
         </button>
         <button className="rounded-md border border-[#6A994E] bg-[#6A994E] p-2 text-white transition-colors hover:bg-[#386641]">
           <ChevronRight size={20} />
-        </button>
+        </button> */}
       </div>
     )}
   </div>

@@ -2,6 +2,7 @@
 
 import React, { useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { useUploadStore } from "@/store/uploadStore";
 import UploadStepper from "@/components/layout/user/uploads/UploadStepper";
 import FolderSection from "@/components/upload/stage2/FolderSection";
@@ -16,6 +17,7 @@ import { getIcon } from "@/utils/getIcon";
 
 function MetadataPage() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const files = useUploadStore((s) => s.files);
   const fileMetadata = useUploadStore((s) => s.fileMetadata);
@@ -87,14 +89,14 @@ function MetadataPage() {
     const missing: string[] = [];
 
     if (!folderManagement.selectedFolderId && !folderManagement.newFolderData) {
-      missing.push("Chọn hoặc tạo thư mục");
+      missing.push(t('upload.metadata.validation.selectOrCreateFolder'));
     }
 
     if (folderManagement.newFolderData) {
       if (!folderManagement.newFolderData.name?.trim())
-        missing.push("Tên thư mục");
+        missing.push(t('upload.metadata.validation.folderName'));
       if (!folderManagement.newFolderData.folderClassificationId)
-        missing.push("Cấp độ phân loại thư mục");
+        missing.push(t('upload.metadata.validation.folderClassification'));
     }
 
     const incomplete = completedFiles.filter((f) => {
@@ -102,7 +104,7 @@ function MetadataPage() {
       return !meta?.title?.trim() || !meta?.description?.trim();
     });
     if (incomplete.length > 0)
-      missing.push(`${incomplete.length} tệp cần dữ liệu hoàn chỉnh`);
+      missing.push(`${incomplete.length} ${t('upload.metadata.validation.filesNeedData')}`);
 
     return {
       isValid: missing.length === 0,
@@ -163,10 +165,10 @@ function MetadataPage() {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-              Tổ chức tài liệu
+              {t('upload.metadata.pageTitle')}
             </h1>
             <p className="mt-1 text-sm text-gray-600">
-              Bước 1: Quản lý thư mục • Bước 2: Thông tin tệp • Gửi khi hoàn tất
+              {t('upload.metadata.pageSubtitle')}
             </p>
           </div>
         </div>
@@ -175,11 +177,11 @@ function MetadataPage() {
       {/* Folder Section */}
       <section className={`group ${cardClass} p-6`}>
         <div className={sectionHeaderClass}>
-          {headerTitle("Folder", "Bước 1: Quản lý thư mục")}
+          {headerTitle("Folder", t('upload.metadata.step1Title'))}
           <span className="text-sm text-gray-500">
             {folderManagement.selectedFolderId
-              ? "Thư mục đã chọn"
-              : "Chọn đích đến cho tệp của bạn"}
+              ? t('upload.metadata.folderSelected')
+              : t('upload.metadata.chooseDestination')}
           </span>
         </div>
         <FolderSection
@@ -199,12 +201,12 @@ function MetadataPage() {
         <div className={sectionHeaderClass}>
           {headerTitle(
             "FileText",
-            `Bước 2: Thông tin tệp (${completedFiles.length})`
+            `${t('upload.metadata.step2Title')} (${completedFiles.length})`
           )}
           <span className="text-sm text-gray-500">
             {completedFiles.length === 0
-              ? "Chưa có tệp nào được tải lên"
-              : `${completedFiles.length} tệp đã sẵn sàng để thêm  dữ liệu`}
+              ? t('upload.metadata.noFilesUploaded')
+              : `${completedFiles.length} ${t('upload.metadata.filesReady')}`}
           </span>
         </div>
         {completedFiles.length > 0 ? (
@@ -219,7 +221,7 @@ function MetadataPage() {
           <div className="text-center py-10 text-gray-500">
             <div className="flex flex-col items-center gap-3">
               {getIcon("Upload", 48, "text-gray-400")}
-              <p className="text-sm">Quay lại để tải lên tệp trước</p>
+              <p className="text-sm">{t('upload.metadata.goBackToUpload')}</p>
             </div>
           </div>
         )}
@@ -235,7 +237,7 @@ function MetadataPage() {
             >
               <div className="flex items-center gap-2 font-medium mb-1">
                 {getIcon("AlertCircle", 18, "text-[#BC4749]")}
-                Thiếu yêu cầu
+                {t('upload.metadata.missingRequirements')}
               </div>
               <ul className="list-disc ml-5 space-y-0.5">
                 {validationState.missing.map((m) => (
@@ -246,7 +248,7 @@ function MetadataPage() {
           ) : (
             <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700 flex items-center gap-2 shadow-sm">
               {getIcon("CheckCircle", 18, "text-green-600")}
-              Tất cả dữ liệu đã hoàn thành. Sẵn sàng gửi!
+              {t('upload.metadata.allDataComplete')}
             </div>
           )}
         </div>
@@ -257,7 +259,7 @@ function MetadataPage() {
             onClick={handleBack}
             className="px-5 py-2 rounded-lg text-sm font-medium bg-gray-50 text-gray-700 border border-gray-200 transition-all duration-200 hover:bg-[#6A994E] hover:text-white hover:border-[#6A994E] focus:outline-none focus:ring-2 focus:ring-[#6A994E]/40"
           >
-            Back
+            {t('upload.metadata.back')}
           </button>
 
           <button
@@ -273,12 +275,11 @@ function MetadataPage() {
             {isSubmitting ? (
               <>
                 {getIcon("Loader2", 16, "animate-spin")}
-                Đang gửi...
+                {t('upload.metadata.submitting')}
               </>
             ) : (
               <>
-                Hoàn thành tải lên
-                {getIcon("ChevronRight", 16)}
+                {t('upload.metadata.completeUpload')}
               </>
             )}
           </button>

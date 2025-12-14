@@ -157,14 +157,14 @@ export class HomepageResponseDto {
   popularFiles: FileDataDto[];
 
   @ApiProperty({
-    description: 'List of most followed folders',
-    type: [FolderDataDto],
+    description: 'List of most downloaded files (different from popularFiles)',
+    type: [FileDataDto],
     example: []
   })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => FolderDataDto)
-  folders: FolderDataDto[];
+  @Type(() => FileDataDto)
+  mostDownloadedFiles: FileDataDto[];
 }
 
 export class SearchFilesQueryDto {

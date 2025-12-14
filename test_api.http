@@ -1,0 +1,38 @@
+### Test Checkout Flow
+
+### Login
+POST http://localhost:3001/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@test.com",
+  "password": "Test1234!"
+}
+
+### Get Cart (requires token from login response)
+GET http://localhost:3001/cart
+Authorization: Bearer TOKEN_HERE
+
+### Add to Cart
+POST http://localhost:3001/cart/add
+Authorization: Bearer TOKEN_HERE
+Content-Type: application/json
+
+{
+  "souvenir_id": "SOUVENIR_ID_HERE",
+  "quantity": 2
+}
+
+### Checkout - Create Order
+POST http://localhost:3001/payment/orders
+Authorization: Bearer TOKEN_HERE
+Content-Type: application/json
+
+{
+  "payment_method": "VNPAY"
+}
+
+### Get Order
+GET http://localhost:3001/payment/orders
+Authorization: Bearer TOKEN_HERE
+

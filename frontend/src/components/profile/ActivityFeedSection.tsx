@@ -116,7 +116,6 @@ const ActivityFeedSection: React.FC<ActivityFeedSectionProps> = ({
             className="w-full text-center text-[#6A994E] hover:text-[#386641] font-medium text-sm py-2 hover:bg-gray-50 rounded-lg transition-colors"
           >
             Xem tất cả hoạt động
-            {getIcon('ChevronRight', 16, 'inline ml-1')}
           </button>
         </div>
       )}

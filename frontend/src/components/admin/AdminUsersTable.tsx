@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AdminUserItem, DisableUserOptions } from '@/types/admin.types';
 import { DisableUserModal } from './DisableUserModal';
 import { EnableUserModal } from './EnableUserModal';
@@ -18,6 +19,7 @@ function AdminUsersTable({
   onEnableUser,
   onUpdateRole
 }: AdminUsersTableProps) {
+  const { t } = useTranslation();
   const [selectedUser, setSelectedUser] = useState<AdminUserItem | null>(null);
   const [showDisableModal, setShowDisableModal] = useState(false);
   const [showEnableModal, setShowEnableModal] = useState(false);
@@ -73,14 +75,14 @@ function AdminUsersTable({
     if (!user.is_disabled) {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          Active
+          {t('adminUsers.status.active')}
         </span>
       );
     }
 
     return (
       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-        Disabled
+        {t('adminUsers.status.disabled')}
       </span>
     );
   };
@@ -92,9 +94,9 @@ function AdminUsersTable({
           <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No users found</h3>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">{t('adminUsers.noUsersFound')}</h3>
           <p className="mt-1 text-sm text-gray-500">
-            Try adjusting your search terms or filters.
+            {t('adminUsers.adjustSearch')}
           </p>
         </div>
       </div>

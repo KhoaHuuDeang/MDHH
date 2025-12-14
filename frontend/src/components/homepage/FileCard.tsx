@@ -1,13 +1,16 @@
 'use client';
 
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import * as lucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
-import { getMimeTypeIcon, getFileTypeDescription } from '@/utils/mimeTypeIcons';
+import { getMimeTypeIcon, getFileTypeDescription, getFileTypeIconColor } from '@/utils/mimeTypeIcons';
 import { FileData, homepageService } from '@/services/homepageService';
 import useFileActions from '@/hooks/useFileActions';
 import { VoteData } from '@/types/vote.types';
 import CommentModal from '@/components/modals/CommentModal';
+import useNotifications from '@/hooks/useNotifications';
+import { PromptDialog } from '@/components/dialogs/PromptDialog';
 
 const getIcons = (iconName: string, size: number, className?: string) => {
   const IconComponent = lucideIcons[iconName as keyof typeof lucideIcons] as LucideIcon;
@@ -27,7 +30,9 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
   showThumbnail = true,
   className = ''
 }) => {
-  const { downloadFile, voteFile, getFileVotes, bookmarkFile, viewFile, isDownloading, isVoting, isBookmarking } = useFileActions();
+  const { data: session } = useSession();
+  const { downloadFile, voteFile, getFileVotes, bookmarkFile, isDownloading, isVoting, isBookmarking } = useFileActions();
+  const toast = useNotifications();
 
   // Vote data state
   const [voteData, setVoteData] = useState<VoteData>({
@@ -35,36 +40,36 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
     downvotes: 0,
     userVote: null
   });
+  const [voteError, setVoteError] = useState(false);
 
-  // Comment modal state
   const [commentModalOpen, setCommentModalOpen] = useState(false);
-
-  // Flag state
   const [isFlagging, setIsFlagging] = useState(false);
+  const [flagDialog, setFlagDialog] = useState({ isOpen: false });
 
-  // Load vote data on mount
   useEffect(() => {
     const loadVoteData = async () => {
       try {
+        setVoteError(false);
         const data = await getFileVotes(file.id);
         setVoteData(data);
       } catch (error) {
         console.error('Failed to load vote data:', error);
+        setVoteError(true);
+        // Set default data for unauthenticated users
+        setVoteData({ upvotes: 0, downvotes: 0, userVote: null });
       }
     };
-
     loadVoteData();
   }, [file.id, getFileVotes]);
 
-  // Memoized file icon and type description
-  const { iconName, typeDescription } = useMemo(() => {
+  const { iconName, typeDescription, iconColor } = useMemo(() => {
     return {
       iconName: getMimeTypeIcon(file.fileType, file.title),
-      typeDescription: getFileTypeDescription(file.fileType, file.title)
+      typeDescription: getFileTypeDescription(file.fileType, file.title),
+      iconColor: getFileTypeIconColor(file.fileType, file.title)
     };
   }, [file.fileType, file.title]);
 
-  // Format creation date
   const formattedDate = useMemo(() => {
     try {
       return new Date(file.createdAt).toLocaleDateString('vi-VN', {
@@ -77,47 +82,44 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
     }
   }, [file.createdAt]);
 
-  // Handle file view - open comment modal
   const handleView = useCallback((e?: React.MouseEvent | React.KeyboardEvent) => {
     e?.stopPropagation();
     setCommentModalOpen(true);
   }, []);
 
-  // Handle flag file
-  const handleFlag = useCallback(async (e: React.MouseEvent) => {
+  const handleFlag = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    const reason = prompt('Enter reason for flagging this file:');
+    setFlagDialog({ isOpen: true });
+  }, []);
+
+  const confirmFlag = useCallback(async (reason: string) => {
     if (!reason) return;
 
     setIsFlagging(true);
     try {
       await homepageService.flagUpload(file.id, reason);
-      alert('File flagged successfully');
+      toast.success('File flagged successfully');
+      setFlagDialog({ isOpen: false });
     } catch (error) {
       console.error('Failed to flag file:', error);
-      alert('Failed to flag file');
+      toast.error('Failed to flag file');
     } finally {
       setIsFlagging(false);
     }
-  }, [file.id]);
+  }, [file.id, toast]);
 
-  // Handle file download
   const handleDownload = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     await downloadFile(file.id, file.title);
   }, [file.id, file.title, downloadFile]);
 
-  // Handle bookmark toggle
   const handleBookmark = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     await bookmarkFile(file.id);
   }, [file.id, bookmarkFile]);
 
-  // Handle upvote with optimistic update
   const handleUpvote = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    // Optimistic update
     const wasUpvoted = voteData.userVote === 'up';
     const newVoteData: VoteData = {
       upvotes: wasUpvoted ? voteData.upvotes - 1 : voteData.upvotes + 1,
@@ -133,17 +135,12 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
         setVoteData(result.data);
       }
     } catch (error) {
-      // Revert optimistic update on error
       setVoteData(voteData);
-      console.error('Vote failed:', error);
     }
   }, [file.id, voteFile, voteData]);
 
-  // Handle downvote with optimistic update
   const handleDownvote = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    // Optimistic update
     const wasDownvoted = voteData.userVote === 'down';
     const newVoteData: VoteData = {
       upvotes: voteData.userVote === 'up' ? voteData.upvotes - 1 : voteData.upvotes,
@@ -159,20 +156,21 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
         setVoteData(result.data);
       }
     } catch (error) {
-      // Revert optimistic update on error
       setVoteData(voteData);
-      console.error('Vote failed:', error);
     }
   }, [file.id, voteFile, voteData]);
 
   return (
-    <div className={`group ${className}`}>
-      <div className="bg-white border border-gray-200 hover:border-[#6A994E] hover:shadow-md transition-all duration-200 rounded-lg overflow-hidden">
+    <div className={`group h-full ${className}`}>
+      {/* Flex col and h-full ensures the card stretches to fill the grid cell, 
+        and the footer sticks to the bottom 
+      */}
+      <div className="flex flex-col h-full bg-white border border-gray-200 hover:border-[#6A994E] hover:shadow-lg transition-all duration-300 rounded-xl overflow-hidden">
         
-        {/* Main clickable area */}
+        {/* === 1. CLICKABLE CONTENT AREA === */}
         <div 
           onClick={handleView}
-          className="cursor-pointer"
+          className="flex-1 flex flex-col cursor-pointer"
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {
@@ -181,220 +179,175 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
               handleView();
             }
           }}
-          aria-label={`View ${file.title}`}
         >
-          {/* File preview area */}
-          <div className="relative bg-gray-50 h-48">
-            {/* Download count badge */}
-            <div className="absolute top-2.5 left-2.5 bg-[#386641] text-white px-2.5 py-0.5 text-xs font-medium rounded-full z-10">
-              {file.downloadCount} downloads
-            </div>
-
-            {/* File type badge */}
-            <div className="absolute top-2.5 right-2.5 bg-white/90 backdrop-blur-sm text-gray-600 px-2 py-1 text-xs rounded-md z-10">
-              {typeDescription}
-            </div>
-
-            {/* Moderation status badge */}
-            {file.moderation_status && (
-              <div className={`absolute bottom-2.5 left-2.5 px-2.5 py-0.5 text-xs font-medium rounded-full z-10 ${
-                file.moderation_status === 'APPROVED' ? 'bg-green-100 text-green-700' :
-                file.moderation_status === 'REJECTED' ? 'bg-red-100 text-red-700' :
-                file.moderation_status === 'FLAGGED' ? 'bg-yellow-100 text-yellow-700' :
-                'bg-blue-100 text-blue-700'
-              }`}>
-                {file.moderation_status.replace('_', ' ')}
-              </div>
-            )}
-
-            {/* File preview/icon */}
-            <div className="w-full h-full flex items-center justify-center">
-              {showThumbnail ? (
-                <div className="relative w-full h-full">
-                  {/* This could be replaced with actual file thumbnails when available */}
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                    {getIcons(iconName, 48, "text-gray-400")}
-                  </div>
-                </div>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                  {getIcons(iconName, 48, "text-gray-400")}
-                </div>
+          {/* Preview Header */}
+          <div className="relative bg-gray-50 h-48 shrink-0 border-b border-gray-100">
+            {/* Badges */}
+            <div className="absolute top-3 left-3 flex gap-2 z-10">
+              <span className="bg-[#386641] text-white px-2.5 py-1 text-[11px] font-semibold rounded-full shadow-sm">
+                {file.downloadCount} downloads
+              </span>
+              {file.moderation_status && (
+                <span className={`px-2.5 py-1 text-[11px] font-semibold rounded-full shadow-sm ${
+                  file.moderation_status === 'APPROVED' ? 'bg-green-100 text-green-700' :
+                  file.moderation_status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                  'bg-yellow-100 text-yellow-700'
+                }`}>
+                  {file.moderation_status.replace('_', ' ')}
+                </span>
               )}
+            </div>
+
+            <div className="absolute top-3 right-3 z-10 flex gap-2 items-center">
+              <span className="bg-white/95 backdrop-blur-sm text-gray-700 px-2.5 py-1 text-[11px] font-medium rounded-md shadow-sm border border-gray-100">
+                {typeDescription}
+              </span>
+              {/* Flag Icon */}
+              <button
+                onClick={handleFlag}
+                disabled={isFlagging}
+                className="h-8 w-8 flex items-center justify-center rounded-lg bg-yellow-400/90 hover:bg-yellow-500 shadow-md transition-all"
+                title="Report"
+              >
+                {isFlagging ? getIcons("Loader2", 13, "animate-spin text-white") : getIcons("Flag", 13, "text-white")}
+              </button>
+            </div>
+
+            {/* Icon/Thumbnail Centered */}
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-gray-100 group-hover:to-gray-200 transition-colors duration-300">
+              {getIcons(iconName, 52, `${iconColor} group-hover:scale-110 transition-all duration-300`)}
             </div>
           </div>
 
-          {/* File info area */}
-          <div className="p-4">
-            <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 mb-2 group-hover:text-[#386641] transition-colors leading-tight">
-              {file.title}
-            </h3>
-            
-            {file.description && (
-              <p className="text-gray-500 text-xs line-clamp-2 mb-2">
-                {file.description}
-              </p>
-            )}
-            
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm text-gray-400">
-                <span>By {file.author}</span>
-                <span>{formattedDate}</span>
-              </div>
+          {/* Info Body */}
+          <div className="p-5 flex flex-col flex-1">
+            <div className="mb-3">
+              <h3 className="font-bold text-gray-900 text-base line-clamp-2 leading-snug group-hover:text-[#386641] transition-colors mb-1.5">
+                {file.title}
+              </h3>
               
-              {file.category && (
-                <div className="flex items-center text-sm text-gray-500">
-                  {getIcons("Tag", 14, "mr-1")}
-                  <span>{file.category}</span>
-                </div>
+              {file.description && (
+                <p className="text-gray-500 text-sm line-clamp-2 leading-relaxed">
+                  {file.description}
+                </p>
               )}
-
-              {/* Classification Level */}
-              {file.classificationLevel && (
-                <div className="flex items-center text-sm text-gray-500">
-                  {getIcons("Shield", 14, "mr-1")}
-                  <span className="text-xs font-medium px-2 py-0.5 bg-[#6A994E]/10 text-[#386641] rounded-full">
+            </div>
+            
+            {/* Meta Data */}
+            <div className="flex items-center justify-between text-xs text-gray-400 mb-3 font-medium">
+              <span className="flex items-center gap-1">
+                {getIcons("User", 12)}
+                {file.author}
+              </span>
+              <span>{formattedDate}</span>
+            </div>
+            
+            {/* Tags & Categories - Flexible height */}
+            <div className="space-y-2 mb-4">
+              <div className="flex flex-wrap gap-2">
+                {file.category && (
+                   <span className="inline-flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
+                    {getIcons("Tag", 10)}
+                    {file.category}
+                  </span>
+                )}
+                {file.classificationLevel && (
+                  <span className="inline-flex items-center gap-1 text-xs text-[#386641] bg-[#6A994E]/10 px-2 py-1 rounded-md border border-[#6A994E]/20">
+                    {getIcons("Shield", 10)}
                     {file.classificationLevel}
                   </span>
-                </div>
-              )}
+                )}
+              </div>
 
-              {/* Tags */}
               {file.tags && file.tags.length > 0 && (
-                <div className="flex items-start text-sm text-gray-500">
-                  {getIcons("Tags", 14, "mr-1 mt-0.5")}
-                  <div className="flex flex-wrap gap-1">
-                    {file.tags.slice(0, 3).map((tag, index) => (
-                      <span key={index} className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full">
-                        {tag}
-                      </span>
-                    ))}
-                    {file.tags.length > 3 && (
-                      <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full">
-                        +{file.tags.length - 3} more
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Folder information */}
-              {file.folderName && (
-                <div className="flex items-center text-sm text-gray-500 cursor-pointer hover:text-[#386641] transition-colors duration-200 px-2 py-1 hover:bg-gray-50 rounded-md -mx-2">
-                  {getIcons("Folder", 14, "mr-2")}
-                  <span>From folder: <span className="text-gray-400 font-normal">{file.folderName}</span></span>
+                <div className="flex flex-wrap gap-1.5">
+                  {file.tags.slice(0, 3).map((tag, index) => (
+                    <span key={index} className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full border border-blue-100">
+                      #{tag}
+                    </span>
+                  ))}
+                  {file.tags.length > 3 && (
+                    <span className="text-[10px] px-2 py-0.5 bg-gray-50 text-gray-500 rounded-full">
+                      +{file.tags.length - 3}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
+
+            {/* Folder - Pushed to bottom of content area */}
+            {file.folderName && (
+              <div className="mt-auto pt-3 border-t border-dashed border-gray-100">
+                <div className="flex items-center text-xs text-gray-500 hover:text-[#386641] transition-colors gap-1.5">
+                  {getIcons("FolderOpen", 14)}
+                  <span className="truncate">In: {file.folderName}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Actions row */}
-        <div className="flex justify-between items-center px-4 py-3 border-t border-gray-100 bg-gray-50/50">
-          {/* Download button */}
+        {/* === 2. FOOTER ACTIONS (Sticky Bottom) === */}
+        <div className="px-4 py-3 bg-gray-50/80 border-t border-gray-100 flex justify-between items-center gap-3">
+          {/* Download */}
           <button
             onClick={handleDownload}
             disabled={isDownloading}
-            className="flex items-center text-gray-600 hover:text-[#386641] text-xs font-medium transition-colors duration-200 px-3 py-2 hover:bg-[#6A994E]/10 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label={`Download ${file.title}`}
+            className="flex-1 flex items-center justify-center gap-2 text-xs font-semibold text-gray-700 hover:text-white bg-white hover:bg-[#386641] border border-gray-200 hover:border-[#386641] transition-all duration-200 py-2 px-3 rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed group/btn"
           >
             {isDownloading ? (
-              <>
-                {getIcons("Loader2", 14, "mr-1 animate-spin")}
-                <span>Downloading...</span>
-              </>
+              getIcons("Loader2", 14, "animate-spin")
             ) : (
-              <>
-                {getIcons("Download", 14, "mr-1")}
-                <span>Download</span>
-              </>
+              getIcons("Download", 14, "group-hover/btn:scale-110 transition-transform")
             )}
+            <span>Download</span>
           </button>
 
-          {/* Action buttons */}
-          <div className="flex items-center space-x-2">
-            {/* Upvote button */}
+          {/* Social Actions */}
+          <div className="flex items-center gap-1.5">
             <button
               onClick={handleUpvote}
               disabled={isVoting}
-              className={`min-h-[44px] min-w-[44px] flex items-center justify-center text-xs font-medium transition-all duration-200 px-3 py-1.5 rounded-md border focus:outline-none focus:ring-2 focus:ring-[#6A994E]/50 ${
+              className={`h-9 min-w-[36px] px-2 flex items-center justify-center gap-1 rounded-lg border text-xs font-medium transition-all ${
                 voteData.userVote === 'up'
                   ? 'bg-[#6A994E] text-white border-[#6A994E] shadow-sm'
-                  : 'text-gray-600 border-gray-200 hover:border-[#6A994E] hover:text-[#6A994E] hover:bg-[#6A994E]/5'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-              aria-label={`Upvote ${file.title}`}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  // Create a synthetic mouse event for keyboard interaction
-                  handleUpvote(e as unknown as React.MouseEvent);
-                }
-              }}
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-[#6A994E] hover:text-[#6A994E]'
+              }`}
             >
-              {isVoting && voteData.userVote === 'up' ? (
-                getIcons("Loader2", 12, "mr-1 animate-spin")
-              ) : (
-                getIcons("ChevronUp", 12, "mr-1")
-              )}
+              {getIcons("ChevronUp", 14)}
               <span>{voteData.upvotes}</span>
             </button>
 
-            {/* Downvote button */}
             <button
               onClick={handleDownvote}
               disabled={isVoting}
-              className={`min-h-[44px] min-w-[44px] flex items-center justify-center text-xs font-medium transition-all duration-200 px-3 py-1.5 rounded-md border focus:outline-none focus:ring-2 focus:ring-red-300/50 ${
+              className={`h-9 w-9 flex items-center justify-center rounded-lg border transition-all ${
                 voteData.userVote === 'down'
-                  ? 'text-red-600 border-red-300 bg-red-50'
-                  : 'text-gray-600 border-gray-200 hover:border-red-300 hover:text-red-600 hover:bg-red-50'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-              aria-label={`Downvote ${file.title}`}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  // Create a synthetic mouse event for keyboard interaction
-                  handleDownvote(e as unknown as React.MouseEvent);
-                }
-              }}
+                  ? 'bg-red-50 text-red-600 border-red-200'
+                  : 'bg-white text-gray-400 border-gray-200 hover:text-red-600 hover:border-red-200'
+              }`}
             >
-              {isVoting && voteData.userVote === 'down' ? (
-                getIcons("Loader2", 12, "mr-1 animate-spin")
-              ) : (
-                getIcons("ChevronDown", 12, "mr-1")
-              )}
-              <span>{voteData.downvotes}</span>
+              {getIcons("ChevronDown", 14)}
             </button>
 
-            {/* Bookmark button */}
+            <div className="w-px h-6 bg-gray-200 mx-1" />
+
             <button
               onClick={handleBookmark}
               disabled={isBookmarking}
-              className="flex items-center text-gray-500 hover:text-[#386641] text-xs font-medium transition-colors duration-200 px-2 py-1 border border-gray-200 rounded-md hover:border-[#6A994E] hover:bg-[#6A994E]/5 disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label={`Bookmark ${file.title}`}
+              className="h-9 w-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-400 hover:text-[#386641] hover:border-[#6A994E] transition-all"
             >
-              {isBookmarking ? (
-                getIcons("Loader2", 14, "animate-spin")
-              ) : (
-                getIcons("Bookmark", 14)
-              )}
-            </button>
-
-            {/* Flag button */}
-            <button
-              onClick={handleFlag}
-              disabled={isFlagging}
-              className="flex items-center text-gray-500 hover:text-yellow-500 text-xs font-medium transition-colors duration-200 px-2 py-1 border border-gray-200 rounded-md hover:border-yellow-300 hover:bg-yellow-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label={`Flag ${file.title}`}
-              title="Report inappropriate content"
-            >
-              {isFlagging ? (
-                getIcons("Loader2", 14, "animate-spin")
-              ) : (
-                getIcons("Flag", 14)
-              )}
+              {isBookmarking ? getIcons("Loader2", 14, "animate-spin") : getIcons("Bookmark", 14)}
             </button>
           </div>
         </div>
+
+        {/* Authentication hint for votes */}
+        {voteError && !session && (
+          <div className="px-4 py-2 bg-yellow-50 dark:bg-yellow-900/20 border-t border-yellow-100 dark:border-yellow-800 text-xs text-yellow-700 dark:text-yellow-400 text-center">
+            Sign in to see and add votes
+          </div>
+        )}
       </div>
 
       <CommentModal
@@ -403,10 +356,21 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
         resourceId={file.id}
         title={file.title}
       />
+
+      <PromptDialog
+        isOpen={flagDialog.isOpen}
+        title="Flag File"
+        message="Enter reason for flagging this file:"
+        placeholder="Reason for flagging..."
+        confirmText="Flag"
+        cancelText="Cancel"
+        onConfirm={confirmFlag}
+        onCancel={() => setFlagDialog({ isOpen: false })}
+      />
     </div>
   );
 });
 
 FileCard.displayName = 'FileCard';
 
-export default FileCard;
+export default FileCard;  

@@ -1,16 +1,27 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
+import { Session } from 'next-auth'
 import { useEffect, useState } from 'react'
 import { signOut } from 'next-auth/react'
 
 interface DisabledGuardProps {
   children: React.ReactNode
   redirectTo?: string
+  session?: Session | null  // Optional prop from layout
+  status?: 'loading' | 'authenticated' | 'unauthenticated'  // Optional prop from layout
 }
 
-export default function DisabledGuard({ children, redirectTo = '/auth' }: DisabledGuardProps) {
-  const { data: session, status } = useSession()
+export default function DisabledGuard({
+  children,
+  redirectTo = '/auth',
+  session: propSession,
+  status: propStatus
+}: DisabledGuardProps) {
+  // Use props if provided (from layout), otherwise use hook (backward compatible)
+  const hookSession = useSession()
+  const session = propSession ?? hookSession.data
+  const status = propStatus ?? hookSession.status
   const [isChecking, setIsChecking] = useState(true)
 
   useEffect(() => {

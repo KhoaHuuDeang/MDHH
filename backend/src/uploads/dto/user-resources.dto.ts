@@ -46,6 +46,14 @@ export class ResourceDetailsDto {
   @IsString()
   folder_name: string;
 
+  @ApiProperty({ description: 'Folder classification level name' })
+  @IsString()
+  folder_classification: string;
+
+  @ApiProperty({ description: 'Folder tags (comma-separated)' })
+  @IsString()
+  folder_tags: string;
+
   @ApiProperty({ description: 'Number of upvotes for this resource' })
   @IsNumber()
   upvotes_count: number;
@@ -56,6 +64,10 @@ export class ResourceDetailsDto {
 }
 
 export class ResourceItemDto {
+  @ApiProperty({ description: 'Upload ID' })
+  @IsString()
+  upload_id: string;
+
   @ApiProperty({ description: 'Resource ID' })
   @IsString()
   resource_id: string;
@@ -75,6 +87,15 @@ export class ResourceItemDto {
   @ApiProperty({ description: 'Upload creation timestamp' })
   @IsDate()
   created_at: Date;
+
+  @ApiProperty({ description: 'Moderation status of upload', enum: ['APPROVED', 'PENDING_APPROVAL', 'REJECTED'] })
+  @IsString()
+  moderation_status: string;
+
+  @ApiPropertyOptional({ description: 'Reason for rejection if rejected' })
+  @IsOptional()
+  @IsString()
+  moderation_reason?: string | null;
 
   @ApiProperty({ description: 'Resource details with social metrics', type: ResourceDetailsDto })
   resource_details: ResourceDetailsDto;

@@ -37,6 +37,8 @@ interface ResourceWithMetrics {
   visibility: string;
   category: string;
   folder_name: string;
+  folder_classification: string;
+  folder_tags: string;
   views_count: number;
   downloads_count: number;
   upvotes_count: number;
@@ -847,7 +849,7 @@ export class UploadsService {
 
       const whereClause = conditions.join(' AND ');
 
-      // Optimized query: removed non-existent tables
+      // Query with folder classification and tags - only show user's own folders
       const dataQueryString = `
         SELECT
           u.id as upload_id,
@@ -864,6 +866,14 @@ export class UploadsService {
           r.visibility,
           r.category,
           COALESCE(fo.name, 'No Folder') as folder_name,
+          COALESCE(cl.name, '') as folder_classification,
+          COALESCE(
+            (SELECT STRING_AGG(t.name, ', ')
+             FROM folder_tags ft
+             JOIN tags t ON ft.tag_id = t.id
+             WHERE ft.folder_id = fo.id
+            ), ''
+          ) as folder_tags,
           0 as views_count,
           0 as downloads_count,
           0 as upvotes_count,
@@ -871,7 +881,8 @@ export class UploadsService {
         FROM uploads u
         INNER JOIN resources r ON u.resource_id = r.id
         LEFT JOIN folder_files ff ON u.resource_id = ff.resource_id
-        LEFT JOIN folders fo ON ff.folder_id = fo.id
+        LEFT JOIN folders fo ON ff.folder_id = fo.id AND fo.user_id = $1::uuid
+        LEFT JOIN classification_levels cl ON fo.classification_level_id = cl.id
         WHERE ${whereClause}
         ORDER BY u.created_at DESC
         LIMIT $${paramIndex}
@@ -916,6 +927,8 @@ export class UploadsService {
             ResourceVisibility.PRIVATE,
           category: row.category || '',
           folder_name: row.folder_name || 'No Folder',
+          folder_classification: row.folder_classification || '',
+          folder_tags: row.folder_tags || '',
           views_count: Number(row.views_count) || 0,
           downloads_count: Number(row.downloads_count) || 0,
           upvotes_count: Number(row.upvotes_count) || 0,
