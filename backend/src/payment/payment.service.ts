@@ -125,14 +125,6 @@ export class PaymentService {
       };
     }
 
-    if (!verification.isSuccess) {
-      return {
-        message: 'Payment failed',
-        status: 400,
-        result: { verification },
-      };
-    }
-
     const orderId = verification.vnp_TxnRef;
 
     const order = await this.prisma.orders.findUnique({
@@ -145,6 +137,24 @@ export class PaymentService {
         message: 'Order not found',
         status: 404,
         result: null,
+      };
+    }
+
+    // Handle payment failure/cancellation
+    if (!verification.isSuccess) {
+      await this.prisma.orders.update({
+        where: { id: orderId },
+        data: {
+          status: 'CANCELLED',
+          payment_ref: String(verification.vnp_TransactionNo || ''),
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        message: 'Payment cancelled',
+        status: 400,
+        result: { verification },
       };
     }
 
