@@ -91,10 +91,16 @@ export class PaymentService {
       vnp_OrderInfo: `Payment for order ${order.id}`,
     });
 
+    // Convert BigInt to Number for JSON serialization
+    const serializedOrder = {
+      ...order,
+      total_amount: Number(order.total_amount),
+    };
+
     return {
       message: 'Order created successfully',
       status: 200,
-      result: { order, paymentUrl },
+      result: { order: serializedOrder, paymentUrl },
     };
   }
 
@@ -207,10 +213,24 @@ export class PaymentService {
       orderBy: { created_at: 'desc' },
     });
 
+    // Convert BigInt to Number for JSON serialization
+    const serializedOrders = orders.map(order => ({
+      ...order,
+      total_amount: Number(order.total_amount),
+      order_items: order.order_items.map(item => ({
+        ...item,
+        price: Number(item.price),
+        souvenirs: {
+          ...item.souvenirs,
+          price: Number(item.souvenirs.price),
+        },
+      })),
+    }));
+
     return {
       message: 'Orders retrieved successfully',
       status: 'success',
-      result: { orders, count: orders.length },
+      result: { orders: serializedOrders, count: serializedOrders.length },
     };
   }
 
@@ -232,10 +252,24 @@ export class PaymentService {
       };
     }
 
+    // Convert BigInt to Number for JSON serialization
+    const serializedOrder = {
+      ...order,
+      total_amount: Number(order.total_amount),
+      order_items: order.order_items.map(item => ({
+        ...item,
+        price: Number(item.price),
+        souvenirs: {
+          ...item.souvenirs,
+          price: Number(item.souvenirs.price),
+        },
+      })),
+    };
+
     return {
       message: 'Order retrieved successfully',
       status: 'success',
-      result: { order },
+      result: { order: serializedOrder },
     };
   }
 }
