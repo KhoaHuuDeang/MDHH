@@ -48,9 +48,13 @@ async function bootstrap() {
 
   // Port binding - CRITICAL for Render
   const port = process.env.PORT || 10000;
+  console.log(`🔧 Environment: ${process.env.NODE_ENV}`);
+  console.log(`🔌 Attempting to bind to 0.0.0.0:${port}`);
+
   await app.listen(port, '0.0.0.0'); // Always bind to 0.0.0.0 for cloud hosting
 
-  console.log(`🚀 Server running on port ${port}`);
+  console.log(`✅ Server successfully bound to 0.0.0.0:${port}`);
+  console.log(`🚀 Application is ready to accept connections`);
 }
 
 bootstrap();
