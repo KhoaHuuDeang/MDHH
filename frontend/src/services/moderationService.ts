@@ -57,6 +57,13 @@ class ModerationService {
     return response.data;
   }
 
+  async getUploadDownloadUrl(uploadId: string): Promise<string> {
+    const response = await csrAxiosClient.get<{ message: string; status: number; result: { downloadUrl: string } }>(
+      `/uploads/download/${uploadId}`
+    );
+    return response.data.result.downloadUrl;
+  }
+
   // ========== COMMENTS ==========
   async getComments(query: AdminCommentsQuery): Promise<AdminCommentsResponse> {
     const params = new URLSearchParams();

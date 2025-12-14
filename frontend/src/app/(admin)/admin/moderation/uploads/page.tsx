@@ -91,6 +91,24 @@ export default function AdminUploadsPage() {
     }
   };
 
+  const handleDownload = async (uploadId: string, fileName: string) => {
+    try {
+      const downloadUrl = await moderationService.getUploadDownloadUrl(uploadId);
+      // Open download URL in new tab or trigger download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName || 'download';
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success(t('common.downloadStarted'));
+    } catch (error) {
+      console.error('Failed to generate download URL:', error);
+      toast.error(t('common.error'));
+    }
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center h-screen bg-gray-50 text-[#386641]">
         <div className="flex flex-col items-center gap-3">
@@ -230,6 +248,13 @@ export default function AdminUploadsPage() {
                                 </td>
                                 <td className="p-3 text-center">
                                     <div className="flex items-center justify-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                            onClick={() => handleDownload(upload.id, upload.file_name || 'file')}
+                                            className="p-1.5 rounded-sm text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-colors border border-transparent hover:border-blue-200"
+                                            title={t('fileCard.download')}
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                        </button>
                                         {upload.moderation_status === 'PENDING_APPROVAL' && (
                                             <>
                                                 <button
