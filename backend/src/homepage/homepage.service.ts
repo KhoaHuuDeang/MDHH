@@ -6,18 +6,18 @@ import { HomepageResponseDto, FileDataDto, FolderDataDto, SearchFilesQueryDto, S
 export class HomepageService {
   constructor(private prisma: PrismaService) {}
 
-  async getHomepageData(recentLimit?: number, popularLimit?: number, folderLimit?: number): Promise<HomepageResponseDto> {
+  async getHomepageData(recentLimit?: number, popularLimit?: number, mostDownloadedLimit?: number): Promise<HomepageResponseDto> {
     try {
-      const [recentFiles, popularFiles, popularFolders] = await Promise.all([
+      const [recentFiles, popularFiles, mostDownloadedFiles] = await Promise.all([
         this.getRecentFiles(recentLimit || 4),
         this.getPopularFiles(popularLimit || 4),
-        this.getPopularFolders(folderLimit || 5)
+        this.getPopularFiles(mostDownloadedLimit || 5)
       ]);
 
       const response = new HomepageResponseDto();
       response.recentFiles = recentFiles;
       response.popularFiles = popularFiles;
-      response.folders = popularFolders;
+      response.mostDownloadedFiles = mostDownloadedFiles;
 
       return response;
     } catch (error) {
@@ -141,52 +141,6 @@ export class HomepageService {
       dto.tags = Array.isArray(row.tags) && row.tags.length > 0 && row.tags[0] !== null 
         ? row.tags 
         : undefined;
-      return dto;
-    });
-  }
-
-  private async getPopularFolders(limit: number = 5): Promise<FolderDataDto[]> {
-    const result = await this.prisma.$queryRaw<any[]>`
-      SELECT
-        f.id,
-        f.name,
-        f.description,
-        u.displayname as author,
-        fc.follow_count::integer as "followCount",
-        COUNT(DISTINCT CASE
-          WHEN up.moderation_status = 'APPROVED'
-            AND up.status = 'COMPLETED'
-          THEN r.id
-        END)::integer as approved_file_count
-      FROM folders f
-      LEFT JOIN users u ON f.user_id = u.id
-      LEFT JOIN folder_files ff ON f.id = ff.folder_id
-      LEFT JOIN resources r ON ff.resource_id = r.id
-      LEFT JOIN uploads up ON r.id = up.resource_id
-      INNER JOIN (
-        SELECT folder_id, COUNT(*)::integer as follow_count
-        FROM follows
-        GROUP BY folder_id
-        HAVING COUNT(*) > 0
-      ) fc ON f.id = fc.folder_id
-      WHERE f.visibility = 'PUBLIC'
-      GROUP BY f.id, f.name, f.description, u.displayname, fc.follow_count
-      HAVING COUNT(DISTINCT CASE
-        WHEN up.moderation_status = 'APPROVED'
-          AND up.status = 'COMPLETED'
-        THEN r.id
-      END) > 0
-      ORDER BY fc.follow_count DESC
-      LIMIT ${limit}
-    `;
-
-    return result.map(row => {
-      const dto = new FolderDataDto();
-      dto.id = row.id;
-      dto.name = row.name || '';
-      dto.description = row.description || '';
-      dto.author = row.author || 'Unknown';
-      dto.followCount = Math.max(0, row.followCount || 0);
       return dto;
     });
   }

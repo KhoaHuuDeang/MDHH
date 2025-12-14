@@ -7,7 +7,7 @@ import { Users, Upload, Download, MessageSquare } from 'lucide-react'
 interface AdminStats {
   totalUsers: number
   totalUploads: number
-  totalDownloads: number
+  totalFolders: number
   totalComments: number
 }
 
@@ -26,7 +26,7 @@ export default function AdminStatsDisplay() {
           setStats({
             totalUsers: result.totalUsers || 0,
             totalUploads: result.totalUploads || 0,
-            totalDownloads: result.totalDownloads || 0,
+            totalFolders: result.totalFolders || 0,
             totalComments: result.totalComments || 0,
           })
         } else {
@@ -72,20 +72,20 @@ export default function AdminStatsDisplay() {
       <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-600 mb-1">Total Downloads</p>
-            <p className="text-3xl font-bold text-gray-900">{stats.totalDownloads}</p>
+            <p className="text-sm font-medium text-gray-600 mb-1">Total Comments</p>
+            <p className="text-3xl font-bold text-gray-900">{stats.totalComments}</p>
           </div>
-          <Download className="w-10 h-10 text-yellow-500 opacity-80" />
+          <MessageSquare className="w-10 h-10 text-purple-500 opacity-80" />
         </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-600 mb-1">Total Comments</p>
-            <p className="text-3xl font-bold text-gray-900">{stats.totalComments}</p>
+            <p className="text-sm font-medium text-gray-600 mb-1">Total Folders</p>
+            <p className="text-3xl font-bold text-gray-900">{stats.totalFolders}</p>
           </div>
-          <MessageSquare className="w-10 h-10 text-purple-500 opacity-80" />
+          <Download className="w-10 h-10 text-yellow-500 opacity-80" />
         </div>
       </div>
     </div>

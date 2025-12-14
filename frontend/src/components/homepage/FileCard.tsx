@@ -4,11 +4,13 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import * as lucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
-import { getMimeTypeIcon, getFileTypeDescription } from '@/utils/mimeTypeIcons';
+import { getMimeTypeIcon, getFileTypeDescription, getFileTypeIconColor } from '@/utils/mimeTypeIcons';
 import { FileData, homepageService } from '@/services/homepageService';
 import useFileActions from '@/hooks/useFileActions';
 import { VoteData } from '@/types/vote.types';
 import CommentModal from '@/components/modals/CommentModal';
+import useNotifications from '@/hooks/useNotifications';
+import { PromptDialog } from '@/components/dialogs/PromptDialog';
 
 const getIcons = (iconName: string, size: number, className?: string) => {
   const IconComponent = lucideIcons[iconName as keyof typeof lucideIcons] as LucideIcon;
@@ -30,6 +32,7 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
 }) => {
   const { data: session } = useSession();
   const { downloadFile, voteFile, getFileVotes, bookmarkFile, isDownloading, isVoting, isBookmarking } = useFileActions();
+  const toast = useNotifications();
 
   // Vote data state
   const [voteData, setVoteData] = useState<VoteData>({
@@ -41,6 +44,7 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
 
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [isFlagging, setIsFlagging] = useState(false);
+  const [flagDialog, setFlagDialog] = useState({ isOpen: false });
 
   useEffect(() => {
     const loadVoteData = async () => {
@@ -58,10 +62,11 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
     loadVoteData();
   }, [file.id, getFileVotes]);
 
-  const { iconName, typeDescription } = useMemo(() => {
+  const { iconName, typeDescription, iconColor } = useMemo(() => {
     return {
       iconName: getMimeTypeIcon(file.fileType, file.title),
-      typeDescription: getFileTypeDescription(file.fileType, file.title)
+      typeDescription: getFileTypeDescription(file.fileType, file.title),
+      iconColor: getFileTypeIconColor(file.fileType, file.title)
     };
   }, [file.fileType, file.title]);
 
@@ -82,22 +87,26 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
     setCommentModalOpen(true);
   }, []);
 
-  const handleFlag = useCallback(async (e: React.MouseEvent) => {
+  const handleFlag = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    const reason = prompt('Enter reason for flagging this file:');
+    setFlagDialog({ isOpen: true });
+  }, []);
+
+  const confirmFlag = useCallback(async (reason: string) => {
     if (!reason) return;
 
     setIsFlagging(true);
     try {
       await homepageService.flagUpload(file.id, reason);
-      alert('File flagged successfully');
+      toast.success('File flagged successfully');
+      setFlagDialog({ isOpen: false });
     } catch (error) {
       console.error('Failed to flag file:', error);
-      alert('Failed to flag file');
+      toast.error('Failed to flag file');
     } finally {
       setIsFlagging(false);
     }
-  }, [file.id]);
+  }, [file.id, toast]);
 
   const handleDownload = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -206,7 +215,7 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
 
             {/* Icon/Thumbnail Centered */}
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-gray-100 group-hover:to-gray-200 transition-colors duration-300">
-              {getIcons(iconName, 52, "text-gray-400 group-hover:text-[#386641] group-hover:scale-110 transition-all duration-300")}
+              {getIcons(iconName, 52, `${iconColor} group-hover:scale-110 transition-all duration-300`)}
             </div>
           </div>
 
@@ -346,6 +355,17 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
         onClose={() => setCommentModalOpen(false)}
         resourceId={file.id}
         title={file.title}
+      />
+
+      <PromptDialog
+        isOpen={flagDialog.isOpen}
+        title="Flag File"
+        message="Enter reason for flagging this file:"
+        placeholder="Reason for flagging..."
+        confirmText="Flag"
+        cancelText="Cancel"
+        onConfirm={confirmFlag}
+        onCancel={() => setFlagDialog({ isOpen: false })}
       />
     </div>
   );

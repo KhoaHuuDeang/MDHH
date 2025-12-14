@@ -16,14 +16,23 @@ export class CartService {
     });
 
     const total = cartItems.reduce(
-      (sum, item) => sum + item.souvenirs.price * item.quantity,
+      (sum, item) => sum + Number(item.souvenirs.price) * item.quantity,
       0
     );
+
+    // Convert BigInt to Number for JSON serialization
+    const items = cartItems.map(item => ({
+      ...item,
+      souvenirs: {
+        ...item.souvenirs,
+        price: Number(item.souvenirs.price),
+      },
+    }));
 
     return {
       message: 'Cart retrieved successfully',
       status: 200,
-      result: { items: cartItems, total, count: cartItems.length },
+      result: { items, total, count: items.length },
     };
   }
 
@@ -91,10 +100,19 @@ export class CartService {
       });
     }
 
+    // Convert BigInt to Number for JSON serialization
+    const result = {
+      ...cartItem,
+      souvenirs: {
+        ...cartItem.souvenirs,
+        price: Number(cartItem.souvenirs.price),
+      },
+    };
+
     return {
       message: 'Item added to cart successfully',
       status: 200,
-      result: { cartItem },
+      result: { cartItem: result },
     };
   }
 
@@ -126,10 +144,19 @@ export class CartService {
       include: { souvenirs: true },
     });
 
+    // Convert BigInt to Number for JSON serialization
+    const result = {
+      ...updated,
+      souvenirs: {
+        ...updated.souvenirs,
+        price: Number(updated.souvenirs.price),
+      },
+    };
+
     return {
       message: 'Cart item updated successfully',
       status: 200,
-      result: { cartItem: updated },
+      result: { cartItem: result },
     };
   }
 

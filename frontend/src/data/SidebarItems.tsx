@@ -21,7 +21,7 @@ export const AdminSidebarItems = [
     { id: 'divider', labelKey: 'common.all', icon: 'Minus', href: '#' },
 
     // Admin-only functions
-    { id: 'admin-dashboard', labelKey: 'sidebar.adminDashboard', icon: 'LayoutDashboard', href: '/admin/dashboard' },
+    { id: 'admin-dashboard', labelKey: 'sidebar.adminDashboard', icon: 'LayoutDashboard', href: '/dashboard' },
     { id: 'admin-users', labelKey: 'sidebar.users', icon: 'UserCog', href: '/admin/users' },
     {
         id: 'admin-moderation',
@@ -31,9 +31,9 @@ export const AdminSidebarItems = [
             { id: 'moderation-uploads', labelKey: 'sidebar.moderationUploads', href: '/admin/moderation/uploads' },
             { id: 'moderation-comments', labelKey: 'sidebar.moderationComments', href: '/admin/moderation/comments' },
             { id: 'moderation-folders', labelKey: 'sidebar.moderationFolders', href: '/admin/moderation/folders' },
+            { id: 'admin-classifications', labelKey: 'sidebar.classifications', href: '/admin/classifications' },
+            { id: 'admin-tags', labelKey: 'sidebar.tags', href: '/admin/tags' },
         ],
     },
-    { id: 'admin-classifications', labelKey: 'sidebar.classifications', icon: 'Layers', href: '/admin/classifications' },
-    { id: 'admin-tags', labelKey: 'sidebar.tags', icon: 'Tag', href: '/admin/tags' },
     { id: 'admin-orders', labelKey: 'sidebar.adminOrders', icon: 'ShoppingCart', href: '/admin/orders' },
 ];

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import UploadHeader from '@/components/layout/user/uploads/UploadHeader';
 import UploadStepper from '@/components/layout/user/uploads/UploadStepper';
@@ -8,6 +8,7 @@ import FileUploadArea from '@/components/upload/stage1/FileUploadArea';
 import UploadedFilesList from '@/components/upload/stage1/UploadedFilesList';
 import { useUploadStore } from '@/store/uploadStore';
 import { useRouter } from 'next/navigation';
+import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
 
 const UploadPage = () => {
   const files = useUploadStore(state => state.files);
@@ -18,6 +19,7 @@ const UploadPage = () => {
   const nextStep = useUploadStore(state => state.nextStep)
   const router = useRouter();
   const { t } = useTranslation();
+  const [resetDialog, setResetDialog] = useState(false);
 
   useEffect(() => {
     setCurrentStep(1);
@@ -41,10 +43,13 @@ const UploadPage = () => {
   }, [router, nextStep]);
 
   const handleReset = useCallback(() => {
-    if (window.confirm(t('upload.uploadComplete'))) {
-      resetUpload();
-    }
-  }, [resetUpload, t]);
+    setResetDialog(true);
+  }, []);
+
+  const confirmReset = useCallback(() => {
+    resetUpload();
+    setResetDialog(false);
+  }, [resetUpload]);
 
   return (
     <>
@@ -103,6 +108,17 @@ const UploadPage = () => {
           {t('upload.shareInfo')}
         </aside>
       </main>
+
+      {/* Reset Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={resetDialog}
+        title={t('common.delete')}
+        message={t('upload.uploadComplete')}
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
+        onConfirm={confirmReset}
+        onCancel={() => setResetDialog(false)}
+      />
     </>
   );
 };

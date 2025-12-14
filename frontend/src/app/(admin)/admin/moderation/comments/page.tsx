@@ -4,14 +4,21 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moderationService } from '@/services/moderationService';
 import { AdminCommentItem, AdminCommentsQuery } from '@/types/moderation.types';
+import useNotifications from '@/hooks/useNotifications';
+import { PromptDialog } from '@/components/dialogs/PromptDialog';
 
 export default function AdminCommentsPage() {
   const { t } = useTranslation();
+  const toast = useNotifications();
   const [comments, setComments] = useState<AdminCommentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState<AdminCommentsQuery>({ page: 1, limit: 20 });
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; id: string | null }>({
+    isOpen: false,
+    id: null,
+  });
 
   useEffect(() => {
     fetchComments();
@@ -31,14 +38,20 @@ export default function AdminCommentsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    const reason = prompt(t('admin.reason'));
-    if (!reason) return;
+  const handleDelete = (id: string) => {
+    setDeleteDialog({ isOpen: true, id });
+  };
+
+  const confirmDelete = async (reason: string) => {
+    if (!reason || !deleteDialog.id) return;
     try {
-      await moderationService.deleteComment(id, reason);
+      await moderationService.deleteComment(deleteDialog.id, reason);
+      toast.success(t('common.deleteSuccess'));
       fetchComments();
+      setDeleteDialog({ isOpen: false, id: null });
     } catch (error) {
       console.error('Failed to delete comment:', error);
+      toast.error(t('common.error'));
     }
   };
 
@@ -112,7 +125,7 @@ export default function AdminCommentsPage() {
                             <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[35%]">{t('upload.description')}</th>
                             <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[20%]">{t('resources.manage')}</th>
                             <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[10%] text-center">{t('admin.status')}</th>
-                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[12%]">{t('profile.birth')}</th>
+                            <th className="p-3 border-r border-[#4a7a53] text-xs font-medium uppercase tracking-wider w-[12%]">{t('admin.createdAt')}</th>
                             <th className="p-3 text-xs font-medium uppercase tracking-wider w-[8%] text-center">{t('admin.actions')}</th>
                         </tr>
                     </thead>
@@ -223,6 +236,18 @@ export default function AdminCommentsPage() {
                 </div>
             </div>
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        <PromptDialog
+          isOpen={deleteDialog.isOpen}
+          title={t('common.delete')}
+          message={t('admin.reason')}
+          placeholder={t('admin.enterReason')}
+          confirmText={t('common.delete')}
+          cancelText={t('common.cancel')}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteDialog({ isOpen: false, id: null })}
+        />
       </div>
     </div>
   );

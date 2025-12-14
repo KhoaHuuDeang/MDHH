@@ -4,9 +4,17 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminOrderService, Order, OrdersResponse, OrderStatsResponse } from '@/services/adminOrderService';
 import { shopService, CreateSouvenirDto } from '@/services/shopService';
+import useNotifications from '@/hooks/useNotifications';
+import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
 
 export default function AdminOrdersPage() {
   const { t } = useTranslation();
+  const toast = useNotifications();
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'orders' | 'souvenirs'>('orders');
+
+  // Orders state
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<OrderStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -14,8 +22,13 @@ export default function AdminOrdersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createForm, setCreateForm] = useState<CreateSouvenirDto>({
+
+  // Souvenirs state
+  const [souvenirs, setSouvenirs] = useState<any[]>([]);
+  const [souvenirLoading, setSouvenirLoading] = useState(false);
+  const [showSouvenirModal, setShowSouvenirModal] = useState(false);
+  const [editingSouvenir, setEditingSouvenir] = useState<any | null>(null);
+  const [souvenirForm, setSouvenirForm] = useState<CreateSouvenirDto>({
     name: '',
     description: '',
     price: 0,
@@ -25,6 +38,10 @@ export default function AdminOrdersPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploading, setUploading] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; id: string | null }>({
+    isOpen: false,
+    id: null,
+  });
 
   const statusOptions = ['PENDING', 'PROCESSING', 'COMPLETED', 'PAID', 'CANCELLED', 'FAILED', 'REFUNDED'];
 
@@ -89,6 +106,90 @@ export default function AdminOrdersPage() {
     return new Date(dateString).toLocaleString('vi-VN');
   };
 
+  // Souvenir Management Functions
+  const loadSouvenirs = async () => {
+    try {
+      setSouvenirLoading(true);
+      const response = await shopService.getAllSouvenirs();
+      setSouvenirs(response.result.souvenirs);
+    } catch (error) {
+      console.error('Failed to load souvenirs:', error);
+      toast.error(t('common.error'));
+    } finally {
+      setSouvenirLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'souvenirs') {
+      loadSouvenirs();
+    }
+  }, [activeTab]);
+
+  const handleCreateOrUpdateSouvenir = async () => {
+    try {
+      setUploading(true);
+      let imageUrl = souvenirForm.image_url;
+
+      // Upload image to S3 if selected
+      if (selectedImage) {
+        imageUrl = await shopService.uploadSouvenirImage(selectedImage);
+      }
+
+      if (editingSouvenir) {
+        // Update existing
+        await shopService.updateSouvenir(editingSouvenir.id, { ...souvenirForm, image_url: imageUrl });
+        toast.success(t('souvenir.updated'));
+      } else {
+        // Create new
+        await shopService.createSouvenir({ ...souvenirForm, image_url: imageUrl });
+        toast.success(t('souvenir.created'));
+      }
+
+      setShowSouvenirModal(false);
+      setSouvenirForm({ name: '', description: '', price: 0, stock: 0, image_url: '' });
+      setEditingSouvenir(null);
+      setSelectedImage(null);
+      setImagePreview('');
+      loadSouvenirs();
+    } catch (error) {
+      console.error('Failed to save souvenir:', error);
+      toast.error(t('common.error'));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleEditSouvenir = (souvenir: any) => {
+    setEditingSouvenir(souvenir);
+    setSouvenirForm({
+      name: souvenir.name,
+      description: souvenir.description || '',
+      price: souvenir.price,
+      stock: souvenir.stock,
+      image_url: souvenir.image_url || '',
+    });
+    setImagePreview(souvenir.image_url || '');
+    setShowSouvenirModal(true);
+  };
+
+  const handleDeleteSouvenir = (id: string) => {
+    setDeleteDialog({ isOpen: true, id });
+  };
+
+  const confirmDeleteSouvenir = async () => {
+    if (!deleteDialog.id) return;
+    try {
+      await shopService.deleteSouvenir(deleteDialog.id);
+      toast.success(t('souvenir.deleted'));
+      loadSouvenirs();
+      setDeleteDialog({ isOpen: false, id: null });
+    } catch (error) {
+      console.error('Failed to delete souvenir:', error);
+      toast.error(t('common.error'));
+    }
+  };
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -98,30 +199,6 @@ export default function AdminOrdersPage() {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-    }
-  };
-
-  const handleCreateSouvenir = async () => {
-    try {
-      setUploading(true);
-      let imageUrl = createForm.image_url;
-
-      // Upload image to S3 if selected
-      if (selectedImage) {
-        imageUrl = await shopService.uploadSouvenirImage(selectedImage);
-      }
-
-      await shopService.createSouvenir({ ...createForm, image_url: imageUrl });
-      setShowCreateModal(false);
-      setCreateForm({ name: '', description: '', price: 0, stock: 0, image_url: '' });
-      setSelectedImage(null);
-      setImagePreview('');
-      alert(t('common.success'));
-    } catch (error) {
-      console.error('Failed to create souvenir:', error);
-      alert(t('common.error'));
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -153,51 +230,73 @@ export default function AdminOrdersPage() {
       <div className="max-w-[1400px] mx-auto">
 
         {/* Header Section */}
-        <div className="flex justify-between items-end mb-6">
-            <div>
-                <h1 className="text-xl font-bold text-[#386641] uppercase tracking-wide">{t('admin.orderManagement')}</h1>
-                <p className="text-gray-500 text-xs mt-1">{t('admin.settings')}</p>
-            </div>
-            <button
-                onClick={() => setShowCreateModal(true)}
-                className="px-4 py-2 bg-[#386641] text-white text-sm font-medium rounded-sm hover:bg-[#2d5133] transition-colors flex items-center gap-2 shadow-sm"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <div className="mb-6">
+            <h1 className="text-xl font-bold text-[#386641] uppercase tracking-wide mb-4">{t('admin.orderManagement')}</h1>
+
+            {/* Tabs */}
+            <div className="flex gap-2 border-b border-gray-200">
+              <button
+                onClick={() => setActiveTab('orders')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === 'orders'
+                    ? 'text-[#386641] border-b-2 border-[#386641]'
+                    : 'text-gray-600 hover:text-[#386641]'
+                }`}
+              >
                 {t('admin.orders')}
-            </button>
+              </button>
+              <button
+                onClick={() => setActiveTab('souvenirs')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === 'souvenirs'
+                    ? 'text-[#386641] border-b-2 border-[#386641]'
+                    : 'text-gray-600 hover:text-[#386641]'
+                }`}
+              >
+                {t('souvenir.management')}
+              </button>
+            </div>
         </div>
 
+        {/* Orders Tab Content */}
+        {activeTab === 'orders' && (
+          <>
         {/* Statistics Cards */}
         {stats && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {/* Total Orders */}
-            <div className="bg-white p-4 rounded-sm shadow-sm border-t-4 border-[#386641] hover:shadow-md transition-shadow">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('admin.orders')}</h3>
-              <p className="text-2xl font-bold text-gray-900 mt-2">{stats.totalOrders}</p>
+          <div className="mb-6 space-y-4">
+            {/* First row: First 3 cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Total Orders */}
+              <div className="bg-white p-4 rounded-sm shadow-sm border-t-4 border-[#386641] hover:shadow-md transition-shadow">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('admin.orders')}</h3>
+                <p className="text-2xl font-bold text-gray-900 mt-2">{stats.totalOrders}</p>
+              </div>
+
+              {/* Total Revenue */}
+              <div className="bg-white p-4 rounded-sm shadow-sm border-t-4 border-[#6A994E] hover:shadow-md transition-shadow">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('admin.export')}</h3>
+                <p className="text-2xl font-bold text-[#386641] mt-2">{formatCurrency(stats.totalRevenue)}</p>
+              </div>
+
+              {/* Recent Orders */}
+              <div className="bg-white p-4 rounded-sm shadow-sm border-t-4 border-blue-400 hover:shadow-md transition-shadow">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('admin.recentActivity')}</h3>
+                <p className="text-2xl font-bold text-gray-900 mt-2">{stats.recentOrders}</p>
+              </div>
             </div>
 
-            {/* Total Revenue */}
-            <div className="bg-white p-4 rounded-sm shadow-sm border-t-4 border-[#6A994E] hover:shadow-md transition-shadow">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('admin.export')}</h3>
-              <p className="text-2xl font-bold text-[#386641] mt-2">{formatCurrency(stats.totalRevenue)}</p>
-            </div>
-
-            {/* Recent Orders */}
-            <div className="bg-white p-4 rounded-sm shadow-sm border-t-4 border-blue-400 hover:shadow-md transition-shadow">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('admin.recentActivity')}</h3>
-              <p className="text-2xl font-bold text-gray-900 mt-2">{stats.recentOrders}</p>
-            </div>
-
-            {/* Status Breakdown */}
-            <div className="bg-white p-3 rounded-sm shadow-sm border-t-4 border-gray-400 hover:shadow-md transition-shadow">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{t('admin.status')}</h3>
-              <div className="space-y-1 h-[60px] overflow-y-auto pr-1 custom-scrollbar">
-                {stats.ordersByStatus.map((s) => (
-                  <div key={s.status} className="flex justify-between items-center text-xs">
-                    <span className={`px-1.5 py-0.5 rounded-[2px] text-[10px] font-medium ${getStatusColor(s.status)} border-0`}>{s.status}</span>
-                    <span className="font-bold text-gray-700">{s.count}</span>
-                  </div>
-                ))}
+            {/* Second row: Order Status card (full width) */}
+            <div className="grid grid-cols-1">
+              <div className="bg-white p-3 rounded-sm shadow-sm border-t-4 border-gray-400 hover:shadow-md transition-shadow">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{t('admin.status')}</h3>
+                <div className="space-y-1 h-[60px] overflow-y-auto pr-1 custom-scrollbar">
+                  {stats.ordersByStatus.map((s) => (
+                    <div key={s.status} className="flex justify-between items-center text-xs">
+                      <span className={`px-1.5 py-0.5 rounded-[2px] text-[10px] font-medium ${getStatusColor(s.status)} border-0`}>{t(`orderStatus.${s.status}`)}</span>
+                      <span className="font-bold text-gray-700">{s.count}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -217,10 +316,10 @@ export default function AdminOrdersPage() {
                 }}
                 className="border border-gray-300 rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:border-[#386641] focus:ring-1 focus:ring-[#386641] bg-white cursor-pointer transition-colors min-w-[200px]"
               >
-                <option value="">{t('admin.all')}</option>
+                <option value="">{t('common.all')}</option>
                 {statusOptions.map((status) => (
                   <option key={status} value={status}>
-                    {status}
+                    {t(`orderStatus.${status}`)}
                   </option>
                 ))}
              </select>
@@ -236,7 +335,7 @@ export default function AdminOrdersPage() {
                             <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border-r border-[#4a7a53] w-[20%]">{t('admin.user')}</th>
                             <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border-r border-[#4a7a53] w-[15%]">{t('upload.description')}</th>
                             <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border-r border-[#4a7a53] w-[15%]">{t('admin.status')}</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border-r border-[#4a7a53] w-[18%]">{t('profile.birth')}</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border-r border-[#4a7a53] w-[18%]">{t('admin.createdAt')}</th>
                             <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider w-[20%]">{t('admin.actions')}</th>
                         </tr>
                     </thead>
@@ -258,7 +357,7 @@ export default function AdminOrdersPage() {
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap border-r border-gray-100">
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-semibold text-gray-900">{order.username || 'Unknown User'}</span>
+                                            <span className="text-sm font-semibold text-gray-900">{order.username || t('common.user')}</span>
                                             <span className="text-xs text-gray-500">{order.user_email}</span>
                                         </div>
                                     </td>
@@ -267,7 +366,7 @@ export default function AdminOrdersPage() {
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap border-r border-gray-100">
                                         <span className={`inline-block px-2 py-0.5 text-[10px] font-bold rounded uppercase tracking-wide ${getStatusColor(order.status)}`}>
-                                            {order.status}
+                                            {t(`orderStatus.${order.status}`)}
                                         </span>
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500 border-r border-gray-100">
@@ -290,7 +389,7 @@ export default function AdminOrdersPage() {
                                             >
                                                 {statusOptions.map((status) => (
                                                     <option key={status} value={status}>
-                                                    {status}
+                                                    {t(`orderStatus.${status}`)}
                                                     </option>
                                                 ))}
                                             </select>
@@ -341,7 +440,7 @@ export default function AdminOrdersPage() {
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                              </div>
                              <div>
-                                <h2 className="text-lg font-bold text-gray-900">{t('moderation.manage')}</h2>
+                                <h2 className="text-lg font-bold text-gray-900">{t('admin.orderDetails')}</h2>
                                 <p className="text-xs text-gray-500 font-mono">#{selectedOrder.id}</p>
                              </div>
                         </div>
@@ -375,7 +474,7 @@ export default function AdminOrdersPage() {
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-gray-500">{t('admin.status')}:</span>
                                         <span className={`px-2 py-0.5 text-[10px] font-bold rounded uppercase tracking-wide ${getStatusColor(selectedOrder.status)}`}>
-                                            {selectedOrder.status}
+                                            {t(`orderStatus.${selectedOrder.status}`)}
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center">
@@ -441,9 +540,100 @@ export default function AdminOrdersPage() {
                 </div>
             </div>
         )}
+          </>
+        )}
 
-        {/* Create Souvenir Modal */}
-        {showCreateModal && (
+        {/* Souvenirs Tab Content */}
+        {activeTab === 'souvenirs' && (
+          <>
+            <div className="bg-white p-4 rounded-sm shadow-sm mb-4 border border-gray-200 flex justify-between items-center">
+              <h2 className="text-lg font-bold text-gray-900">{t('souvenir.list')}</h2>
+              <button
+                onClick={() => {
+                  setEditingSouvenir(null);
+                  setSouvenirForm({ name: '', description: '', price: 0, stock: 0, image_url: '' });
+                  setImagePreview('');
+                  setShowSouvenirModal(true);
+                }}
+                className="px-4 py-2 bg-[#386641] text-white text-sm font-medium rounded-sm hover:bg-[#2d5133] transition-colors flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                {t('souvenir.create')}
+              </button>
+            </div>
+
+            {souvenirLoading ? (
+              <div className="flex justify-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#386641]"></div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-sm shadow-sm border border-gray-200 overflow-hidden">
+                <table className="min-w-full">
+                  <thead className="bg-[#386641] text-white">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase">{t('souvenir.image')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase">{t('souvenir.name')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase">{t('souvenir.description')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase">{t('souvenir.price')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase">{t('souvenir.stock')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase">{t('admin.status')}</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium uppercase">{t('admin.actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {souvenirs.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-10 text-center text-gray-500">
+                          {t('shop.noSouvenirs')}
+                        </td>
+                      </tr>
+                    ) : (
+                      souvenirs.map((souvenir) => (
+                        <tr key={souvenir.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            {souvenir.image_url ? (
+                              <img src={souvenir.image_url} alt={souvenir.name} className="w-12 h-12 object-cover rounded" />
+                            ) : (
+                              <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-gray-400 text-xs">
+                                {t('souvenir.noImage')}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 font-semibold text-gray-900">{souvenir.name}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">{souvenir.description || '-'}</td>
+                          <td className="px-4 py-3 font-bold text-[#386641]">{formatCurrency(souvenir.price)}</td>
+                          <td className="px-4 py-3 text-sm">{souvenir.stock}</td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-1 text-xs rounded ${souvenir.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                              {souvenir.is_active ? t('souvenir.active') : t('souvenir.inactive')}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center space-x-2">
+                            <button
+                              onClick={() => handleEditSouvenir(souvenir)}
+                              className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            >
+                              {t('common.edit')}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSouvenir(souvenir.id)}
+                              className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition-colors"
+                            >
+                              {t('common.delete')}
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Souvenir Create/Edit Modal */}
+        {showSouvenirModal && (
             <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-white rounded-sm shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                     {/* Modal Header */}
@@ -453,11 +643,10 @@ export default function AdminOrdersPage() {
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                             </div>
                             <div>
-                                <h2 className="text-lg font-bold text-gray-900">{t('upload.createNewFolder')}</h2>
-                                <p className="text-xs text-gray-500">{t('upload.step1Desc')}</p>
+                                <h2 className="text-lg font-bold text-gray-900">{editingSouvenir ? t('souvenir.edit') : t('souvenir.create')}</h2>
                             </div>
                         </div>
-                        <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors">
+                        <button onClick={() => setShowSouvenirModal(false)} className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </button>
                     </div>
@@ -467,46 +656,46 @@ export default function AdminOrdersPage() {
                         <div className="space-y-4">
                             {/* Name */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('upload.fileName')} *</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('souvenir.name')} *</label>
                                 <input
                                     type="text"
-                                    value={createForm.name}
-                                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                                    value={souvenirForm.name}
+                                    onChange={(e) => setSouvenirForm({ ...souvenirForm, name: e.target.value })}
                                     className="w-full border border-gray-300 rounded-sm px-3 py-2 text-sm focus:outline-none focus:border-[#386641] focus:ring-1 focus:ring-[#386641]"
-                                    placeholder={t('upload.folderNamePlaceholder')}
+                                    placeholder={t('souvenir.namePlaceholder')}
                                 />
                             </div>
 
                             {/* Description */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('upload.description')}</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('souvenir.description')}</label>
                                 <textarea
-                                    value={createForm.description}
-                                    onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                                    value={souvenirForm.description}
+                                    onChange={(e) => setSouvenirForm({ ...souvenirForm, description: e.target.value })}
                                     className="w-full border border-gray-300 rounded-sm px-3 py-2 text-sm focus:outline-none focus:border-[#386641] focus:ring-1 focus:ring-[#386641] min-h-[80px]"
-                                    placeholder={t('upload.folderDescPlaceholder')}
+                                    placeholder={t('souvenir.descriptionPlaceholder')}
                                 />
                             </div>
 
                             {/* Price and Stock */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.export')} *</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('souvenir.price')} *</label>
                                     <input
                                         type="number"
-                                        value={createForm.price}
-                                        onChange={(e) => setCreateForm({ ...createForm, price: parseInt(e.target.value) || 0 })}
+                                        value={souvenirForm.price}
+                                        onChange={(e) => setSouvenirForm({ ...souvenirForm, price: parseInt(e.target.value) || 0 })}
                                         className="w-full border border-gray-300 rounded-sm px-3 py-2 text-sm focus:outline-none focus:border-[#386641] focus:ring-1 focus:ring-[#386641]"
                                         placeholder="0"
                                         min="0"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('resources.manage')} *</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('souvenir.stock')} *</label>
                                     <input
                                         type="number"
-                                        value={createForm.stock}
-                                        onChange={(e) => setCreateForm({ ...createForm, stock: parseInt(e.target.value) || 0 })}
+                                        value={souvenirForm.stock}
+                                        onChange={(e) => setSouvenirForm({ ...souvenirForm, stock: parseInt(e.target.value) || 0 })}
                                         className="w-full border border-gray-300 rounded-sm px-3 py-2 text-sm focus:outline-none focus:border-[#386641] focus:ring-1 focus:ring-[#386641]"
                                         placeholder="0"
                                         min="0"
@@ -516,7 +705,7 @@ export default function AdminOrdersPage() {
 
                             {/* Image Upload */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('fileCard.download')}</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('souvenir.image')}</label>
                                 <div className="space-y-2">
                                     <input
                                         type="file"
@@ -537,22 +726,33 @@ export default function AdminOrdersPage() {
                     {/* Modal Footer */}
                     <div className="flex justify-end gap-2 p-4 border-t border-gray-100 bg-gray-50">
                         <button
-                            onClick={() => setShowCreateModal(false)}
+                            onClick={() => setShowSouvenirModal(false)}
                             className="px-4 py-2 border border-gray-300 rounded-sm text-sm text-gray-600 hover:bg-gray-100 transition-colors"
                         >
-                            {t('profile.cancel')}
+                            {t('common.cancel')}
                         </button>
                         <button
-                            onClick={handleCreateSouvenir}
-                            disabled={!createForm.name || createForm.price <= 0 || createForm.stock < 0 || uploading}
+                            onClick={handleCreateOrUpdateSouvenir}
+                            disabled={!souvenirForm.name || souvenirForm.price <= 0 || souvenirForm.stock < 0 || uploading}
                             className="px-4 py-2 bg-[#386641] text-white text-sm font-medium rounded-sm hover:bg-[#2d5133] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {uploading ? t('common.loading') : t('upload.createNewFolder')}
+                            {uploading ? t('common.loading') : (editingSouvenir ? t('common.update') : t('common.create'))}
                         </button>
                     </div>
                 </div>
             </div>
         )}
+
+        {/* Delete Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={deleteDialog.isOpen}
+          title={t('souvenir.deleteConfirm')}
+          message={t('souvenir.deleteMessage')}
+          confirmText={t('common.delete')}
+          cancelText={t('common.cancel')}
+          onConfirm={confirmDeleteSouvenir}
+          onCancel={() => setDeleteDialog({ isOpen: false, id: null })}
+        />
       </div>
     </div>
   );

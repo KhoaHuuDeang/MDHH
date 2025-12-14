@@ -1,4 +1,10 @@
-import { Injectable, ConflictException, InternalServerErrorException, UnauthorizedException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  InternalServerErrorException,
+  UnauthorizedException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { DiscordSignInDto } from 'src/users/user.dto';
 import { AuthService } from './auth.service';
@@ -15,11 +21,10 @@ export class DiscordService {
     private authService: AuthService,
     private readonly jwtService: JwtService,
     private readonly sessionService: SessionService,
-    private readonly emailService: EmailService
-  ) { }
+    private readonly emailService: EmailService,
+  ) {}
 
   async handleDiscordOAuth(dto: DiscordSignInDto) {
-   
     this.validateDiscordDto(dto);
 
     try {
@@ -50,7 +55,9 @@ export class DiscordService {
       throw new UnauthorizedException('Discord ID and provider are required');
     }
     if (!dto.email) {
-      throw new UnauthorizedException('Email is required for Discord authentication');
+      throw new UnauthorizedException(
+        'Email is required for Discord authentication',
+      );
     }
   }
 
@@ -68,11 +75,11 @@ export class DiscordService {
             roles: {
               select: {
                 name: true,
-                id: true
-              }
-            }
-          }
-        }
+                id: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -84,20 +91,25 @@ export class DiscordService {
         roles: {
           select: {
             name: true,
-            id: true
-          }
-        }
-      }
+            id: true,
+          },
+        },
+      },
     });
   }
 
-  private async handleExistingDiscordUser(tx: any, existingAccount: any, dto: DiscordSignInDto) {
+  private async handleExistingDiscordUser(
+    tx: any,
+    existingAccount: any,
+    dto: DiscordSignInDto,
+  ) {
     let user = existingAccount.users;
 
     if (!user) {
-      throw new InternalServerErrorException('Account exists but user data is missing');
+      throw new InternalServerErrorException(
+        'Account exists but user data is missing',
+      );
     }
-
 
     const needsUpdate = this.shouldUpdateUserProfile(user, dto);
 
@@ -110,21 +122,38 @@ export class DiscordService {
       await this.updateAccountTokens(tx, existingAccount.id, dto);
     }
 
+    // Send Discord login notification email
+    if (user.email) {
+      try {
+        await this.emailService.sendDiscordLoginEmail(
+          user.email,
+          user.displayname || user.username,
+          false, // isNewAccount
+        );
+      } catch (error) {
+        this.logger.error('Failed to send Discord login email:', error);
+      }
+    }
+
     return this._createTokensAndSession(user, tx);
   }
 
-
-  private async linkDiscordToExistingUser(tx: any, userByEmail: any, dto: DiscordSignInDto) {
-
+  private async linkDiscordToExistingUser(
+    tx: any,
+    userByEmail: any,
+    dto: DiscordSignInDto,
+  ) {
     const existingDiscordLink = await tx.accounts.findFirst({
       where: {
         provider: dto.provider,
         provider_account_id: dto.discordId,
-      }
+      },
     });
 
     if (existingDiscordLink) {
-      throw new ConflictException('This Discord account is already linked to another user');
+      throw new ConflictException(
+        'This Discord account is already linked to another user',
+      );
     }
 
     await tx.accounts.create({
@@ -148,11 +177,10 @@ export class DiscordService {
     return this._createTokensAndSession(updatedUser, tx);
   }
 
-
   private async createNewDiscordUser(tx: any, dto: DiscordSignInDto) {
     const userRole = await tx.roles.findUnique({
       where: { name: 'USER' },
-      select: { id: true, name: true }
+      select: { id: true, name: true },
     });
 
     if (!userRole) {
@@ -160,7 +188,6 @@ export class DiscordService {
     }
 
     const uniqueUsername = await this.generateUniqueUsername(tx, dto.username);
-
 
     const newUser = await tx.users.create({
       data: {
@@ -187,28 +214,31 @@ export class DiscordService {
         roles: {
           select: {
             name: true,
-            id: true
-          }
-        }
+            id: true,
+          },
+        },
       },
     });
 
-    // Send welcome email
+    // Send Discord account creation email
     if (newUser.email) {
       try {
-        await this.emailService.sendAccountCreationEmail(
+        await this.emailService.sendDiscordLoginEmail(
           newUser.email,
-          newUser.displayname || newUser.username
+          newUser.displayname || newUser.username,
+          true, // isNewAccount
         );
       } catch (error) {
-        this.logger.error('Failed to send welcome email:', error);
+        this.logger.error(
+          'Failed to send Discord account creation email:',
+          error,
+        );
       }
     }
 
     console.log('New user created aaaa:', newUser);
     return this._createTokensAndSession(newUser, tx);
   }
-
 
   private shouldUpdateUserProfile(user: any, dto: DiscordSignInDto): boolean {
     return (
@@ -218,8 +248,11 @@ export class DiscordService {
     );
   }
 
-
-  private async updateUserProfile(tx: any, userId: string, dto: DiscordSignInDto) {
+  private async updateUserProfile(
+    tx: any,
+    userId: string,
+    dto: DiscordSignInDto,
+  ) {
     return await tx.users.update({
       where: { id: userId },
       data: {
@@ -233,15 +266,18 @@ export class DiscordService {
         roles: {
           select: {
             name: true,
-            id: true
-          }
-        }
-      }
+            id: true,
+          },
+        },
+      },
     });
   }
 
-
-  private async updateAccountTokens(tx: any, accountId: string, dto: DiscordSignInDto) {
+  private async updateAccountTokens(
+    tx: any,
+    accountId: string,
+    dto: DiscordSignInDto,
+  ) {
     return await tx.accounts.update({
       where: { id: accountId },
       data: {
@@ -252,8 +288,10 @@ export class DiscordService {
     });
   }
 
-
-  private async generateUniqueUsername(tx: any, baseUsername: string): Promise<string> {
+  private async generateUniqueUsername(
+    tx: any,
+    baseUsername: string,
+  ): Promise<string> {
     if (!baseUsername) {
       baseUsername = 'user';
     }
@@ -275,13 +313,19 @@ export class DiscordService {
     }
 
     if (!user.roles) {
-      throw new InternalServerErrorException('User role information is missing');
+      throw new InternalServerErrorException(
+        'User role information is missing',
+      );
     }
 
     try {
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
       // Truyền transaction context vào SessionService
-      const session = await this.sessionService.createSession(user.id, expiresAt, tx);
+      const session = await this.sessionService.createSession(
+        user.id,
+        expiresAt,
+        tx,
+      );
 
       const payload = {
         sub: user.id,
@@ -313,19 +357,18 @@ export class DiscordService {
       };
     } catch (error) {
       this.logger.error('Token creation failed:', error);
-      throw new InternalServerErrorException('Failed to create authentication tokens');
+      throw new InternalServerErrorException(
+        'Failed to create authentication tokens',
+      );
     }
   }
 
-
   private determineRoleFromDiscordRoles(discordRoles: string[]): string {
-
     const roleMapping: Record<string, string> = {
       [process.env.DISCORD_ADMIN_ROLE_ID || '']: 'ADMIN',
       [process.env.DISCORD_MOD_ROLE_ID || '']: 'MODERATOR',
       [process.env.DISCORD_PREMIUM_ROLE_ID || '']: 'PREMIUM',
     };
-
 
     const rolePriority = ['ADMIN', 'MODERATOR', 'PREMIUM'];
 
@@ -336,7 +379,6 @@ export class DiscordService {
         }
       }
     }
-
 
     return 'USER';
   }

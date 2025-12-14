@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAdminUsers } from '@/hooks/useAdminUsers';
 import AdminUsersHeader from './AdminUsersHeader';
 import AdminUsersTable from './AdminUsersTable';
@@ -8,6 +9,7 @@ import AdminUsersPagination from './AdminUsersPagination';
 import SpinnerLoading from '../layout/spinner';
 
 function AdminUsersPage() {
+  const { t } = useTranslation();
   const {
     users,
     pagination,
@@ -37,7 +39,7 @@ function AdminUsersPage() {
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Error</h3>
+                <h3 className="text-sm font-medium text-red-800">{t('adminUsers.error')}</h3>
                 <div className="mt-2 text-sm text-red-700">
                   <p>{error}</p>
                 </div>
@@ -47,7 +49,7 @@ function AdminUsersPage() {
                     onClick={refresh}
                     className="bg-red-100 px-3 py-2 rounded-md text-sm font-medium text-red-800 hover:bg-red-200"
                   >
-                    Retry
+                    {t('adminUsers.retry')}
                   </button>
                 </div>
               </div>
@@ -96,7 +98,5 @@ function AdminUsersPage() {
       </div>
     </div>
   );
-}
-
-AdminUsersPage.displayName = 'AdminUsersPage';
+};
 export default React.memo(AdminUsersPage);

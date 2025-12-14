@@ -5,6 +5,7 @@ import { authService } from "@/services/userService";
 import { signIn } from "next-auth/react";
 import { LoginFormData, RegisterFormData } from "@/lib/validations/auth";
 import { controllers } from "chart.js";
+import { useTranslation } from "react-i18next";
 
 export const useAuth = (
   mode: "login" | "register",
@@ -13,6 +14,7 @@ export const useAuth = (
   const { setLoading } = useLoadingStore();
   const { success, error } = useNotifications();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const handleAuth = async (data: LoginFormData | RegisterFormData) => {
     setLoading(true);
@@ -25,10 +27,10 @@ export const useAuth = (
         });
 
         if (!result?.ok) {
-          throw new Error(result?.error || "Invalid credentials");
+          throw new Error(result?.error || t('auth.loginError'));
         }
 
-        success("Login successful!");
+        success(t('auth.loginSuccess'));
         router.push("/home");
       } else {
         const rawPayload = data as RegisterFormData;
@@ -37,7 +39,7 @@ export const useAuth = (
         //tạo formData mới bao gồm result
         const formData = { ...result };
         await authService.register(formData);
-        success("Account created! Please sign in.");
+        success(t('auth.registerSuccess'));
         setMode("login");
       }
     } catch (err: unknown) {

@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { getIcon } from '@/utils/getIcon';
 import useNotifications from '@/hooks/useNotifications';
+import { useTranslation } from 'react-i18next';
+import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
 
 interface Folder {
   id: string;
@@ -21,8 +23,14 @@ interface FolderListSectionProps {
 
 export default function FolderListSection({ userId, accessToken }: FolderListSectionProps) {
   const toast = useNotifications();
+  const { t } = useTranslation();
   const [folders, setFolders] = useState<Folder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; id: string | null; name: string }>({
+    isOpen: false,
+    id: null,
+    name: '',
+  });
 
   const fetchFolders = async () => {
     try {
@@ -40,24 +48,29 @@ export default function FolderListSection({ userId, accessToken }: FolderListSec
       setFolders(Array.isArray(data) ? data : []);
     } catch (error: any) {
       console.error('Folder fetch error:', error);
-      toast.error(error.message || 'Không thể tải danh sách thư mục');
+      toast.error(error.message || t('folders.cannotLoad'));
       setFolders([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDelete = async (folderId: string, folderName: string) => {
-    if (!confirm(`Xác nhận xóa thư mục "${folderName}"?`)) return;
+  const handleDelete = (folderId: string, folderName: string) => {
+    setDeleteDialog({ isOpen: true, id: folderId, name: folderName });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteDialog.id) return;
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/folders/${folderId}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/folders/${deleteDialog.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${accessToken}` }
       });
-      toast.success('Đã xóa thư mục');
+      toast.success(t('folders.deleted'));
       fetchFolders();
+      setDeleteDialog({ isOpen: false, id: null, name: '' });
     } catch (error) {
-      toast.error('Không thể xóa thư mục');
+      toast.error(t('folders.cannotDelete'));
     }
   };
 
@@ -68,7 +81,7 @@ export default function FolderListSection({ userId, accessToken }: FolderListSec
   if (isLoading) {
     return (
       <section className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Thư mục của tôi</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('folders.myFolders')}</h2>
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
@@ -79,9 +92,9 @@ export default function FolderListSection({ userId, accessToken }: FolderListSec
   return (
     <section className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Thư mục của tôi</h2>
+        <h2 className="text-2xl font-bold text-gray-900">{t('folders.myFolders')}</h2>
         <div className="text-sm text-gray-600">
-          Tổng số: {folders.length} thư mục
+          {t('folders.total')}: {folders.length} {t('folders.folders')}
         </div>
       </div>
 
@@ -90,8 +103,8 @@ export default function FolderListSection({ userId, accessToken }: FolderListSec
           <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
             {getIcon('Folder', 48, 'text-gray-400')}
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Chưa có thư mục</h3>
-          <p className="text-gray-500">Tạo thư mục khi tải lên tài liệu</p>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">{t('folders.noFolders')}</h3>
+          <p className="text-gray-500">{t('folders.createWhenUpload')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -138,13 +151,24 @@ export default function FolderListSection({ userId, accessToken }: FolderListSec
                   className="flex items-center gap-1 text-red-600 hover:text-red-800 font-medium"
                 >
                   {getIcon('Trash2', 12)}
-                  Xóa
+                  {t('common.delete')}
                 </button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        title={t('common.delete')}
+        message={`${t('folders.deleteConfirm')} "${deleteDialog.name}"?`}
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteDialog({ isOpen: false, id: null, name: '' })}
+      />
     </section>
   );
 }

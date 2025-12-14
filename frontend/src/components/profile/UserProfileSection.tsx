@@ -3,6 +3,7 @@
 import React, { ChangeEvent, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
+import { useTranslation } from "react-i18next";
 import { getIcon } from "@/utils/getIcon";
 import FieldRow from "./FieldRow";
 import useUserProfile from "@/hooks/useUserProfile";
@@ -13,7 +14,7 @@ interface UserProfileSectionProps {
 }
 
 function UserProfileSection({ userId }: UserProfileSectionProps) {
-
+    const { t } = useTranslation();
     const { optimisticData: userData, isLoading, updateProfile } = useUserProfile(userId);
     const { update: updateSession } = useSession();
 
@@ -151,7 +152,7 @@ function UserProfileSection({ userId }: UserProfileSectionProps) {
                     aria-label="Edit background image"
                 >
                     {getIcon("Image", 16)}
-                    <span className="hidden sm:inline">Edit Background</span>
+                    <span className="hidden sm:inline">{t('profile.editBackground')}</span>
                 </button>
 
                 {/* Hidden file input */}

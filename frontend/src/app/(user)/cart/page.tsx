@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { csrAxiosClient } from '@/utils/axiosClient';
 import { useRouter } from 'next/navigation';
+import useNotifications from '@/hooks/useNotifications';
 
 export default function CartPage() {
   const [cart, setCart] = useState<any>({ items: [], total: 0 });
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { t } = useTranslation();
+  const toast = useNotifications();
 
   useEffect(() => {
     fetchCart();
@@ -41,7 +43,7 @@ export default function CartPage() {
       fetchCart();
       window.dispatchEvent(new CustomEvent('cartUpdated'));
     } catch (err: any) {
-      alert(err.response?.data?.message || t('common.error'));
+      toast.error(err.response?.data?.message || t('common.error'));
     }
   };
 
@@ -51,7 +53,7 @@ export default function CartPage() {
       fetchCart();
       window.dispatchEvent(new CustomEvent('cartUpdated'));
     } catch (err) {
-      alert(t('moderation.error'));
+      toast.error(t('moderation.error'));
     }
   };
 
@@ -65,7 +67,7 @@ export default function CartPage() {
       window.location.href = paymentUrl;
 
     } catch (err: any) {
-      alert(err.response?.data?.message || t('common.error'));
+      toast.error(err.response?.data?.message || t('common.error'));
     }
   }
 

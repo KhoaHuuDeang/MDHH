@@ -341,4 +341,39 @@ export class AdminService {
       },
     };
   }
+
+
+  async getGraphData() {
+    // User signups by day (last 14 days)
+    const userSignups = await this.prisma.$queryRaw<any[]>`
+      SELECT 
+        DATE(created_at) as date,
+        COUNT(*)::int as count
+      FROM "users"
+      WHERE created_at >= NOW() - INTERVAL '14 days'
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+    `;
+
+    // Upvotes by day (last 14 days) from logs
+    const upvotes = await this.prisma.$queryRaw<any[]>`
+      SELECT 
+        DATE(created_at) as date,
+        COUNT(*)::int as count
+      FROM "logs"
+      WHERE type = 'UPVOTE' 
+        AND created_at >= NOW() - INTERVAL '14 days'
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+    `;
+
+    return {
+      message: 'Graph data retrieved successfully',
+      status: 200,
+      result: {
+        userSignups,
+        upvotes
+      }
+    };
+  }
 }

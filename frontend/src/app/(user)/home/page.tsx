@@ -11,7 +11,6 @@ import {
   ChevronRight,
   FileX,
   TrendingDown,
-  FolderX,
   Plus,
   LucideIcon,
 } from "lucide-react";
@@ -19,7 +18,6 @@ import useNotifications from "@/hooks/useNotifications";
 
 import SearchSection from "@/components/homepage/SearchSection";
 import FileCard from "@/components/homepage/FileCard";
-import FolderCard from "@/components/homepage/FolderCard";
 import useHomepageData from "@/hooks/useHomepageData";
 import { FilterChangeParams } from "@/components/homepage/CategoryFilter";
 import {
@@ -133,7 +131,7 @@ export default function HomePage() {
   // Load more state
   const [recentCount, setRecentCount] = useState(4);
   const [popularCount, setPopularCount] = useState(4);
-  const [folderCount, setFolderCount] = useState(5);
+  const [mostDownloadedCount, setMostDownloadedCount] = useState(5);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Dynamic homepage data
@@ -157,7 +155,7 @@ export default function HomePage() {
         const response = await homepageService.getHomepageData(
           recentCount,
           popularCount,
-          folderCount
+          mostDownloadedCount
         );
         setDynamicHomepageData(response);
       } catch (err) {
@@ -165,13 +163,13 @@ export default function HomePage() {
       }
     };
 
-    if (recentCount > 4 || popularCount > 4 || folderCount > 5) {
+    if (recentCount > 4 || popularCount > 4 || mostDownloadedCount > 5) {
       setIsLoadingMore(true);
       fetchHomepageData().finally(() => setIsLoadingMore(false));
     } else {
       setDynamicHomepageData(homepageData);
     }
-  }, [recentCount, popularCount, folderCount, homepageData]);
+  }, [recentCount, popularCount, mostDownloadedCount, homepageData]);
 
   // Unified search/filter handler
   const performSearch = useCallback(
@@ -246,7 +244,7 @@ export default function HomePage() {
   const {
     recentFiles = [],
     popularFiles = [],
-    folders = [],
+    mostDownloadedFiles = [],
   } = dynamicHomepageData || homepageData || {};
 
   // Determine which files to display
@@ -352,52 +350,32 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Popular Folders - Hide when searching */}
+        {/* Most Downloaded Files - Hide when searching */}
         {!hasSearched && (
           <div className="mt-20">
-            <h2 className="mb-10 text-4xl font-bold text-gray-800">
-              {t("home.popularFolders")}
-            </h2>
-            {isLoading && !dynamicHomepageData ? (
-              /* Skeleton Folders */
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-60 rounded-xl bg-gray-200 animate-pulse"
-                  />
-                ))}
-              </div>
-            ) : folders.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                  {folders.map((folder: any) => (
-                    <FolderCard
-                      key={folder.id}
-                      folder={folder}
-                      onView={() => {}}
-                    />
-                  ))}
-                </div>
+            <SectionHeader title={t("home.popularFiles")} />
+            <ContentGrid
+              isLoading={isLoading && !dynamicHomepageData}
+              isEmpty={mostDownloadedFiles.length === 0}
+              icon={TrendingDown}
+              emptyText={t("home.noPopularFiles")}
+            >
+              {mostDownloadedFiles.map((file: any) => (
+                <FileCard key={file.id} file={file} onView={() => {}} />
+              ))}
+            </ContentGrid>
 
-                {/* Load More Folders */}
-                {folders.length === folderCount && (
-                  <div className="mt-6 text-center">
-                    <button
-                      onClick={() => setFolderCount(folderCount + 5)}
-                      disabled={isLoadingMore}
-                      className="rounded-lg bg-[#386641] px-8 py-3 text-white transition-colors hover:bg-[#2d4f31] disabled:opacity-50"
-                    >
-                      {isLoadingMore ? t("common.loading") : t("home.loadMore")}
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <EmptyState
-                icon={FolderX}
-                text={t("home.noPopularFolders")}
-              />
+            {/* Load More Most Downloaded Files */}
+            {mostDownloadedFiles.length === mostDownloadedCount && (
+              <div className="mt-6 text-center">
+                <button
+                  onClick={() => setMostDownloadedCount(mostDownloadedCount + 5)}
+                  disabled={isLoadingMore}
+                  className="rounded-lg bg-[#386641] px-8 py-3 text-white transition-colors hover:bg-[#2d4f31] disabled:opacity-50"
+                >
+                  {isLoadingMore ? t("common.loading") : t("home.loadMore")}
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -437,12 +415,12 @@ const SectionHeader = ({
     <h2 className="text-3xl font-bold text-gray-800">{title}</h2>
     {hasNav && (
       <div className="flex space-x-2">
-        <button className="rounded-md border border-gray-200 bg-gray-100 p-2 text-gray-600 transition-colors hover:bg-[#6A994E] hover:text-white">
+        {/* <button className="rounded-md border border-gray-200 bg-gray-100 p-2 text-gray-600 transition-colors hover:bg-[#6A994E] hover:text-white">
           <ChevronLeft size={20} />
         </button>
         <button className="rounded-md border border-[#6A994E] bg-[#6A994E] p-2 text-white transition-colors hover:bg-[#386641]">
           <ChevronRight size={20} />
-        </button>
+        </button> */}
       </div>
     )}
   </div>

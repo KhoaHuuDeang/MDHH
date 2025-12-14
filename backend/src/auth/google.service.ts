@@ -108,6 +108,19 @@ export class GoogleService {
       await this.updateAccountTokens(tx, existingAccount.id, dto);
     }
 
+    // Send Google login notification email
+    if (user.email) {
+      try {
+        await this.emailService.sendGoogleLoginEmail(
+          user.email,
+          user.displayname || user.username,
+          false // isNewAccount
+        );
+      } catch (error) {
+        this.logger.error('Failed to send Google login email:', error);
+      }
+    }
+
     return this._createTokensAndSession(user, tx);
   }
 
@@ -188,15 +201,16 @@ export class GoogleService {
       },
     });
 
-    // Send welcome email
+    // Send Google account creation email
     if (newUser.email) {
       try {
-        await this.emailService.sendAccountCreationEmail(
+        await this.emailService.sendGoogleLoginEmail(
           newUser.email,
-          newUser.displayname || newUser.username
+          newUser.displayname || newUser.username,
+          true // isNewAccount
         );
       } catch (error) {
-        this.logger.error('Failed to send welcome email:', error);
+        this.logger.error('Failed to send Google account creation email:', error);
       }
     }
 

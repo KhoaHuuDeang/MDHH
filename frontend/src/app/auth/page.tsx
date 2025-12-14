@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import LoginForm from "@/components/auth/LoginForm";
 import RegisterForm from "@/components/auth/RegisterForm";
 import Image from "next/image";
+import { useTranslation } from "react-i18next";
 
 // ------------------------------------
 // Page Level
@@ -15,12 +16,18 @@ export default function AuthPage() {
   const [mounted, setMounted] = useState(false);
   const { isLoading } = useLoadingStore();
   const { handleAuth } = useAuth(mode, setMode);
+  const { t, i18n } = useTranslation();
 
   const isLogin = mode === "login";
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'en' ? 'vi' : 'en';
+    i18n.changeLanguage(newLang);
+  };
 
   if (!mounted) {
     return null;
@@ -44,16 +51,31 @@ export default function AuthPage() {
         <div className="absolute inset-0 bg-black/20" />
       </div>
 
+      {/* Language Switcher - Fixed top right */}
+      <div className="fixed top-4 right-4 z-50">
+        <button
+          onClick={toggleLanguage}
+          className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur hover:bg-white border border-gray-200 rounded-lg shadow-lg transition-all text-sm font-medium text-gray-700 hover:text-[#386641]"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          {i18n.language === 'en' ? 'VI' : 'EN'}
+        </button>
+      </div>
+
       <main className="w-full max-w-md">
         {/* Card */}
         <div className="relative rounded-2xl border border-gray-200 bg-white/90 backdrop-blur shadow-lg p-6 md:p-8 transition-all duration-300">
           {/* Header */}
           <header className="mb-6 text-center">
             <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-              {isLogin ? "Welcome back!" : "Create an account"}
+              {isLogin ? t('auth.welcomeBack') : t('auth.joinCommunity')}
             </h1>
             <p className="mt-1 text-sm text-gray-600">
-              {isLogin ? "We're so excited to see you again!" : "Join our community today!"}
+              {isLogin ? t('auth.welcomeBack') : t('auth.joinCommunity')}
             </p>
           </header>
 
@@ -79,7 +101,7 @@ export default function AuthPage() {
                     isLogin ? "text-[#386641]" : "text-gray-600 hover:text-[#386641]",
                   ].join(" ")}
                 >
-                  Sign In
+                  {t('auth.signIn')}
                 </button>
                 <button
                   type="button"
@@ -90,7 +112,7 @@ export default function AuthPage() {
                     !isLogin ? "text-[#386641]" : "text-gray-600 hover:text-[#386641]",
                   ].join(" ")}
                 >
-                  Register
+                  {t('auth.createAccount')}
                 </button>
               </div>
             </div>

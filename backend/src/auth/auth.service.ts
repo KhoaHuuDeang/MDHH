@@ -188,6 +188,18 @@ export class AuthService {
 
     this.logger.log(`User logged in successfully: ${user.email}`);
 
+    // Send login notification email
+    if (user.email) {
+      try {
+        await this.emailService.sendTraditionalLoginEmail(
+          user.email,
+          user.displayname || user.username || 'User'
+        );
+      } catch (error) {
+        this.logger.error('Failed to send login notification email:', error);
+      }
+    }
+
     return {
       message: 'Login successful',
       status: 200,
@@ -232,79 +244,88 @@ export class AuthService {
       throw new BadRequestException('Password must be at least 8 characters long');
     }
 
-    const [existingEmail, existingUsername, roleCheck] = await Promise.all([
-      this.prisma.users.findUnique({
-        where: { email: createUserDto.email },
-        select: { id: true, email: true },
-      }),
-      this.prisma.users.findUnique({
-        where: { username: createUserDto.username },
-        select: { id: true, username: true },
-      }),
-      this.prisma.roles.findUnique({
-        where: { name: 'USER' },
-        select: { id: true },
-      }),
-    ]);
-
-    if (existingEmail) {
-      this.logger.warn(`Email already exists: ${createUserDto.email}`);
-      throw new ConflictException('Email đã được sử dụng');
-    }
-    if (existingUsername) {
-      this.logger.warn(`Username already exists: ${createUserDto.username}`);
-      throw new ConflictException('Username đã được sử dụng');
-    }
-    if (!roleCheck) {
-      this.logger.error('USER role not found in database');
-      throw new InternalServerErrorException('System configuration error');
-    }
-
     try {
-      const hashedPassword = await bcrypt.hash(
-        createUserDto.password,
-        this.BCRYPT_ROUNDS,
-      );
-      const newUser = await this.prisma.users.create({
-        data: {
-          email: createUserDto.email,
-          username: createUserDto.username,
-          displayname: createUserDto.displayname,
-          password: hashedPassword,
-          birth: createUserDto.birth || '2000-01-01',
-          email_verified: false,
-          roles: { connect: { id: roleCheck.id } },
-        },
-        include: { roles: true },
-      });
+      return await this.prisma.$transaction(async (tx) => {
+        const [existingEmail, existingUsername, roleCheck] = await Promise.all([
+          tx.users.findUnique({
+            where: { email: createUserDto.email },
+            select: { id: true, email: true },
+          }),
+          tx.users.findUnique({
+            where: { username: createUserDto.username },
+            select: { id: true, username: true },
+          }),
+          tx.roles.findUnique({
+            where: { name: 'USER' },
+            select: { id: true },
+          }),
+        ]);
 
-      const { password, ...result } = newUser;
-
-      // Clear rate limit on successful registration
-      this.registerAttempts.delete(createUserDto.email);
-
-      this.logger.log(`User registered successfully: ${newUser.email}`);
-
-      // Send welcome email
-      if (newUser.email) {
-        try {
-          await this.emailService.sendAccountCreationEmail(
-            newUser.email,
-            newUser.displayname || newUser.username || 'User'
-          );
-        } catch (error) {
-          this.logger.error('Failed to send welcome email:', error);
+        if (existingEmail) {
+          this.logger.warn(`Email already exists: ${createUserDto.email}`);
+          throw new ConflictException('Email đã được sử dụng');
         }
-      }
+        if (existingUsername) {
+          this.logger.warn(`Username already exists: ${createUserDto.username}`);
+          throw new ConflictException('Username đã được sử dụng');
+        }
+        if (!roleCheck) {
+          this.logger.error('USER role not found in database');
+          throw new InternalServerErrorException('System configuration error');
+        }
 
-      return {
-        message: 'User created successfully',
-        status: 201,
-        result: {
-          user: result,
-        },
-      };
+        const hashedPassword = await bcrypt.hash(
+          createUserDto.password,
+          this.BCRYPT_ROUNDS,
+        );
+        const newUser = await tx.users.create({
+          data: {
+            email: createUserDto.email,
+            username: createUserDto.username,
+            displayname: createUserDto.displayname,
+            password: hashedPassword,
+            birth: createUserDto.birth || '2000-01-01',
+            email_verified: false,
+            roles: { connect: { id: roleCheck.id } },
+          },
+          include: { roles: true },
+        });
+
+        const { password, ...result } = newUser;
+
+        // Clear rate limit on successful registration
+        this.registerAttempts.delete(createUserDto.email);
+
+        this.logger.log(`User registered successfully: ${newUser.email}`);
+
+        // Send welcome email
+        if (newUser.email) {
+          try {
+            await this.emailService.sendAccountCreationEmail(
+              newUser.email,
+              newUser.displayname || newUser.username || 'User'
+            );
+          } catch (error) {
+            this.logger.error('Failed to send welcome email:', error);
+          }
+        }
+
+        return {
+          message: 'User created successfully',
+          status: 201,
+          result: {
+            user: result,
+          },
+        };
+      });
     } catch (err) {
+      if (
+        err instanceof ConflictException ||
+        err instanceof BadRequestException ||
+        err instanceof InternalServerErrorException
+      ) {
+        throw err;
+      }
       this.logger.error('Registration error:', err);
       throw new InternalServerErrorException('Error creating user');
     }
@@ -334,8 +355,12 @@ export class AuthService {
       },
     });
 
-    // Email sending logic would go here
-    // await this.emailService.sendVerificationEmail(email, token);
+    // Email sending logic
+    try {
+      await this.emailService.sendVerificationEmail(email, token);
+    } catch (error) {
+      this.logger.error(`Failed to send verification email to ${email}`, error);
+    }
 
     return {
       message: 'Verification email sent',
@@ -394,13 +419,19 @@ export class AuthService {
       },
     });
 
-    // Email sending logic would go here
-    // await this.emailService.sendPasswordResetEmail(email, token);
+    // Send password reset email
+    try {
+      await this.emailService.sendPasswordResetEmail(email, token);
+      this.logger.log(`Password reset email sent to ${email}`);
+    } catch (error) {
+      this.logger.error(`Failed to send password reset email to ${email}`, error);
+      // Don't throw - continue even if email fails
+    }
 
     return {
       message: 'If email exists, reset link sent',
       status: 'success',
-      result: { token }, // Only for testing, remove in production
+      result: null,
     };
   }
 

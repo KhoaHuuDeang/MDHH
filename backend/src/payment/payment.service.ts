@@ -36,7 +36,7 @@ export class PaymentService {
     }
 
     const totalAmount = cartItems.reduce(
-      (sum, item) => sum + item.souvenirs.price * item.quantity,
+      (sum, item) => sum + Number(item.souvenirs.price) * item.quantity,
       0
     );
 

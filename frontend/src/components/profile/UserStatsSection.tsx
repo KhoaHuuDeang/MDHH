@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { getIcon } from '@/utils/getIcon'
 import useUserStats from '@/hooks/useUserStats'
 import useUserAchievements from '@/hooks/useUserAchievements'
@@ -15,6 +16,7 @@ interface UserStatsSectionProps {
 }
 
 function UserStatsSection({ userId }: UserStatsSectionProps) {
+  const { t } = useTranslation();
   const { stats, isLoading } = useUserStats(userId);
   const { achievements: realAchievements, isLoading: achievementsLoading } = useUserAchievements(userId);
 
@@ -30,10 +32,10 @@ function UserStatsSection({ userId }: UserStatsSectionProps) {
 
   // Transform real stats data to display format
   const statsDisplay = stats ? [
-    { label: "Uploads", value: stats.uploads.toString(), icon: "Upload", color: "text-[#6A994E]" },
-    { label: "Upvotes", value: stats.upvotes.toString(), icon: "ThumbsUp", color: "text-[#6A994E]" },
-    { label: "Comments", value: stats.comments.toString(), icon: "MessageCircle", color: "text-[#6A994E]" },
-    { label: "Downloads", value: stats.downloads.toString(), icon: "Download", color: "text-[#6A994E]" },
+    { label: t('profile.stats.uploads'), value: stats.uploads.toString(), icon: "Upload", color: "text-[#6A994E]" },
+    { label: t('profile.stats.upvotes'), value: stats.upvotes.toString(), icon: "ThumbsUp", color: "text-[#6A994E]" },
+    { label: t('profile.stats.comments'), value: stats.comments.toString(), icon: "MessageCircle", color: "text-[#6A994E]" },
+    { label: t('profile.stats.downloads'), value: stats.downloads.toString(), icon: "Download", color: "text-[#6A994E]" },
   ] : [];
 
   if (isLoading || !stats) {
@@ -72,7 +74,7 @@ function UserStatsSection({ userId }: UserStatsSectionProps) {
           <div className="w-10 h-10 bg-[#6A994E] rounded-lg flex items-center justify-center">
             {getIcon('BarChart3', 20, 'text-white')}
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">Thống kê hoạt động</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('profile.activityStats')}</h2>
         </div>
         
         <div className="grid grid-cols-2 gap-4">
@@ -101,7 +103,7 @@ function UserStatsSection({ userId }: UserStatsSectionProps) {
           <div className="w-10 h-10 bg-yellow-500 rounded-lg flex items-center justify-center">
             {getIcon('Trophy', 20, 'text-white')}
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">Thành tích</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('profile.achievements')}</h2>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -147,7 +149,7 @@ function UserStatsSection({ userId }: UserStatsSectionProps) {
         {/* Achievement Progress */}
         <div className="mt-6 pt-6 border-t border-gray-200">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">Tiến độ thành tích</span>
+            <span className="text-sm font-medium text-gray-700">{t('profile.achievementProgress')}</span>
             <span className="text-sm text-gray-500">
               {achievements.filter(a => a.unlocked).length}/{achievements.length}
             </span>

@@ -10,6 +10,7 @@ import useCartCount from '@/hooks/useCartCount';
 import { getIconForLogType, formatRelativeTime, formatNotificationMessage } from '@/utils/notificationHelpers';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { signOut } from 'next-auth/react';
 
 interface HeaderProps {
     userProps: SidebarProfileMenuProps['mockUser'];
@@ -50,6 +51,10 @@ const Header = forwardRef<HTMLElement, HeaderProps>(({ userProps, HeaderItems, s
         if (!isRead) {
             await markAsRead(notificationId);
         }
+    };
+
+    const handleSignOut = async () => {
+        await signOut({ callbackUrl: '/auth' });
     };
 
     // Close dropdowns when clicking outside
@@ -306,6 +311,7 @@ const Header = forwardRef<HTMLElement, HeaderProps>(({ userProps, HeaderItems, s
                                                         </Link>
                                                     ) : item.action && (
                                                         <button
+                                                            onClick={item.action === 'signout' ? handleSignOut : undefined}
                                                             className='flex items-center gap-4 w-full rounded-xl transition-all duration-300
                                                                      text-sm h-11 px-4 text-white font-medium
                                                                      hover:bg-gradient-to-r hover:from-[#386641]/20 hover:to-[#2d4a2d]/50
