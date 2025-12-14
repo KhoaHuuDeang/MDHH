@@ -1,20 +1,22 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
+import { Resend } from 'resend';
 
 @Injectable()
 export class EmailService {
-  private transporter: nodemailer.Transporter;
+  private resend: Resend;
   private readonly logger = new Logger(EmailService.name);
+  private readonly fromEmail: string;
 
   constructor(private configService: ConfigService) {
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: this.configService.get<string>('EMAIL_USER'),
-        pass: this.configService.get<string>('EMAIL_PASSWORD'),
-      },
-    });
+    const apiKey = this.configService.get<string>('RESEND_API_KEY');
+    this.fromEmail = this.configService.get<string>('EMAIL_FROM') || 'onboarding@resend.dev';
+
+    if (!apiKey) {
+      this.logger.warn('RESEND_API_KEY not configured - emails will not be sent');
+    }
+
+    this.resend = new Resend(apiKey);
   }
 
   // --- UI/HTML Templates ---
@@ -56,8 +58,8 @@ export class EmailService {
     `);
 
     try {
-      await this.transporter.sendMail({
-        from: this.configService.get<string>('EMAIL_USER'),
+      await this.resend.emails.send({
+        from: this.fromEmail,
         to: email,
         subject: 'Verify Your Email - MDHH',
         html: htmlContent,
@@ -82,8 +84,8 @@ export class EmailService {
     `);
 
     try {
-      await this.transporter.sendMail({
-        from: this.configService.get<string>('EMAIL_USER'),
+      await this.resend.emails.send({
+        from: this.fromEmail,
         to: email,
         subject: 'Reset Your Password - MDHH',
         html: htmlContent,
@@ -134,8 +136,8 @@ export class EmailService {
         <p style="margin-top: 20px; text-align: center; font-size: 16px;">We appreciate your support!</p>
       `);
 
-      await this.transporter.sendMail({
-        from: this.configService.get<string>('EMAIL_USER'),
+      await this.resend.emails.send({
+        from: this.fromEmail,
         to: email,
         subject: `Order Confirmation #${orderId} - MDHH`,
         html: htmlContent,
@@ -159,8 +161,8 @@ export class EmailService {
     `);
 
     try {
-      await this.transporter.sendMail({
-        from: this.configService.get<string>('EMAIL_USER'),
+      await this.resend.emails.send({
+        from: this.fromEmail,
         to: email,
         subject: 'Welcome to MDHH - Account Created Successfully',
         html: htmlContent,
@@ -206,8 +208,8 @@ export class EmailService {
     const htmlContent = this.getEmailWrapper(isNewAccount ? newAccountMessage : existingLoginMessage);
 
     try {
-      await this.transporter.sendMail({
-        from: this.configService.get<string>('EMAIL_USER'),
+      await this.resend.emails.send({
+        from: this.fromEmail,
         to: email,
         subject: subject,
         html: htmlContent,
@@ -253,8 +255,8 @@ export class EmailService {
     const htmlContent = this.getEmailWrapper(isNewAccount ? newAccountMessage : existingLoginMessage);
 
     try {
-      await this.transporter.sendMail({
-        from: this.configService.get<string>('EMAIL_USER'),
+      await this.resend.emails.send({
+        from: this.fromEmail,
         to: email,
         subject: subject,
         html: htmlContent,
@@ -284,8 +286,8 @@ export class EmailService {
     `);
 
     try {
-      await this.transporter.sendMail({
-        from: this.configService.get<string>('EMAIL_USER'),
+      await this.resend.emails.send({
+        from: this.fromEmail,
         to: email,
         subject: 'Login Notification - MDHH',
         html: htmlContent,
