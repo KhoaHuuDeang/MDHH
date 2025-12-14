@@ -14,6 +14,7 @@ export class EmailService {
 
     if (!apiKey) {
       this.logger.warn('RESEND_API_KEY not configured - emails will not be sent');
+      return;
     }
 
     this.resend = new Resend(apiKey);
@@ -46,6 +47,11 @@ export class EmailService {
   // --- Email Sending Methods (Updated HTML content) ---
 
   async sendVerificationEmail(email: string, token: string): Promise<void> {
+    if (!this.resend) {
+      this.logger.warn('Skipping email send - RESEND_API_KEY not configured');
+      return;
+    }
+
     const verifyUrl = `${this.configService.get<string>('FRONTEND_URL')}/verify-email?token=${token}`;
 
     const htmlContent = this.getEmailWrapper(`
@@ -72,6 +78,11 @@ export class EmailService {
   }
 
   async sendPasswordResetEmail(email: string, token: string): Promise<void> {
+    if (!this.resend) {
+      this.logger.warn('Skipping email send - RESEND_API_KEY not configured');
+      return;
+    }
+
     const resetUrl = `${this.configService.get<string>('FRONTEND_URL')}/reset-password?token=${token}`;
 
     const htmlContent = this.getEmailWrapper(`
@@ -104,6 +115,11 @@ export class EmailService {
     items: any[],
     buyerName: string
   ): Promise<void> {
+    if (!this.resend) {
+      this.logger.warn('Skipping email send - RESEND_API_KEY not configured');
+      return;
+    }
+
     try {
       const itemsList = items
         .map(
@@ -150,6 +166,11 @@ export class EmailService {
   }
 
   async sendAccountCreationEmail(email: string, displayName: string): Promise<void> {
+    if (!this.resend) {
+      this.logger.warn('Skipping email send - RESEND_API_KEY not configured');
+      return;
+    }
+
     const htmlContent = this.getEmailWrapper(`
       <h2 style="color: #386641; text-align: center;">Welcome to MDHH! 👋</h2>
       <p style="font-size: 16px;">Hi **${displayName}**,</p>
@@ -175,6 +196,11 @@ export class EmailService {
   }
 
   async sendGoogleLoginEmail(email: string, displayName: string, isNewAccount: boolean): Promise<void> {
+    if (!this.resend) {
+      this.logger.warn('Skipping email send - RESEND_API_KEY not configured');
+      return;
+    }
+
     const subject = isNewAccount
       ? 'Welcome to MDHH - Account Created via Google'
       : 'Login Notification - MDHH';
@@ -222,6 +248,11 @@ export class EmailService {
   }
 
   async sendDiscordLoginEmail(email: string, displayName: string, isNewAccount: boolean): Promise<void> {
+    if (!this.resend) {
+      this.logger.warn('Skipping email send - RESEND_API_KEY not configured');
+      return;
+    }
+
     const subject = isNewAccount
       ? 'Welcome to MDHH - Account Created via Discord'
       : 'Login Notification - MDHH';
@@ -269,6 +300,11 @@ export class EmailService {
   }
 
   async sendTraditionalLoginEmail(email: string, displayName: string): Promise<void> {
+    if (!this.resend) {
+      this.logger.warn('Skipping email send - RESEND_API_KEY not configured');
+      return;
+    }
+
     const loginDetailsHtml = `
       <div style="background-color: #f0fff0; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 5px solid #386641;">
         <p style="margin-bottom: 5px;"><strong>Time:</strong> ${new Date().toLocaleString('vi-VN')}</p>
