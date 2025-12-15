@@ -205,10 +205,24 @@ export class PaymentService {
       }
     }
 
+    // Convert BigInt to Number for JSON serialization
+    const serializedOrder = {
+      ...updatedOrder,
+      total_amount: Number(updatedOrder.total_amount),
+      order_items: updatedOrder.order_items.map(item => ({
+        ...item,
+        price: Number(item.price),
+        souvenirs: {
+          ...item.souvenirs,
+          price: Number(item.souvenirs.price),
+        },
+      })),
+    };
+
     return {
       message: 'Payment processed successfully',
       status: 200,
-      result: { order: updatedOrder, verification },
+      result: { order: serializedOrder, verification },
     };
   }
 
