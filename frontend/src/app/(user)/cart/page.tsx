@@ -119,9 +119,11 @@ export default function CartPage() {
                 <div key={item.id} className="bg-white p-4 rounded-sm shadow-sm grid grid-cols-1 md:grid-cols-12 gap-4 items-center border border-transparent hover:border-[#F0F8F2] transition-colors">
 
                   <div className="col-span-1 md:col-span-6 flex items-center gap-4">
-                    <div className="w-20 h-20 bg-[#F0F8F2] rounded-sm shrink-0 flex items-center justify-center text-[#6A994E]">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21 15-9-15-9 15a2 2 0 0 0 1.7 3h14.6a2 2 0 0 0 1.7-3Z"/></svg>
-                    </div>
+                    <img
+                      src={item.souvenirs.image_url || '/placeholder.png'}
+                      alt={item.souvenirs.name}
+                      className="w-20 h-20 object-cover rounded-sm shrink-0"
+                    />
                     <div className="flex flex-col">
                         <h3 className="font-medium text-gray-900 line-clamp-2">{item.souvenirs.name}</h3>
                         <span className="md:hidden text-[#386641] font-semibold mt-1">₫{item.souvenirs.price.toLocaleString()}</span>

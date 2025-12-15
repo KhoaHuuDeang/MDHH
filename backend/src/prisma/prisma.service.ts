@@ -12,6 +12,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         },
       },
       log: ['error'],
+      // Increase transaction timeout to 30 seconds to handle email sending
+      transactionOptions: {
+        maxWait: 30000, // Max time to wait for transaction to start (30s)
+        timeout: 30000, // Max time transaction can run (30s)
+      },
     });
   }
 

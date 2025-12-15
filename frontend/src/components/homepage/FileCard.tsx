@@ -203,14 +203,14 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
                 {typeDescription}
               </span>
               {/* Flag Icon */}
-              <button
+              {/* <button
                 onClick={handleFlag}
                 disabled={isFlagging}
                 className="h-8 w-8 flex items-center justify-center rounded-lg bg-yellow-400/90 hover:bg-yellow-500 shadow-md transition-all"
                 title="Report"
               >
                 {isFlagging ? getIcons("Loader2", 13, "animate-spin text-white") : getIcons("Flag", 13, "text-white")}
-              </button>
+              </button> */}
             </div>
 
             {/* Icon/Thumbnail Centered */}
