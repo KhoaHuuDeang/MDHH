@@ -256,6 +256,9 @@ model uploads {
   moderated_at       DateTime?          @db.Timestamptz(6)
   created_at         DateTime?          @default(now()) @db.Timestamptz(6)
   uploaded_at        DateTime?          @db.Timestamptz(6)
+  title              String?            @db.VarChar
+  description        String?
+  visibility         Visibility?        @default(PUBLIC)
   resources          resources?         @relation(fields: [resource_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users              users?             @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 

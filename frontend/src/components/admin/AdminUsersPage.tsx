@@ -3,6 +3,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAdminUsers } from '@/hooks/useAdminUsers';
+import { exportToExcel } from '@/utils/exportToExcel';
+import useNotifications from '@/hooks/useNotifications';
 import AdminUsersHeader from './AdminUsersHeader';
 import AdminUsersTable from './AdminUsersTable';
 import AdminUsersPagination from './AdminUsersPagination';
@@ -10,6 +12,7 @@ import SpinnerLoading from '../layout/spinner';
 
 function AdminUsersPage() {
   const { t } = useTranslation();
+  const toast = useNotifications();
   const {
     users,
     pagination,
@@ -26,6 +29,16 @@ function AdminUsersPage() {
     refresh,
     performSearch
   } = useAdminUsers();
+
+  const handleExport = () => {
+    try {
+      exportToExcel(users, 'users');
+      toast.success(t('admin.exportSuccess'));
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error(t('common.error'));
+    }
+  };
 
   if (error) {
     return (
@@ -64,11 +77,12 @@ function AdminUsersPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="space-y-6">
-          <AdminUsersHeader 
+          <AdminUsersHeader
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
             onRefresh={refresh}
             onSearch={performSearch}
+            onExport={handleExport}
             isLoading={isLoading}
           />
           

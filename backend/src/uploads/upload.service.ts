@@ -367,6 +367,10 @@ export class UploadsService {
             file_size: file.fileSize,
             s3_key: file.s3Key,
             status: 'COMPLETED' as const,
+            // Per-file metadata (Task 2 fix)
+            title: file.title || file.originalFilename,
+            description: file.description || null,
+            visibility: file.fileVisibility || 'PUBLIC',
           }));
 
           await tx.uploads.createMany({

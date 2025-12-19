@@ -14,6 +14,9 @@ export interface AdminUploadItem {
   moderated_at: string | null;
   created_at: string | null;
   uploaded_at: string | null;
+  title: string | null;
+  description: string | null;
+  visibility: string | null;
   user?: {
     id: string;
     username: string | null;

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminOrderService, Order, OrdersResponse, OrderStatsResponse } from '@/services/adminOrderService';
 import { shopService, CreateSouvenirDto } from '@/services/shopService';
+import { exportToExcel } from '@/utils/exportToExcel';
 import useNotifications from '@/hooks/useNotifications';
 import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
 
@@ -22,6 +23,16 @@ export default function AdminOrdersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
+  const handleExport = () => {
+    try {
+      exportToExcel(orders, 'orders');
+      toast.success(t('admin.exportSuccess'));
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error(t('common.error'));
+    }
+  };
 
   // Souvenirs state
   const [souvenirs, setSouvenirs] = useState<any[]>([]);
@@ -323,6 +334,18 @@ export default function AdminOrdersPage() {
                   </option>
                 ))}
              </select>
+             <button
+                onClick={handleExport}
+                className="ml-auto px-3 py-2 bg-[#386641] text-white text-xs font-medium rounded-sm hover:bg-[#2b4d32] transition-colors flex items-center gap-2"
+                title={t('admin.exportToExcel')}
+             >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                {t('admin.export')}
+             </button>
         </div>
 
         {/* Orders Table */}

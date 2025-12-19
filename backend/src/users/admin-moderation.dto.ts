@@ -17,6 +17,9 @@ export class AdminUploadItemDto {
   moderated_at: Date | null;
   created_at: Date | null;
   uploaded_at: Date | null;
+  title: string | null;
+  description: string | null;
+  visibility: string | null;
   user?: {
     id: string;
     username: string | null;

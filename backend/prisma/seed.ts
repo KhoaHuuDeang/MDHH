@@ -304,6 +304,19 @@ async function main() {
     },
   });
 
+  // Link tags to resources
+  const generalTag = createdTags.find(t => t.name === 'General');
+  const tutorialTag = createdTags.find(t => t.name === 'Tutorial');
+  const documentationTag = createdTags.find(t => t.name === 'Documentation');
+
+  await prisma.resource_tags.createMany({
+    data: [
+      { resource_id: resource1.id, tag_id: generalTag.id },
+      { resource_id: resource1.id, tag_id: tutorialTag.id },
+      { resource_id: resource1.id, tag_id: documentationTag.id },
+    ],
+  });
+
   // Seed votes/ratings
   console.log('\nSeeding votes...');
 

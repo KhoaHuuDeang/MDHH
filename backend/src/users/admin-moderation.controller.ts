@@ -10,8 +10,13 @@ import {
   UseGuards,
   Request,
   HttpStatus,
+  Res,
+  UploadedFile,
+  UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Response } from 'express';
 import { AdminModerationService } from './admin-moderation.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -37,7 +42,9 @@ import {
 @Roles('ADMIN')
 @ApiBearerAuth()
 export class AdminModerationController {
-  constructor(private readonly moderationService: AdminModerationService) {}
+  constructor(
+    private readonly moderationService: AdminModerationService,
+  ) {}
 
   // ========== UPLOADS ENDPOINTS ==========
   @Get('uploads')
