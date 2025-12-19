@@ -34,6 +34,7 @@
     "react-toastify": "^11.0.5",
     "swr": "^2.2.5",
     "use-debounce": "^10.0.1",
+    "xlsx": "^0.18.5",
     "zod": "^3.25.64",
     "zustand": "^5.0.5"
   },
@@ -41,6 +42,7 @@
     "@eslint/eslintrc": "^3",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/xlsx": "^0.0.35",
     "autoprefixer": "^10.4.17",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",

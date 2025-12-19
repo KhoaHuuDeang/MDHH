@@ -66,6 +66,9 @@ export class AdminModerationService {
           moderated_at: true,
           created_at: true,
           uploaded_at: true,
+          title: true,
+          description: true,
+          visibility: true,
           users: {
             select: {
               id: true,
@@ -99,6 +102,9 @@ export class AdminModerationService {
       moderated_at: upload.moderated_at,
       created_at: upload.created_at,
       uploaded_at: upload.uploaded_at,
+      title: upload.title,
+      description: upload.description,
+      visibility: upload.visibility,
       user: upload.users
         ? {
             id: upload.users.id,

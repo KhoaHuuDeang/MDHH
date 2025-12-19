@@ -183,7 +183,7 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
           {/* Preview Header */}
           <div className="relative bg-gray-50 h-48 shrink-0 border-b border-gray-100">
             {/* Badges */}
-            <div className="absolute top-3 left-3 flex gap-2 z-10">
+            <div className="absolute top-3 left-3 flex flex-wrap gap-2 z-10 max-w-[calc(100%-6rem)]">
               <span className="bg-[#386641] text-white px-2.5 py-1 text-[11px] font-semibold rounded-full shadow-sm">
                 {file.downloadCount} downloads
               </span>
@@ -196,6 +196,11 @@ const FileCard: React.FC<FileCardProps> = React.memo(({
                   {file.moderation_status.replace('_', ' ')}
                 </span>
               )}
+              {file.tags && file.tags.length > 0 && file.tags.slice(0, 3).map((tag: string, idx: number) => (
+                <span key={idx} className="bg-blue-100 text-blue-700 px-2.5 py-1 text-[11px] font-semibold rounded-full shadow-sm">
+                  {tag}
+                </span>
+              ))}
             </div>
 
             <div className="absolute top-3 right-3 z-10 flex gap-2 items-center">

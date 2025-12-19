@@ -3,18 +3,31 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moderationService } from '@/services/moderationService';
+import { exportToExcel } from '@/utils/exportToExcel';
 import { AdminFolderItem, AdminFoldersQuery } from '@/types/moderation.types';
+import useNotifications from '@/hooks/useNotifications';
 import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
 import { PromptDialog } from '@/components/dialogs/PromptDialog';
 
 export default function AdminFoldersPage() {
   const { t } = useTranslation();
+  const toast = useNotifications();
   const [folders, setFolders] = useState<AdminFolderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState<AdminFoldersQuery>({ page: 1, limit: 20 });
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [searchInput, setSearchInput] = useState('');
+
+  const handleExport = () => {
+    try {
+      exportToExcel(folders, 'folders-moderation');
+      toast.success(t('admin.exportSuccess'));
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error(t('common.error'));
+    }
+  };
 
   // Dialog states
   const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; step: 'reason' | 'confirm'; folderId: string | null; reason: string }>({
@@ -129,13 +142,27 @@ export default function AdminFoldersPage() {
                 <option value="PRIVATE">{t('upload.private')}</option>
             </select>
             
-            <button 
-                onClick={() => fetchFolders()}
-                className="ml-auto p-2 text-gray-500 hover:text-[#386641] hover:bg-[#F0F8F2] rounded-sm transition-colors" 
-                title="Refresh Data"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
-            </button>
+            <div className="ml-auto flex items-center gap-2">
+                <button
+                    onClick={handleExport}
+                    className="px-3 py-2 bg-[#386641] text-white text-xs font-medium rounded-sm hover:bg-[#2b4d32] transition-colors flex items-center gap-2"
+                    title={t('admin.exportToExcel')}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    {t('admin.export')}
+                </button>
+                <button
+                    onClick={() => fetchFolders()}
+                    className="p-2 text-gray-500 hover:text-[#386641] hover:bg-[#F0F8F2] rounded-sm transition-colors"
+                    title="Refresh Data"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+                </button>
+            </div>
         </div>
 
         {/* Data Table */}
