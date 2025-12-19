@@ -649,11 +649,10 @@ export class UploadsService {
             {
               resources: {
                 visibility: 'PUBLIC',
-                // Only approved uploads
               }
             }
           ],
-          moderation_status: 'APPROVED',
+          moderation_status: { in: ['APPROVED', 'PENDING_APPROVAL'] },
           status: 'COMPLETED',
         },
         include: {
